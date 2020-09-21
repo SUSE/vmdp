@@ -1,0 +1,35 @@
+TARGETNAME=pvcrash_notify
+TARGETTYPE=DRIVER
+
+TARGETPATH = ..\dist\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+TARGETPATHLIB = ..\obj\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+TARGETLIBS= $(DDK_LIB_PATH)\ntstrsafe.lib \
+            $(DDK_LIB_PATH)\ntoskrnl.lib
+
+INCLUDES = ..\include; ..\include\virtio
+
+USER_C_FLAGS = " /FAcs /Fa..\obj\ "
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DTARGET_OS_GTE_WinLH
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DTARGET_OS_GTE_WinLH
+!endif
+
+!if "$(_BUILDARCH)"=="x86"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+DLLDEF=$(TARGETNAME)_x86.def
+!else if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64
+!endif
+
+C_DEFINES = $(C_DEFINES) -DUSES_DDK_BUILD -DPVCRASH_NOTIFY
+
+SOURCES= \
+    pvcrash.c \
+    pvcrash_pnp.c \
+    pvcrash_power.c \
+    virtio_utils.c \
+    pvcrash.rc

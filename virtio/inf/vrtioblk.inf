@@ -1,0 +1,107 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright (c) 2011-2013 Novell, Inc.
+; Copyright 2013-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+
+[Version]
+Signature   = "$Windows NT$"
+ClassGUID   = {4D36E97B-E325-11CE-BFC1-08002BE10318}
+Class       = SCSIAdapter
+Provider    = %NOVELL%
+DriverVer   = 08/14/2013,1.0.0.06
+CatalogFile = vrtioblk.cat
+
+[DestinationDirs]
+VirtioBlk.CopyFiles = 12
+
+[SourceDisksNames]
+1 = %DiskId%,,,""
+
+[SourceDisksFiles]
+vrtioblk.sys = 1,,
+
+[Manufacturer]
+%NOVELL%    = VirtioBlk,NTx86,NTamd64
+
+[VirtioBlk.NTx86]
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001
+
+[VirtioBlk.NTamd64]
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001
+
+[VirtioBlk.CopyFiles]
+vrtioblk.sys,,,2
+
+[VirtioBlk_Install]
+CopyFiles=VirtioBlk.CopyFiles
+
+[VirtioBlk_Install.HW]
+AddReg = VirtioBlk.EnableMSI
+
+[VirtioBlk_Install.Services]
+AddService = vrtioblk, 0x00000002 , VirtioBlk_Service, VirtioBlk_EventLog_Inst
+
+[VirtioBlk_Service]
+DisplayName     = %VirtioBlk.Service.DispName%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_BOOT_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+ServiceBinary  = %12%\vrtioblk.sys
+LoadOrderGroup = SCSI miniport
+AddReg         = VirtioBlk_Reg
+
+[VirtioBlk_EventLog_Inst]
+AddReg = VirtioBlk_EventLog_Add_Reg
+
+[VirtioBlk_EventLog_Add_Reg]
+HKR,,EventMessageFile,%REG_EXPAND_SZ%,"%%SystemRoot%%\System32\IoLogMsg.dll"
+HKR,,TypesSupported,%REG_DWORD%,7
+
+[VirtioBlk_Reg]
+HKR, "Parameters", "BusType", %REG_DWORD%, 0x00000001
+HKR, "Parameters\PnpInterface", "5", %REG_DWORD%, 0x00000001
+
+[VirtioBlk.EnableMSI]
+HKR, "Interrupt Management",, 0x00000010
+HKR, "Interrupt Management\MessageSignaledInterruptProperties",, 0x00000010
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00010001, 0
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 2
+HKR, "Interrupt Management\Affinity Policy",, 0x00000010
+HKR, "Interrupt Management\Affinity Policy", DevicePolicy, 0x00010001, 5
+
+[Strings]
+; Localizable Strings
+NOVELL = "Novell, Inc."
+DiskId = "SUSE Drivers for Windows on KVM"
+VirtioBlk.DeviceDesc = "SUSE Block Driver for Windows"
+VirtioBlk.Service.DispName = "SUSE Block Driver service for Windows on KVM"
+
+; Non-Localizable Strings
+REG_DWORD             = 0x00010001
+REG_EXPAND_SZ         = 0x00020000
+SERVICE_BOOT_START    = 0
+SERVICE_ERROR_NORMAL  = 1
+SERVICE_KERNEL_DRIVER = 1
+

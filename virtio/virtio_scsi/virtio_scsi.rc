@@ -1,0 +1,136 @@
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright 2012-2020 SUSE LLC
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <windows.h>
+#include <ntverp.h>
+#include <win_version.h>
+#include "virtio_scsi_ver.h"
+
+#define VER_INTERNALNAME_STR        "vtioscsi.sys"
+#define VER_ORIGINALFILENAME_STR    "vtioscsi.sys"
+
+#undef VER_PRODUCTVERSION
+#define VER_PRODUCTVERSION          PV_PRODUCTVERSION
+
+#undef VER_PRODUCTVERSION_STR
+#define VER_PRODUCTVERSION_STR      PV_PRODUCTVERSION_STR
+
+#undef VER_COMPANYNAME_STR
+#define VER_COMPANYNAME_STR         VIRT_COMPANYNAME_STR
+
+#undef VER_FILEDESCRIPTION_STR
+#undef VER_PRODUCTNAME_STR
+
+#define VER_FILESUBTYPE             VFT2_DRV_SYSTEM
+
+#define VER_FILETYPE                VFT_DRV
+
+/* Strings to be translated */
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/* Windows 2000 */
+#ifdef TARGET_OS_Win2K
+#define VER_FILEDESCRIPTION_STR     "SUSE SCIS Driver for Windows 2000 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 2000 (32-bit) on KVM"
+
+/* Windows XP 32 bit  */
+#elif defined TARGET_OS_WinXP
+#define VER_FILEDESCRIPTION_STR     "SUSE SCSI Driver for Windows XP on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows XP (32-bit) on KVM"
+
+/* Windows 2003 32 bit, Windows 2003 64 bit, and XP 64 bit */
+#elif defined TARGET_OS_WinNET
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows Server 2003 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows Server 2003 (32-bit) on KVM"
+#else
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows XP/Server 2003 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows XP and Windows Server 2003 (64-bit) on KVM"
+#endif
+
+/* Windows Vista and Windows 2008 */
+#elif defined TARGET_OS_WinLH
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows Vista/Server 2008 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows Vista and Windows Server 2008 (32-bit) on KVM"
+#else
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows Vista/Server 2008 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows Vista and Windows Server 2008 (64-bit) on KVM"
+#endif
+
+/* Windows 7 */
+#elif defined TARGET_OS_Win7
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 7 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 7 (32-bit) on KVM"
+#else
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 7/Server 2008 R2 KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 7/Server 2008 R2 (64-bit) on KVM"
+#endif
+
+/* Windows 8 */
+#elif defined TARGET_OS_Win8
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 8 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 8 (32-bit) on KVM"
+#else
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 8/Server 2012 KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 8/Server 2012 (64-bit) on KVM"
+#endif
+
+/* Windows 8.1 */
+#elif defined TARGET_OS_Win8_1
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 8.1 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 8.1 (32-bit) on KVM"
+#else
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 8.1/Server 2012 R2 KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 8.1/Server 2012 R2 (64-bit) on KVM"
+#endif
+
+/* Windows 10 */
+#elif defined TARGET_OS_Win10
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 10 on KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10 (32-bit) on KVM"
+#else
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows 10/Server 2016 KVM"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10/Server 2016 (64-bit) on KVM"
+#endif
+
+#else
+#define VER_FILEDESCRIPTION_STR     "SCSI Driver for Windows on KVM"
+#ifdef ARCH_x86
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows (32-bit) on KVM"
+#else
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows (64-bit) on KVM"
+#endif
+
+#endif
+
+#include "common.ver"
+

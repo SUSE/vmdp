@@ -1,0 +1,47 @@
+TARGETNAME=virtio_balloon
+TARGETTYPE=DRIVER
+
+TARGETPATH = ..\dist\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+
+TARGETLIBS= $(DDK_LIB_PATH)\ntstrsafe.lib \
+            $(DDK_LIB_PATH)\wdmsec.lib
+
+!if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64
+!else if "$(DDK_TARGET_OS)"=="Win2K"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!else if "$(DDK_TARGET_OS)"=="WinXP"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!else
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!endif
+C_DEFINES = $(C_DEFINES) -DPVVXBN
+
+INCLUDES = ..\include;..\include\virtio
+
+USER_C_FLAGS = " /FAcs /Fa..\obj\ "
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DTARGET_OS_GTE_WinLH
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DTARGET_OS_GTE_WinLH
+!endif
+
+C_DEFINES = $(C_DEFINES) -DVIRTIO_DEVICE_BALLOON
+
+
+SOURCES=virtio_blndrv.c \
+    virtio_blnentry.c \
+    virtio_blnpwr.c \
+    virtio_balloon.c \
+    virtio_ring.c \
+    virtio_pci.c \
+    virtio_pci_legacy.c \
+    virtio_pci_modern.c \
+    virtio_pci_wdm.c \
+    virtio_utils.c \
+    virtio_balloon.rc
+
+

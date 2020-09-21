@@ -1,0 +1,103 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright 2017-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+
+[Version]
+Signature   = "$Windows NT$"
+ClassGUID   = {4d36e97d-e325-11ce-bfc1-08002be10318}
+Class       = System
+Provider    = %SUSE%
+DriverVer   = 02/16/2017,1.0.0.00
+CatalogFile = virtio_rng.cat
+
+[DestinationDirs]
+DefaultDestDir = 12
+virtio_rng_Provider_CopyFiles = 11
+virtio_rng_Wdf_CoInstaller_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+virtio_rng.sys = 1,,
+viorngum.dll=1
+viorngci.dll=1
+
+[Manufacturer]
+%SUSE% = virtio_rng,NT$ARCH$
+
+[virtio_rng.NT$ARCH$]
+%virtio_rng.DeviceDesc% = virtio_rng_Device, PCI\VEN_1AF4&DEV_1005&SUBSYS_00041AF4&REV_00
+%virtio_rng.DeviceDesc% = virtio_rng_Device, PCI\VEN_1AF4&DEV_1044&SUBSYS_11001AF4&REV_01
+%virtio_rng.DeviceDesc% = virtio_rng_Device, PCI\VEN_1AF4&DEV_1044
+%virtio_rng.DeviceDesc% = virtio_rng_Device, PCI\VEN_1AF4&DEV_1005
+
+[virtio_rng_Device.NT]
+CopyFiles = virtio_rng_CopyFiles
+CopyFiles=virtio_rng_Provider_CopyFiles
+
+[virtio_rng_Device.NT.HW]
+AddReg = virtio_rng_AddReg
+
+[virtio_rng_CopyFiles]
+virtio_rng.sys
+
+[virtio_rng_AddReg]
+HKR,Interrupt Management,,0x00000010
+HKR,Interrupt Management\MessageSignaledInterruptProperties,,0x00000010
+HKR,Interrupt Management\MessageSignaledInterruptProperties,MSISupported,0x00010001,1
+HKR,Interrupt Management\MessageSignaledInterruptProperties,MessageNumberLimit,0x00010001,1
+
+[virtio_rng_Device.NT.Services]
+AddService = virtio_rng,0x00000002,virtio_rng_Service_Install
+
+[virtio_rng_Service_Install]
+DisplayName    = %virtio_rng.Service%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\virtio_rng.sys
+LoadOrderGroup = Extended Base
+
+; viorngum RNG Provider
+[virtio_rng_Provider_CopyFiles]
+viorngum.dll
+
+; viorngci Device CoInstaller
+[virtio_rng_Device.NT.CoInstallers]
+AddReg=virtio_rng_Wdf_CoInstaller_AddReg
+CopyFiles=virtio_rng_Wdf_CoInstaller_CopyFiles
+
+[virtio_rng_Wdf_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000,"viorngci.dll,VirtRngCoInstaller"
+
+[virtio_rng_Wdf_CoInstaller_CopyFiles]
+viorngci.dll
+
+[Strings]
+SUSE = "SUSE"
+DiskName               = "VirtIO RNG Installation Disk"
+virtio_rng.DeviceDesc  = "VirtIO RNG Device"
+virtio_rng.Service     = "VirtIO RNG Service"

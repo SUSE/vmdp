@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">virtio_rng</TARGETNAME>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">DRIVER</TARGETTYPE>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ntstrsafe.lib              $(DDK_LIB_PATH)\wdmsec.lib</TARGETLIBS>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">..\include;..\include\virtio;..\virtio_rng</INCLUDES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">vrng.c    vrng_pnp.c         vrng_power.c   vrng_isr.c     vrng_read.c     ..\virtio_base\virtio_ring.c    ..\virtio_base\virtio_pci.c     ..\virtio_base\virtio_pci_legacy.c      ..\virtio_base\virtio_pci_modern.c    ..\virtio_base\virtio_pci_wdm.c     ..\virtio_base\virtio_utils.c  	vrng.rc</SOURCES>
+  </PropertyGroup>
+</Project>

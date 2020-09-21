@@ -1,0 +1,42 @@
+TARGETNAME=virtio_rng
+TARGETTYPE=DRIVER
+
+TARGETPATH = ..\dist\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+TARGETPATHLIB = ..\obj\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+TARGETLIBS= $(DDK_LIB_PATH)\ntstrsafe.lib \
+            $(DDK_LIB_PATH)\wdmsec.lib
+
+INCLUDES = ..\include;..\include\virtio
+
+USER_C_FLAGS = " /FAcs /Fa..\obj\ "
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DTARGET_OS_GTE_WinLH
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DTARGET_OS_GTE_WinLH
+!endif
+
+!if "$(_BUILDARCH)"=="x86"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+DLLDEF=$(TARGETNAME)_x86.def
+!else if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64
+!endif
+
+C_DEFINES = $(C_DEFINES) -DVIRTIO_DEVICE_RNG
+
+SOURCES= \
+    vrng.c \
+    vrng_pnp.c \
+    vrng_power.c \
+    vrng_isr.c \
+    vrng_read.c \
+    virtio_ring.c \
+    virtio_pci.c \
+    virtio_pci_legacy.c \
+    virtio_pci_modern.c \
+    virtio_pci_wdm.c \
+    virtio_utils.c \
+    vrng.rc

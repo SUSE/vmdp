@@ -1,0 +1,82 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright 2018-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+
+[Version]
+Signature   = "$Windows NT$"
+ClassGUID   = {4d36e97d-e325-11ce-bfc1-08002be10318}
+Class       = System
+Provider    = %SUSE%
+DriverVer   = 12/07/2017,1.0.0.00
+CatalogFile = fwcfg.cat
+
+[DestinationDirs]
+fwcfg.CopyFiles = 12
+
+[SourceDisksNames]
+1 = %DiskId%,,,""
+
+[SourceDisksFiles]
+fwcfg.sys = 1,,
+
+[Manufacturer]
+%SUSE% = fwcfg,NTx86,NTamd64
+
+[fwcfg.NTx86]
+%fwcfg.DeviceDesc% = fwcfg_Install, ACPI\QEMU0002
+
+[fwcfg.NTamd64]
+%fwcfg.DeviceDesc% = fwcfg_Install, ACPI\QEMU0002
+
+[fwcfg.CopyFiles]
+fwcfg.sys,,,2
+
+[fwcfg_Install]
+CopyFiles=fwcfg.CopyFiles
+
+[fwcfg_Install.Services]
+AddService = fwcfg, 0x00000002 , fwcfg_Service
+
+[fwcfg_Service]
+DisplayName     = %fwcfg.Service.DispName%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_BOOT_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+ServiceBinary  = %12%\fwcfg.sys
+
+[Strings]
+; Localizable Strings
+SUSE = "SUSE"
+DiskId = "SUSE Drivers for Windows"
+fwcfg.DeviceDesc = "SUSE QEMU FwCfg Driver for Windows"
+fwcfg.Service.DispName = "SUSE QEMU FwCfg Driver for Windows"
+
+; Non-Localizable Strings
+REG_DWORD             = 0x00010001
+REG_EXPAND_SZ         = 0x00020000
+SERVICE_BOOT_START    = 0
+SERVICE_KERNEL_DRIVER = 1
+SERVICE_DEMAND_START  = 3
+SERVICE_ERROR_NORMAL  = 1

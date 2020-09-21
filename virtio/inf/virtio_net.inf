@@ -1,0 +1,310 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright (c) 2011-2013 Novell, Inc.
+; Copyright 2013-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+
+[Version]
+Signature = "$Windows NT$"
+Class = Net
+ClassGUID = {4d36e972-e325-11ce-bfc1-08002be10318}
+Provider = %SUSE%
+DriverVer = 11/28/2012,1.0.0.16
+CatalogFile=virtio_net.cat
+
+[DestinationDirs]
+VirtioNet.CopyFiles = 12
+
+[SourceDisksNames]
+1 = %DiskId%,,,""
+
+[SourceDisksFiles]
+virtio_net.sys = 1,,
+
+[Manufacturer]
+%SUSE% = VirtioNet,NTx86.5,NTx86.6,NTamd64.5,NTamd64.6
+
+[VirtioNet.NTx86.5]
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1000
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1041
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
+
+[VirtioNet.NTx86.6]
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1000
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1041
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
+
+[VirtioNet.NTamd64.5]
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1000
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1041
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.5, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
+
+[VirtioNet.NTamd64.6]
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1000
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1041
+%VirtioNet.DeviceDesc%=VirtioNet.Ndi.6, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
+
+[VirtioNet.Ndi.5]
+Characteristics = 0x84 ; NCF_PHYSICAL  | NCF_HAS_UI
+AddReg = VirtioNet.Reg, virtio_net_params.reg, virtio_net_params.reg5
+BusType = 5 ; PCI
+CopyFiles = VirtioNet.CopyFiles
+*IfType = 6
+*MediaType = 0
+*PhysicalMediaType = 0
+
+[VirtioNet.Ndi.6]
+Characteristics = 0x84 ; NCF_PHYSICAL  | NCF_HAS_UI
+BusType = 5 ; PCI
+AddReg = VirtioNet.Reg, virtio_net_params.reg, virtio_net_params.reg6
+CopyFiles = VirtioNet.CopyFiles
+*IfType = 6
+*MediaType = 0
+*PhysicalMediaType = 0
+
+
+[VirtioNet.Ndi.5.Services]
+AddService = virtio_net, 2, VirtioNet.Service, VirtioNet.EventLog
+
+[VirtioNet.Ndi.6.Services]
+AddService = virtio_net, 2, VirtioNet.Service, VirtioNet.EventLog
+
+[VirtioNet.Reg]
+HKR, Ndi, Service, 0, "virtio_net"
+HKR, Ndi\Interfaces, UpperRange, 0, "ndis5"
+HKR, Ndi\Interfaces, LowerRange, 0, "ethernet"
+
+[VirtioNet.Ndi.6.hw]
+AddReg = VirtioNet.Ndi.6.EnableMSI
+
+[VirtioNet.Ndi.6.EnableMSI]
+HKR, "Interrupt Management",, 0x00000010
+HKR, "Interrupt Management\Affinity Policy",, 0x00000010
+HKR, "Interrupt Management\Affinity Policy", DevicePolicy, 0x00010001, 1
+HKR, "Interrupt Management\Affinity Policy", DevicePriority, 0x00010001, 2
+HKR, "Interrupt Management\MessageSignaledInterruptProperties",, 0x00000010
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00010001, 1
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 4
+
+[virtio_net_params.reg]
+HKR, Ndi\params\NumRcb,         ParamDesc,  0, "%ReceiveBuffers%"
+HKR, Ndi\params\NumRcb,         default,    0, "256"
+HKR, Ndi\params\NumRcb,         min,        0, "256"
+HKR, Ndi\params\NumRcb,         max,        0, "1024"
+HKR, Ndi\params\NumRcb,         step,       0, "1"
+HKR, Ndi\params\NumRcb,         base,       0, "10"
+HKR, Ndi\params\NumRcb,         type,       0, "int"
+
+HKR, Ndi\params\RcvLimit,       ParamDesc,  0, "%ReceiveLimit%"
+HKR, Ndi\params\RcvLimit,       default,    0, "64"
+HKR, Ndi\params\RcvLimit,       min,        0, "0"
+HKR, Ndi\params\RcvLimit,       max,        0, "256"
+HKR, Ndi\params\RcvLimit,       step,       0, "1"
+HKR, Ndi\params\RcvLimit,       base,       0, "10"
+HKR, Ndi\params\RcvLimit,       type,       0, "int"
+
+HKR, Ndi\params\StatInterval,   ParamDesc,  0, "%StatInterval%"
+HKR, Ndi\params\StatInterval,   default,    0, "0"
+HKR, Ndi\params\StatInterval,   min,        0, "0"
+HKR, Ndi\params\StatInterval,   max,        0, "3600"
+HKR, Ndi\params\StatInterval,   step,       0, "1"
+HKR, Ndi\params\StatInterval,   base,       0, "10"
+HKR, Ndi\params\StatInterval,   type,       0, "int"
+
+HKR, Ndi\params\ResourceTimeout, ParamDesc, 0, "%ResourceTimeout%"
+HKR, Ndi\params\ResourceTimeout, default,   0, "0"
+HKR, Ndi\params\ResourceTimeout, min,       0, "0"
+HKR, Ndi\params\ResourceTimeout, max,       0, "3600"
+HKR, Ndi\params\ResourceTimeout, step,      0, "1"
+HKR, Ndi\params\ResourceTimeout, base,      0, "10"
+HKR, Ndi\params\ResourceTimeout, type,      0, "int"
+
+HKR, Ndi\params\dbg_print_mask,  ParamDesc, 0, "%DBG_PRINTK_MASK%"
+HKR, Ndi\params\dbg_print_mask,  default,   0, "7"
+HKR, Ndi\params\dbg_print_mask,  min,       0, "0"
+HKR, Ndi\params\dbg_print_mask,  max,       0, "ffffffff"
+HKR, Ndi\params\dbg_print_mask,  step,      0, "1"
+HKR, Ndi\params\dbg_print_mask,  base,      0, "16"
+HKR, Ndi\params\dbg_print_mask,  type,      0, "dword"
+
+HKR, Ndi\params\rel_print_mask,  ParamDesc, 0, "%REL_PRINTK_MASK%"
+HKR, Ndi\params\rel_print_mask,  default,   0, "0"
+HKR, Ndi\params\rel_print_mask,  min,       0, "0"
+HKR, Ndi\params\rel_print_mask,  max,       0, "ffffffff"
+HKR, Ndi\params\rel_print_mask,  step,      0, "1"
+HKR, Ndi\params\rel_print_mask,  base,      0, "16"
+HKR, Ndi\params\rel_print_mask,  type,      0, "dword"
+
+HKR, Ndi\params\TCPChecksumOffloadIPv4,       ParamDesc,  0, %TCPIPv4Desc%
+HKR, Ndi\params\TCPChecksumOffloadIPv4,       default,    0, "0"
+HKR, Ndi\params\TCPChecksumOffloadIPv4,       type,       0, "enum"
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "0",        0, %Disable%
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "1",        0, %TX%
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "2",        0, %RX%
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\UDPChecksumOffloadIPv4,       ParamDesc,  0, %UDPIPv4Desc%
+HKR, Ndi\params\UDPChecksumOffloadIPv4,       default,    0, "0"
+HKR, Ndi\params\UDPChecksumOffloadIPv4,       type,       0, "enum"
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "0",        0, %Disable%
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "1",        0, %TX%
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "2",        0, %RX%
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "3",        0, %RX_TX%
+
+[virtio_net_params.reg5]
+HKR, Ndi\params\LsoV1IPv4,         ParamDesc,  0, %LSO%
+HKR, Ndi\params\LsoV1IPv4,         default,    0, "0"
+HKR, Ndi\params\LsoV1IPv4,         type,       0, "enum"
+HKR, Ndi\params\LsoV1IPv4\enum,    "0",        0, %Disable%
+HKR, Ndi\params\LsoV1IPv4\enum,    "1",        0, %Enable%
+
+HKR, Ndi\params\LsoDataSize,       ParamDesc,  0, %LSO_DATA_SIZE%
+HKR, Ndi\params\LsoDataSize,       default,    0, "61440"
+HKR, Ndi\params\LsoDataSize,       type,       0, "enum"
+HKR, Ndi\params\LsoDataSize\enum,  "8192",     0, 8192
+HKR, Ndi\params\LsoDataSize\enum,  "16384",    0, 16384
+HKR, Ndi\params\LsoDataSize\enum,  "32768",    0, 32768
+HKR, Ndi\params\LsoDataSize\enum,  "61440",    0, 61440
+
+[virtio_net_params.reg6]
+HKR, Ndi\params\TCPChecksumOffloadIPv6,       ParamDesc,  0, %TCPIPv6Desc%
+HKR, Ndi\params\TCPChecksumOffloadIPv6,       default,    0, "0"
+HKR, Ndi\params\TCPChecksumOffloadIPv6,       type,       0, "enum"
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "0",        0, %Disable%
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "1",        0, %TX%
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "2",        0, %RX%
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\UDPChecksumOffloadIPv6,       ParamDesc,  0, %UDPIPv6Desc%
+HKR, Ndi\params\UDPChecksumOffloadIPv6,       default,    0, "0"
+HKR, Ndi\params\UDPChecksumOffloadIPv6,       type,       0, "enum"
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "0",        0, %Disable%
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "1",        0, %TX%
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "2",        0, %RX%
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport,      ParamDesc, 0, %IPv6ExtHdrsSupport%
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport,      default,   0, "0"
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport,      type,      0, "enum"
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport\enum, "0",       0, %Disable%
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport\enum, "1",       0, %Enable%
+
+HKR, Ndi\params\*LsoV2IPv4,        ParamDesc, 0, %LSOV2%
+HKR, Ndi\params\*LsoV2IPv4,        default,   0, "1"
+HKR, Ndi\params\*LsoV2IPv4,        type,      0, "enum"
+HKR, Ndi\params\*LsoV2IPv4\enum,   "0",       0, %Disable%
+HKR, Ndi\params\*LsoV2IPv4\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\*LsoV2IPv6,        ParamDesc, 0, %LSOV2IPv6%
+HKR, Ndi\params\*LsoV2IPv6,        default,   0, "1"
+HKR, Ndi\params\*LsoV2IPv6,        type,      0, "enum"
+HKR, Ndi\params\*LsoV2IPv6\enum,   "0",       0, %Disable%
+HKR, Ndi\params\*LsoV2IPv6\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\LsoDataSize,       ParamDesc,  0, %LSO_DATA_SIZE%
+HKR, Ndi\params\LsoDataSize,       default,    0, "61440"
+HKR, Ndi\params\LsoDataSize,       type,       0, "enum"
+HKR, Ndi\params\LsoDataSize\enum,  "8192",     0, 8192
+HKR, Ndi\params\LsoDataSize\enum,  "16384",    0, 16384
+HKR, Ndi\params\LsoDataSize\enum,  "32768",    0, 32768
+HKR, Ndi\params\LsoDataSize\enum,  "61440",    0, 61440
+
+HKR, Ndi\params\MTU,                ParamDesc,  0, "%MTU%"
+HKR, Ndi\params\MTU,                default,    0, "1500"
+HKR, Ndi\params\MTU,                min,        0, "576"
+HKR, Ndi\params\MTU,                max,        0, "61426"
+HKR, Ndi\params\MTU,                step,       0, "1"
+HKR, Ndi\params\MTU,                base,       0, "10"
+HKR, Ndi\params\MTU,                type,       0, "long"
+
+HKR, Ndi\Params\LinkSpeed,          ParamDesc, 0, %LinkSpeed%
+HKR, Ndi\Params\LinkSpeed,          Default,   0, "1000"
+HKR, Ndi\Params\LinkSpeed,          type,      0, "enum"
+HKR, Ndi\Params\LinkSpeed\enum,     "10000",   0, "10 Gbps"
+HKR, Ndi\Params\LinkSpeed\enum,     "1000",    0, "1 Gbps"
+HKR, Ndi\Params\LinkSpeed\enum,     "100",     0, "100 Mbps"
+HKR, Ndi\Params\LinkSpeed\enum,     "10",      0, "10 Mbps"
+
+HKR, Ndi\params\PMC,                ParamDesc,  0, %PMC%
+HKR, Ndi\params\PMC,                default,    0, "1"
+HKR, Ndi\params\PMC,                type,       0, "enum"
+HKR, Ndi\params\PMC\enum,           "0",        0, %Disable%
+HKR, Ndi\params\PMC\enum,           "1",        0, %W2K12%
+
+[VirtioNet.CopyFiles]
+virtio_net.sys,,,2
+
+[VirtioNet.Service]
+DisplayName     = %VirtioNet.Service.DispName%
+ServiceType     = 1 ;%SERVICE_KERNEL_DRIVER%
+StartType       = 3 ;%SERVICE_DEMAND_START%
+ErrorControl    = 1 ;%SERVICE_ERROR_NORMAL%
+ServiceBinary   = %12%\virtio_net.sys
+LoadOrderGroup  = NDIS
+AddReg          = TextModeFlags.Reg
+
+[VirtioNet.EventLog]
+AddReg = VirtioNet.AddEventLog.Reg
+
+[VirtioNet.AddEventLog.Reg]
+HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
+HKR, , TypesSupported,   0x00010001, 7
+
+[TextModeFlags.Reg]
+HKR, , TextModeFlags, 0x00010001, 0x0001
+
+[Strings]
+SUSE = "SUSE"
+DiskId = "SUSE Drivers for Windows on KVM"
+VirtioNet.DeviceDesc = "SUSE Network Driver for Windows on KVM"
+VirtioNet.Service.DispName = "SUSE Net Driver service for Windows on KVM"
+TCPIPv4Desc = "TCP Checksum Offload (IPv4)"
+UDPIPv4Desc = "UDP Checksum Offload (IPv4)"
+TCPIPv6Desc = "TCP Checksum Offload (IPv6)"
+UDPIPv6Desc = "UDP Checksum Offload (IPv6)"
+Disable = "Disabled"
+Enable = "Enabled"
+LSO = "Large Send Offload Version 1 (IPv4)"
+LSOV2 = "Large Send Offload V2 (IPv4)"
+LSOV2IPv6 = "Large Send Offload V2 (IPv6)"
+IPv6ExtHdrsSupport = "IPv6 Extension Headers Support"
+LSO_DATA_SIZE = "TCP Large Send Offload Size"
+MTU = "MTU"
+LinkSpeed = "Link Speed"
+TX = "Tx Enabled"
+RX = "Rx Enabled"
+RX_TX = "Rx and Tx Enabled"
+ReceiveBuffers  = "Receive Buffers"
+ReceiveLimit    = "Quick Receive Turnaround Threshold"
+StatInterval    = "Statistics Timer Interval (seconds)"
+ResourceTimeout = "Return Resource Timeout (seconds)"
+DBG_PRINTK_MASK = "Debug print mask (for debug driver)"
+REL_PRINTK_MASK = "Debug print mask (for release driver)"
+ResourceTimeout = "Return Resource Timeout (seconds)"
+PMC = "Power Management Capabilities"
+W2K12 = "Win2012"

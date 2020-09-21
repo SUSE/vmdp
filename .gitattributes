@@ -1,0 +1,12 @@
+*.bat     eol=crlf
+*.inf     eol=crlf
+*.vcxproj eol=crlf
+*.props eol=crlf
+*.sln eol=crlf
+*.filters eol=crlf
+*.user eol=crlf
+*.cdf eol=crlf
+*13 eol=crlf
+*15 eol=crlf
+*17 eol=crlf
+*19 eol=crlf

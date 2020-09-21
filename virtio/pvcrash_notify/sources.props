@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">pvcrash_notify</TARGETNAME>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">DRIVER</TARGETTYPE>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ntstrsafe.lib              </TARGETLIBS>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">..\include;..\include\virtio</INCLUDES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">pvcrash.c    pvcrash_pnp.c         pvcrash_power.c   ..\virtio_base\virtio_utils.c    pvcrash.rc</SOURCES>
+  </PropertyGroup>
+</Project>

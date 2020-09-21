@@ -1,0 +1,18 @@
+SOURCES = miniport.c \
+    mp_main.c \
+    init.c \
+    oid.c \
+    mp_utils.c \
+    mp_vutils.c \
+    mp_vinterface.c \
+    mp_main6.c \
+    mp_init6.c \
+    mp_nic6.c \
+    mp_vnic6.c \
+    mp_rss.c \
+    virtio_ring.c \
+    virtio_pci.c \
+    virtio_pci_legacy.c \
+    virtio_pci_modern.c \
+    virtio_utils.c \
+    virtio_net.rc

@@ -1,0 +1,45 @@
+TARGETNAME=pvvxsvc
+TARGETTYPE=PROGRAM
+
+C_DEFINES=-DUNICODE -D_UNICODE
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET -DPVVX
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DPVVX
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DPVVX
+!endif
+
+!if "$(_BUILDARCH)"=="x86"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!else if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64
+!endif
+
+SOURCES=pvvxsvc.c \
+    pvvxsvc_dispatch.c \
+    pvvxsvc_shutdown.c \
+    pvvxsvc_process.c \
+    pvvxsvc_utils.c \
+    pvvxsvc_bln.c \
+    pvvxsvc_memstats.cpp \
+    pvvxsvc.rc
+
+UMENTRY=wmain
+UMTYPE=windows
+
+TARGETLIBS=$(SDK_LIB_PATH)\shell32.lib \
+    $(SDK_LIB_PATH)\kernel32.lib \
+    $(SDK_LIB_PATH)\setupapi.lib \
+    $(SDK_LIB_PATH)\shlwapi.lib \
+    $(SDK_LIB_PATH)\version.lib \
+    $(SDK_LIB_PATH)\wbemuuid.lib  \
+    $(SDK_LIB_PATH)\ole32.lib     \
+    $(SDK_LIB_PATH)\Advapi32.lib
+
+INCLUDES =                       \
+            ..\include;          \
+            ..\virtio_balloon;   \
+
+USE_MSVCRT=1
