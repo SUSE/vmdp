@@ -80,8 +80,8 @@ virtio/virtio_rng/virtio_utils.c
 virtio/virtio_rng/virtio_pci_legacy.c
 virtio/virtio_rng/virtio_pci_modern.c
 virtio/virtio_rng/virtio_pci_wdm.c
-virtio/virtio_rng/coinstaller
-virtio/virtio_rng/cng
+virtio/virtio_rng/coinstaller/Win32
+virtio/virtio_rng/cng/um/Win32
 virtio/pvcrash_notify/virtio_utils.c
 virtio/fwcfg/virtio_utils.c
 xen/build_all.bat
