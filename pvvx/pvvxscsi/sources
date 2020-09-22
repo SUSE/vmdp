@@ -1,0 +1,60 @@
+TARGETNAME=pvvxscsi
+TARGETTYPE=DRIVER
+
+TARGETPATH = ..\dist\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+TARGETPATHLIB = ..\obj\$(DDK_TARGET_OS)
+
+!if "$(_BUILDARCH)"=="x86"
+_XENARCH = i386
+!else if "$(_BUILDARCH)"=="AMD64"
+_XENARCH = amd64
+!endif
+
+TARGETLIBS= \
+    $(DDK_LIB_PATH)\ntstrsafe.lib \
+!if "$(_BUILDARCH)"=="AMD64"
+    $(DDK_LIB_PATH)\storport.lib
+!else if "$(DDK_TARGET_OS)"=="Win2K"
+    $(DDK_LIB_PATH)\scsiport.lib
+!else if "$(DDK_TARGET_OS)"=="WinXP"
+    $(DDK_LIB_PATH)\scsiport.lib
+!else
+    $(DDK_LIB_PATH)\storport.lib
+!endif
+
+
+!if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64 -DIS_STORPORT -DXENSCSI_STORPORT
+!else if "$(DDK_TARGET_OS)"=="Win2K"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!else if "$(DDK_TARGET_OS)"=="WinXP"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!else
+C_DEFINES = $(C_DEFINES) -DARCH_x86 -DIS_STORPORT -DXENSCSI_STORPORT
+!endif
+
+INCLUDES =                                  \
+            .;                              \
+            ..\pvvxsb;                      \
+            ..\..\xen\xenscsi;              \
+            ..\..\virtio\virtio_scsi;       \
+            ..\include;                     \
+            ..\..\xen\include;              \
+            ..\..\virtio\virtio_sp_common;  \
+            ..\..\virtio\include;           \
+            ..\..\virtio\include\virtio;    \
+
+USER_C_FLAGS = " /FAcs /Fa..\obj\ "
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET -DPVVX
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DPVVX -DCAN_USE_MSI
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DPVVX -DCAN_USE_MSI
+!endif
+C_DEFINES = $(C_DEFINES) -DPVVXSCSI -DUSE_INDIRECT_XENBUS_APIS
+C_DEFINES = $(C_DEFINES) -DVIRTIO_SCSI_DRIVER
+
+!include src_files
+

@@ -1,0 +1,73 @@
+TARGETNAME=pvvxbn
+TARGETTYPE=EXPORT_DRIVER
+
+TARGETPATH = ..\dist\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+
+TARGETLIBS= $(DDK_LIB_PATH)\ntstrsafe.lib \
+            $(DDK_LIB_PATH)\wdmsec.lib
+
+TARGETPATHLIB = ..\obj\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+
+INCLUDES =                                  \
+            .;                              \
+            ..\..\xen\xenbus;               \
+            ..\..\virtio\virtio_balloon;    \
+            ..\include;                     \
+            ..\..\xen\include;              \
+            ..\..\xen\include\asm;          \
+            ..\..\xen\include\public;       \
+            ..\..\virtio\include;           \
+            ..\..\virtio\include\virtio;    \
+            ..\..\virtio\include\asm;       \
+
+
+USER_C_FLAGS = " /FAcs /Fa..\obj\ "
+
+C_DEFINES = $(C_DEFINES) -DPVVX
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DTARGET_OS_GTE_WinLH
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DTARGET_OS_GTE_WinLH
+!endif
+C_DEFINES = $(C_DEFINES) -DPVVXBN
+C_DEFINES = $(C_DEFINES) -DVIRTIO_DEVICE_BALLOON
+
+!if "$(_BUILDARCH)"=="x86"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+DLLDEF=pvvxbn_x86.def
+!else if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64
+DLLDEF=pvvxbn_x64.def
+
+AMD64_SOURCES = amd64\xenbus_glu64.asm
+!endif
+
+SOURCES= \
+    vxbn.c \
+    vxbn_devctrl.c \
+    xenbus.c \
+    pnp.c \
+    power.c \
+    pdofunc.c \
+    xen_support.c \
+    gnttab.c \
+    evtchn.c \
+    balloon.c \
+    xenbus_xs.c \
+    xenbus_probe.c \
+    xenbus_client.c \
+    xenbus_ioctl.c \
+    hypervsr_is.c \
+    virtio_blndrv.c \
+    virtio_blnpwr.c \
+    virtio_balloon.c \
+    virtio_ring.c \
+    virtio_pci.c \
+    virtio_pci_legacy.c \
+    virtio_pci_modern.c \
+    virtio_pci_wdm.c \
+    virtio_utils.c \
+    vxbn.rc

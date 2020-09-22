@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">pvvxbn</TARGETNAME>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">EXPORT_DRIVER</TARGETTYPE>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ntstrsafe.lib              $(DDK_LIB_PATH)\wdmsec.lib</TARGETLIBS>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">.;..\..\xen\xenbus;..\..\virtio\virtio_balloon;..\include;..\..\xen\include;..\..\xen\include\asm;..\..\xen\include\public;..\..\virtio\include;..\..\virtio\include\virtio;..\..\virtio\include\asm</INCLUDES>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(_BUILDARCH)'=='x86'">
+      <PropertyGroup>
+        <DLLDEF Condition="'$(OVERRIDE_DLLDEF)'!='true'">pvvxbn_x86.def</DLLDEF>
+        <I386_SOURCES Condition="'$(OVERRIDE_I386_SOURCES)'!='true'">..\..\xen\xenbus\i386\xenbus_glu32.asm</I386_SOURCES>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_BUILDARCH)'=='AMD64'">
+      <PropertyGroup>
+        <DLLDEF Condition="'$(OVERRIDE_DLLDEF)'!='true'">pvvxbn_x64.def</DLLDEF>
+        <AMD64_SOURCES Condition="'$(OVERRIDE_AMD64_SOURCES)'!='true'">..\..\xen\xenbus\amd64\xenbus_glu64.asm</AMD64_SOURCES>
+      </PropertyGroup>
+    </When>
+  </Choose>
+  <PropertyGroup>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">vxbn.c      vxbn_devctrl.c      ..\..\xen\xenbus\xenbus.c      ..\..\xen\xenbus\pnp.c      ..\..\xen\xenbus\power.c      ..\..\xen\xenbus\pdofunc.c      ..\..\xen\xenbus\xen_support.c      ..\..\xen\xenbus\gnttab.c      ..\..\xen\xenbus\evtchn.c      ..\..\xen\xenbus\balloon.c      ..\..\xen\xenbus\xenbus_xs.c      ..\..\xen\xenbus\xenbus_probe.c      ..\..\xen\xenbus\xenbus_client.c      ..\..\xen\xenbus\xenbus_ioctl.c      hypervsr_is.c        ..\..\virtio\virtio_balloon\virtio_blndrv.c      ..\..\virtio\virtio_balloon\virtio_blnpwr.c      ..\..\virtio\virtio_balloon\virtio_balloon.c      ..\..\virtio\virtio_base\virtio_ring.c      ..\..\virtio\virtio_base\virtio_pci.c       ..\..\virtio\virtio_base\virtio_pci_legacy.c     ..\..\virtio\virtio_base\virtio_pci_modern.c     ..\..\virtio\virtio_base\virtio_pci_wdm.c      ..\..\virtio\virtio_base\virtio_utils.c      vxbn.rc</SOURCES>
+  </PropertyGroup>
+</Project>

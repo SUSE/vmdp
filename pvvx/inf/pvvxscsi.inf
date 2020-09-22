@@ -1,0 +1,142 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright 2013-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+
+[Version]
+Signature="$Windows NT$"
+Class=SCSIAdapter
+ClassGUID={4D36E97B-E325-11CE-BFC1-08002BE10318}
+Provider    = %SUSE%
+DriverVer   = 06/14/2013,1.0.0.00
+CatalogFile = pvvxscsi.cat
+
+[DestinationDirs]
+pvvxscsi.CopyFiles = 12
+
+[SourceDisksNames]
+1 = %DiskId%,,,""
+
+[SourceDisksFiles]
+pvvxscsi.sys = 1,,
+
+[Manufacturer]
+%SUSE% = pvvxscsi,NTx86.5.1,NTx86.5.2,NTx86.6,NTamd64.5.1,NTamd64.5.2,NTamd64.6
+
+[pvvxscsi.NTx86.5.1]
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
+
+[pvvxscsi.NTamd64.5.1]
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
+
+[pvvxscsi.NTx86.5.2]
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, XEN\TYPE_vscsi
+
+[pvvxscsi.NTamd64.5.2]
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, XEN\TYPE_vscsi
+
+[pvvxscsi.NTx86.6]
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, XEN\TYPE_vscsi
+
+[pvvxscsi.NTamd64.6]
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
+%pvvxscsi.DeviceDesc% = pvvxscsi_Install, XEN\TYPE_vscsi
+
+[pvvxscsi.CopyFiles]
+pvvxscsi.sys,,,2
+
+[pvvxscsi_Install]
+CopyFiles=pvvxscsi.CopyFiles
+
+[pvvxscsi_Install.HW]
+AddReg = pvvxscsi.EnableMSI
+
+[pvvxscsi_Install.Services]
+AddService = pvvxscsi, 0x00000002 , pvvxscsi_Service, pvvxscsi_EventLog_Inst
+
+[pvvxscsi_Service]
+DisplayName     = %pvvxscsi.Service.DispName%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_BOOT_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+ServiceBinary  = %12%\pvvxscsi.sys
+LoadOrderGroup = SCSI miniport
+AddReg         = pvvxscsi_Reg
+
+[pvvxscsi_EventLog_Inst]
+AddReg = pvvxscsi_EventLog_Add_Reg
+
+[pvvxscsi_EventLog_Add_Reg]
+HKR,,EventMessageFile,%REG_EXPAND_SZ%,"%%SystemRoot%%\System32\IoLogMsg.dll"
+HKR,,TypesSupported,%REG_DWORD%,7
+
+[pvvxscsi_Reg]
+HKR, "Parameters", "BusType", %REG_DWORD%, 0x00000001
+HKR, "Parameters\PnpInterface", "5", %REG_DWORD%, 0x00000001
+HKR,"Parameters\PnpInterface","15",%REG_DWORD%,0x00000001
+HKR,"Parameters\PnpInterface","0",%REG_DWORD%,0x00000001
+
+[pvvxscsi.EnableMSI]
+HKR, "Interrupt Management",, 0x00000010
+HKR, "Interrupt Management\MessageSignaledInterruptProperties",, 0x00000010
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00010001, 1
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 256
+HKR, "Interrupt Management\Affinity Policy",, 0x00000010
+HKR, "Interrupt Management\Affinity Policy", DevicePolicy, 0x00010001, 5
+HKR, "Interrupt Management\Affinity Policy", DevicePriority, 0x00010001, 3
+
+[Strings]
+; Localizable Strings
+SUSE = "SUSE"
+DiskId = "SUSE Drivers for Windows on KVM"
+pvvxscsi.DeviceDesc = "SUSE SCSI Driver for Windows"
+pvvxscsi.Service.DispName = "SUSE SCSI Driver service for Windows"
+
+; Non-Localizable Strings
+REG_DWORD             = 0x00010001
+REG_EXPAND_SZ         = 0x00020000
+SERVICE_BOOT_START    = 0
+SERVICE_ERROR_NORMAL  = 1
+SERVICE_KERNEL_DRIVER = 1
