@@ -1,0 +1,102 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright 2007-2012 Novell, Inc.
+; Copyright 2012-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+ 
+[Version] 
+Signature = "$Windows NT$" 
+Class=System
+ClassGUID={4d36e97d-e325-11ce-bfc1-08002be10318} 
+Provider=%Novell% 
+DriverVer = 05/24/2012,2.3.0.03
+CatalogFile=xenbus.cat
+
+[DestinationDirs] 
+XenBus.Files.x86_12 = 12 
+
+[SourceDisksNames.x86]
+0=%DiskId%
+
+[SourceDisksNames.ia64]
+
+
+[SourceDisksFiles.x86]
+xenbus.sys=0,, 
+
+[SourceDisksFiles.ia64]
+
+
+[Manufacturer] 
+%Novell%=Novell
+
+[Novell]
+%XenBusDesc%=XenBus_Inst,root\xenbus
+
+[XenBus_Inst.ntx86] 
+CopyFiles = XenBus.Files.x86_12 
+
+[XenBus_Inst.ntx86.Services] 
+AddService = XenBus,0x00000002,XenBus_Service_Instx86, 
+
+[XenBus_Service_Instx86] 
+DisplayName     = %XenBus.Service.DispName%
+ServiceType     = %SERVICE_KERNEL_DRIVER% 
+StartType       = %SERVICE_BOOT_START% 
+ErrorControl    = %SERVICE_ERROR_IGNORE% 
+ServiceBinary   = %12%\xenbus.sys 
+LoadOrderGroup  = Boot Bus Extender
+
+
+[XenBus.Files.x86_12] 
+xenbus.sys
+
+[XenBus_EventLog_Inst] 
+AddReg = XenBus_EventLog_Inst.AddReg 
+ 
+[XenBus_EventLog_Inst.AddReg] 
+HKR,,EventMessageFile,%REG_EXPAND_SZ%,"%%SystemRoot%%\System32\IoLogMsg.dll" 
+HKR,,TypesSupported,%REG_DWORD%,7
+
+
+[Strings] 
+Novell = "Novell, Inc." 
+DiskId = "SUSE Drivers for Windows 2000 on Xen" 
+XenBusDesc = "SUSE Bus Driver for Windows 2000 on Xen" 
+XenBus.Service.DispName = "SUSE Bus Driver service for Windows 2000 on Xen"
+
+SERVICE_BOOT_START = 0x0 
+SERVICE_SYSTEM_START = 0x1 
+SERVICE_AUTO_START = 0x2 
+SERVICE_DEMAND_START = 0x3 
+SERVICE_DISABLED = 0x4 
+
+SERVICE_KERNEL_DRIVER = 0x1 
+SERVICE_ERROR_IGNORE = 0x0 
+SERVICE_ERROR_NORMAL = 0x1 
+SERVICE_ERROR_SEVERE = 0x2 
+SERVICE_ERROR_CRITICAL = 0x3 
+
+REG_EXPAND_SZ = 0x00020000 
+REG_DWORD = 0x00010001 

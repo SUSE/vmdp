@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">xenblk</TARGETNAME>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">DRIVER</TARGETTYPE>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(SolutionDir)xenbus\$(IntDir)xenbus.lib   $(DDK_LIB_PATH)\ntstrsafe.lib   $(DDK_LIB_PATH)\storport.lib</TARGETLIBS>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">..\include;..\..\virtio\include;..\xenblk</INCLUDES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">xenblk_entry.c      xenblk.c      xenblkfront.c      ..\..\virtio\virtio_blk\storport_reg.c  xenblk.rc</SOURCES>
+  </PropertyGroup>
+</Project>

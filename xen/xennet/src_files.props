@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">miniport.c   mp_main.c init.c    oid.c   mp_utils.c      mp_xutils.c     mp_xinterface.c     mp_main6.c      mp_init6.c      mp_nic6.c   xennet.rc</SOURCES>
+  </PropertyGroup>
+</Project>

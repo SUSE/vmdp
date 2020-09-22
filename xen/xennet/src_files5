@@ -1,0 +1,11 @@
+SOURCES = miniport.c \
+    mp_main.c \
+    init.c \
+    oid.c \
+    mp_utils.c \
+    mp_xutils.c \
+    mp_xinterface.c \
+    mp_main5.c \
+    mp_init5.c \
+    mp_nic5.c \
+    xennet.rc

@@ -1,0 +1,4 @@
+DIRS = xenbus \
+       xenblk \
+       xennet \
+       xenscsi

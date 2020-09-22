@@ -1,0 +1,69 @@
+TARGETNAME=xenscsi
+TARGETTYPE=DRIVER
+
+!if "$(_BUILDARCH)"=="x86"
+_XENARCH = i386
+!else if "$(_BUILDARCH)"=="AMD64"
+_XENARCH = amd64
+!endif
+
+TARGETPATH = ..\dist\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+TARGETLIBS= ..\obj\$(DDK_TARGET_OS)\$(DDKBUILDENV)\$(_XENARCH)\xenbus.lib \
+    $(DDK_LIB_PATH)\ntstrsafe.lib \
+!if "$(_BUILDARCH)"=="AMD64"
+    $(DDK_LIB_PATH)\storport.lib
+!else if "$(DDK_TARGET_OS)"=="Win2K"
+    $(DDK_LIB_PATH)\scsiport.lib
+!else if "$(DDK_TARGET_OS)"=="WinXP"
+    $(DDK_LIB_PATH)\scsiport.lib
+!else
+    $(DDK_LIB_PATH)\storport.lib
+!endif
+
+
+#!if "$(_BUILDARCH)"=="x86"
+#   $(DDK_LIB_PATH)\scsiport.lib
+#!else if "$(_BUILDARCH)"=="AMD64"
+#   $(DDK_LIB_PATH)\storport.lib
+#!endif
+
+TARGETPATHLIB = ..\obj\$(DDK_TARGET_OS)
+
+INCLUDES =                                  \
+            .;                              \
+            ..\..\virtio\virtio_scsi;       \
+            ..\include;                     \
+            ..\include\virtio;              \
+            ..\..\virtio\include;           \
+            ..\..\virtio\include\virtio;    \
+
+USER_C_FLAGS = " /FAcs /Fa..\obj\ "
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7
+!endif
+
+
+!if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64 -DXENSCSI_STORPORT
+!else if "$(DDK_TARGET_OS)"=="Win2K"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!else if "$(DDK_TARGET_OS)"=="WinXP"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+!else
+C_DEFINES = $(C_DEFINES) -DARCH_x86 -DXENSCSI_STORPORT
+!endif
+
+
+SOURCES=\
+    xenscsi_entry.c \
+    xenscsi.c \
+    xenscsi_front.c \
+    storport_reg.c \
+    xenscsi.rc
+
+

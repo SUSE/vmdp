@@ -1,0 +1,106 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright 2007-2012 Novell, Inc.
+; Copyright 2012-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+; 
+
+[Version]
+Signature = "$Windows NT$"
+ClassGUID={4D36E97B-E325-11CE-BFC1-08002BE10318}
+Class=SCSIAdapter
+Provider = %NOVELL%
+DriverVer = 05/24/2012,2.3.0.03
+CatalogFile=xenblk.cat
+
+[DestinationDirs]
+XenBlk.CopyFiles = 12
+
+[SourceDisksNames]
+1 = %DiskId%,,,""
+
+[SourceDisksFiles]
+xenblk.sys = 1,,
+
+[Manufacturer]
+%NVL% = XenBlk,NTx86,NTamd64
+
+[XenBlk.NTx86]
+%XenBlk.DeviceDesc%=XenBlk_Install, PCI\VEN_5853&DEV_0001
+
+[XenBlk.NTamd64]
+%XenBlk.DeviceDesc%=XenBlk_Install, PCI\VEN_5853&DEV_0001
+
+[XenBlk_Install]
+CopyFiles = XenBlk.CopyFiles
+
+[XenBlk_Install.HW]
+DelReg = LegacyScsiportValues
+
+[XenBlk_Install.Services]
+AddService = XenBlk, 2, XenBlk.Service, Miniport_EventLog_Inst
+
+[XenBlk.Service]
+DisplayName     = %XenBlk.Service.DispName%
+ServiceType     = %SERVICE_KERNEL_DRIVER%
+StartType       = %SERVICE_BOOT_START%
+ErrorControl    = %SERVICE_ERROR_NORMAL%
+ServiceBinary   = %12%\xenblk.sys
+LoadOrderGroup  = SCSI miniport
+AddReg = XenBlk.Reg
+
+[XenBlk.CopyFiles]
+xenblk.sys,,,2
+
+[LegacyScsiportValues]
+HKR,Scsiport,BusNumber
+HKR,Scsiport,LegacyInterfaceType
+HKR,Scsiport,SlotNumber
+
+[XenBlk.Reg]
+HKR,"Parameters","BusType",%REG_DWORD%,0x00000001
+HKR,"Parameters\PnpInterface","5",%REG_DWORD%,0x00000001
+
+[Miniport_EventLog_Inst]
+AddReg = Miniport_EventLog_AddReg
+
+[Miniport_EventLog_AddReg]
+HKR,,EventMessageFile,%REG_EXPAND_SZ%,"%%SystemRoot%%\System32\IoLogMsg.dll"
+HKR,,TypesSupported,%REG_DWORD%,7
+
+[Strings]
+NOVELL = "Novell, Inc."
+NVL = "Novell, Inc."
+DiskId = "SUSE Drivers for Windows on Xen"
+XenBlk.DeviceDesc = "SUSE Block Driver for Windows"
+XenBlk.Service.DispName = "SUSE Block Driver service for Windows on Xen"
+SCSIClassName="SCSI and RAID controllers"
+
+REG_DWORD=0x00010001
+REG_EXPAND_SZ          = 0x00020000
+SERVICE_KERNEL_DRIVER  = 1
+SERVICE_BOOT_START     = 0
+SERVICE_ERROR_IGNORE   = 0
+SERVICE_ERROR_NORMAL   = 1
+SERVICE_DEMAND_START   = 3

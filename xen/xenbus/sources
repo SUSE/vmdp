@@ -1,0 +1,50 @@
+TARGETNAME=xenbus
+TARGETTYPE=EXPORT_DRIVER
+
+TARGETPATH = ..\dist\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+TARGETPATHLIB = ..\obj\$(DDK_TARGET_OS)\$(DDKBUILDENV)
+
+INCLUDES =                                  \
+            ..\include;                     \
+            ..\..\virtio\include;           \
+            ..\..\virtio\include\virtio;    \
+            ..\..\virtio\include\asm;       \
+
+TARGETLIBS= $(DDK_LIB_PATH)\ntstrsafe.lib \
+            $(DDK_LIB_PATH)\wdmsec.lib
+
+USER_C_FLAGS = " /FAcs /Fa..\obj\ "
+
+!if "$(DDK_TARGET_OS)"=="WinNET"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET
+!else if "$(DDK_TARGET_OS)"=="WinLH"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DTARGET_OS_GTE_WinLH
+!else if "$(DDK_TARGET_OS)"=="Win7"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DTARGET_OS_GTE_WinLH
+!endif
+
+!if "$(_BUILDARCH)"=="x86"
+C_DEFINES = $(C_DEFINES) -DARCH_x86
+DLLDEF=$(TARGETNAME)_x86.def
+!else if "$(_BUILDARCH)"=="AMD64"
+C_DEFINES = $(C_DEFINES) -DARCH_x86_64
+DLLDEF=$(TARGETNAME)_x64.def
+
+AMD64_SOURCES = amd64\xenbus_glu64.asm
+!endif
+
+SOURCES= \
+         xenbus_entry.c \
+         xenbus.c \
+         pnp.c \
+         power.c \
+         pdofunc.c \
+         xen_support.c \
+         gnttab.c \
+         evtchn.c \
+         balloon.c \
+         xenbus_xs.c \
+         xenbus_probe.c \
+         xenbus_client.c \
+         xenbus_ioctl.c \
+         xenbus.rc

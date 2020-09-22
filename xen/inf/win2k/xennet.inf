@@ -1,0 +1,160 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright 2007-2012 Novell, Inc.
+; Copyright 2012-2020 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+
+[Version]
+Signature = "$Windows NT$"
+Class = Net
+ClassGUID = {4d36e972-e325-11ce-bfc1-08002be10318}
+Provider = %NOVELL%
+DriverVer = 05/24/2012,2.4.0.11
+CatalogFile=xennet.cat
+
+[DestinationDirs]
+XenNet.CopyFiles = 12
+
+[SourceDisksNames]
+1 = %DiskId%,,,""
+
+[SourceDisksFiles]
+xennet.sys = 1,,
+
+[Manufacturer]
+%NVL% = XenNet
+
+[XenNet]
+%XenNet.DeviceDesc%=XenNet.Ndi, XEN\TYPE_vif
+
+[XenNet.Ndi]
+Characteristics = 0x81 ; NCF_HAS_UI 0x80, NCF_VIRTUAL 1
+AddReg = XenNet.Reg, xennet_params.reg
+CopyFiles = XenNet.CopyFiles
+
+[XenNet.Ndi.Services]
+AddService = XenNet, 2, XenNet.Service, XenNet.EventLog
+
+[XenNet.Reg]
+HKR, Ndi, Service, 0, "XenNet"
+HKR, Ndi\Interfaces, UpperRange, 0, "ndis5"
+HKR, Ndi\Interfaces, LowerRange, 0, "ethernet"
+
+[xennet_params.reg]
+HKR, Ndi\params\*TCPChecksumOffloadIPv4,       ParamDesc,  0, %TCPIPv4Desc%
+HKR, Ndi\params\*TCPChecksumOffloadIPv4,       default,    0, "3"
+HKR, Ndi\params\*TCPChecksumOffloadIPv4,       type,       0, "enum"
+HKR, Ndi\params\*TCPChecksumOffloadIPv4\enum,  "0",        0, %Disable%
+HKR, Ndi\params\*TCPChecksumOffloadIPv4\enum,  "1",        0, %TX%
+HKR, Ndi\params\*TCPChecksumOffloadIPv4\enum,  "2",        0, %RX%
+HKR, Ndi\params\*TCPChecksumOffloadIPv4\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\NumRcb,         ParamDesc,  0, "%ReceiveBuffers%"
+HKR, Ndi\params\NumRcb,         default,    0, "256"
+HKR, Ndi\params\NumRcb,         min,        0, "256"
+HKR, Ndi\params\NumRcb,         max,        0, "1024"
+HKR, Ndi\params\NumRcb,         step,       0, "1"
+HKR, Ndi\params\NumRcb,         base,       0, "10"
+HKR, Ndi\params\NumRcb,         type,       0, "int"
+
+HKR, Ndi\params\RcvLimit,       ParamDesc,  0, "%ReceiveLimit%"
+HKR, Ndi\params\RcvLimit,       default,    0, "64"
+HKR, Ndi\params\RcvLimit,       min,        0, "0"
+HKR, Ndi\params\RcvLimit,       max,        0, "256"
+HKR, Ndi\params\RcvLimit,       step,       0, "1"
+HKR, Ndi\params\RcvLimit,       base,       0, "10"
+HKR, Ndi\params\RcvLimit,       type,       0, "int"
+
+HKR, Ndi\params\StatInterval,   ParamDesc,  0, "%StatInterval%"
+HKR, Ndi\params\StatInterval,   default,    0, "0"
+HKR, Ndi\params\StatInterval,   min,        0, "0"
+HKR, Ndi\params\StatInterval,   max,        0, "3600"
+HKR, Ndi\params\StatInterval,   step,       0, "1"
+HKR, Ndi\params\StatInterval,   base,       0, "10"
+HKR, Ndi\params\StatInterval,   type,       0, "int"
+
+HKR, Ndi\params\ResourceTimeout, ParamDesc, 0, "%ResourceTimeout%"
+HKR, Ndi\params\ResourceTimeout, default,   0, "0"
+HKR, Ndi\params\ResourceTimeout, min,       0, "0"
+HKR, Ndi\params\ResourceTimeout, max,       0, "3600"
+HKR, Ndi\params\ResourceTimeout, step,      0, "1"
+HKR, Ndi\params\ResourceTimeout, base,      0, "10"
+HKR, Ndi\params\ResourceTimeout, type,      0, "int"
+
+;HKR, Ndi\params\TxThrottleStart, ParamDesc,  0, "%TxThrottleStart%"
+;HKR, Ndi\params\TxThrottleStart, default,    0, "256"
+;HKR, Ndi\params\TxThrottleStart, min,        0, "20"
+;HKR, Ndi\params\TxThrottleStart, max,        0, "1024"
+;HKR, Ndi\params\TxThrottleStart, step,       0, "1"
+;HKR, Ndi\params\TxThrottleStart, base,       0, "10"
+;HKR, Ndi\params\TxThrottleStart, type,       0, "int"
+
+;HKR, Ndi\params\TxThrottleStop,  ParamDesc,  0, "%TxThrottleStop%"
+;HKR, Ndi\params\TxThrottleStop,  default,    0, "256"
+;HKR, Ndi\params\TxThrottleStop,  min,        0, "0"
+;HKR, Ndi\params\TxThrottleStop,  max,        0, "1024"
+;HKR, Ndi\params\TxThrottleStop,  step,       0, "1"
+;HKR, Ndi\params\TxThrottleStop,  base,       0, "10"
+;HKR, Ndi\params\TxThrottleStop,  type,       0, "int"
+
+[XenNet.CopyFiles]
+xennet.sys,,,2
+
+[XenNet.Service]
+DisplayName     = %XenNet.Service.DispName%
+ServiceType     = 1 ;%SERVICE_KERNEL_DRIVER%
+StartType       = 3 ;%SERVICE_DEMAND_START%
+ErrorControl    = 1 ;%SERVICE_ERROR_NORMAL%
+ServiceBinary   = %12%\xennet.sys
+LoadOrderGroup  = NDIS
+AddReg          = TextModeFlags.Reg
+
+[XenNet.EventLog]
+AddReg = XenNet.AddEventLog.Reg
+
+[XenNet.AddEventLog.Reg]
+HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
+HKR, , TypesSupported,   0x00010001, 7
+
+[TextModeFlags.Reg]
+HKR, , TextModeFlags, 0x00010001, 0x0001
+
+
+[Strings]
+NOVELL = "Novell, Inc."
+NVL = "Novell, Inc."
+DiskId = "SUSE Drivers for Windows on Xen"
+XenNet.DeviceDesc = "SUSE Network Driver for Windows 2000"
+XenNet.Service.DispName = "SUSE Net Driver service for Windows 2000 on Xen"
+TCPIPv4Desc = "TCP Checksum Offload (IPv4)"
+Disable = "Disabled"
+TX = "Tx Enabled"
+RX = "Rx Enabled"
+RX_TX = "Rx and Tx Enabled"
+ReceiveBuffers  = "Receive Buffers"
+ReceiveLimit    = "Quick Receive Turnaround Threshold"
+StatInterval    = "Statistics Timer Interval (seconds)"
+ResourceTimeout = "Return Resource Timeout (seconds)"
+;TxThrottleStart = "Start Tx Throttle when Rx reaches"
+;TxThrottleStop  = "Stop Tx Throttle when Rx reaches"
