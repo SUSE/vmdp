@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2016-2020 SUSE LLC
@@ -40,7 +40,8 @@ sp_registry_read(void *dev_ext, PUCHAR val_name, DWORD r_type,
         if (ret) {
             switch (r_type) {
             case REG_DWORD:
-                /* StorPortRegistryRead succeeds even if the reg value does
+                /*
+                 * StorPortRegistryRead succeeds even if the reg value does
                  * not exist.  The read value gets set to -1 in this case.
                  */
                 if (*(DWORD *)reg_buf != (DWORD)-1) {
@@ -119,7 +120,7 @@ sp_get_reg_value(PWSTR key, PWSTR name, DWORD *value)
     NTSTATUS status;
     ULONG len;
 
-    DPRINTK(DPRTL_ON, ("%s - IN\n", __FUNCTION__));
+    DPRINTK(DPRTL_ON, ("%s - IN\n", __func__));
 
     status = sp_open_key(key, &registryKey, FILE_OPEN);
     if (NT_SUCCESS(status)) {
@@ -136,7 +137,7 @@ sp_get_reg_value(PWSTR key, PWSTR name, DWORD *value)
         }
         ZwClose(registryKey);
     }
-    DPRINTK(DPRTL_ON, ("%s - OUT\n", __FUNCTION__));
+    DPRINTK(DPRTL_ON, ("%s - OUT\n", __func__));
     return status;
 }
 
@@ -148,7 +149,7 @@ sp_set_reg_value(PWSTR key, PWSTR name, DWORD value)
     UNICODE_STRING valueName;
     NTSTATUS status;
 
-    DPRINTK(DPRTL_ON, ("%s - IN\n", __FUNCTION__));
+    DPRINTK(DPRTL_ON, ("%s - IN\n", __func__));
 
     status = sp_open_key(key, &registryKey, FILE_CREATE);
     if (NT_SUCCESS(status)) {
@@ -166,6 +167,6 @@ sp_set_reg_value(PWSTR key, PWSTR name, DWORD value)
     } else {
         PRINTK(("Reg open key failed for %ws, %x\n", key, status));
     }
-    DPRINTK(DPRTL_ON, ("%s - OUT\n", __FUNCTION__));
+    DPRINTK(DPRTL_ON, ("%s - OUT\n", __func__));
     return status;
 }

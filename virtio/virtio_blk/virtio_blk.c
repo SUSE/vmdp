@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
@@ -28,7 +28,7 @@
 #include "virtio_blk.h"
 
 #ifdef DBG
-static ULONG g_no_work = 0;
+static ULONG g_no_work;
 #endif
 
 BOOLEAN

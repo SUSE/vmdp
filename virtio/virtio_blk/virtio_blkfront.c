@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2020 SUSE LLC
@@ -383,13 +383,11 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
         param.Size = sizeof(STARTIO_PERFORMANCE_PARAMETERS);
         status = StorPortGetStartIoPerfParams(dev_ext, srb, &param);
         if (status == STOR_STATUS_SUCCESS && param.MessageNumber != 0) {
-           qidx = param.MessageNumber - 1;
+            qidx = param.MessageNumber - 1;
+        } else {
+            qidx = 0;
         }
-        else {
-           qidx = 0;
-        }
-    }
-    else {
+    } else {
         qidx = 0;
     }
 
