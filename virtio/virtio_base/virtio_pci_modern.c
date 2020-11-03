@@ -119,11 +119,11 @@ virtio_modern_map_simple_capability(virtio_bar_t *vbar,
         vbar,
         pci_config_buf,
         cap_offset,
-        length,             // minlen
+        length,             /* minlen */
         alignment,
-        0,                  // offset
-        (uint32_t)length,   // size is equal to minlen
-        NULL);              // not interested in the full length
+        0,                  /* offset */
+        (uint32_t)length,   /* size is equal to minlen */
+        NULL);              /* not interested in the full length */
 }
 
 static void
@@ -225,7 +225,8 @@ static void virtio_dev_modern_reset(virtio_device_t *vdev)
     /* 0 status means a reset. */
     virtio_iowrite8((ULONG_PTR)&vdev->common->device_status, 0);
 
-    /* After writing 0 to device_status, the driver MUST wait for a read of
+    /*
+     * After writing 0 to device_status, the driver MUST wait for a read of
      * device_status to return 0 before reinitializing the device.
      * This will flush out the status write, and flush in device writes,
      * including MSI-X interrupts, if any.
@@ -243,7 +244,9 @@ virtio_dev_modern_get_features(virtio_device_t *vdev)
     virtio_iowrite32((ULONG_PTR)&vdev->common->device_feature_select, 0);
     features = virtio_ioread32((ULONG_PTR)&vdev->common->device_feature);
     virtio_iowrite32((ULONG_PTR)&vdev->common->device_feature_select, 1);
-    features |= ((uint64_t)virtio_ioread32((ULONG_PTR)&vdev->common->device_feature) << 32);
+    features |=
+        ((uint64_t)virtio_ioread32((ULONG_PTR)&vdev->common->device_feature)
+            << 32);
 
     return features;
 }
@@ -311,10 +314,11 @@ virtio_dev_modern_query_vq_alloc(virtio_device_t *vdev,
 
     /* Check if queue is either not available or already active. */
     num = virtio_ioread16((ULONG_PTR)&cfg->queue_size);
-    /* QEMU has a bug where queues don't revert to inactive on device
+    /*
+     * QEMU has a bug where queues don't revert to inactive on device
      * reset. Skip checking the queue_enable field until it is fixed.
      */
-    if (!num /*|| ioread16(vdev, &cfg->queue_enable)*/) {
+    if (!num) {
         return STATUS_NOT_FOUND;
     }
 
@@ -611,7 +615,8 @@ find_first_pci_vendor_capability(PUCHAR pci_config_buf)
     return offset;
 }
 
-/* Populate Offsets with virtio vendor capability offsets within the
+/*
+ * Populate Offsets with virtio vendor capability offsets within the
  * PCI config space
  */
 static void find_pci_vendor_capabilities(virtio_bar_t *vbar,
@@ -716,7 +721,8 @@ virtio_dev_modern_init(virtio_device_t *vdev,
             + offsetof(virtio_pci_notify_cap_t, cap.offset),
         notify_offset);
 
-    /* Map the notify capability if it's small enough.
+    /*
+     * Map the notify capability if it's small enough.
      * Otherwise, map each VQ individually later.
      */
     if (notify_length + (notify_offset % PAGE_SIZE) <= PAGE_SIZE) {
@@ -770,7 +776,8 @@ virtio_dev_modern_init(virtio_device_t *vdev,
     virtio_pci_device_ops.reset = virtio_dev_modern_reset;
     virtio_pci_device_ops.get_features = virtio_dev_modern_get_features;
     virtio_pci_device_ops.set_features = virtio_dev_modern_set_features;
-    virtio_pci_device_ops.set_config_vector = virtio_dev_modern_set_config_vector;
+    virtio_pci_device_ops.set_config_vector =
+        virtio_dev_modern_set_config_vector;
     virtio_pci_device_ops.set_queue_vector = virtio_dev_modern_set_queue_vector;
     virtio_pci_device_ops.query_queue_alloc = virtio_dev_modern_query_vq_alloc;
     virtio_pci_device_ops.setup_queue = virtio_dev_modern_vq_setup;

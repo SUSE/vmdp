@@ -162,7 +162,8 @@ virtio_device_remove_status(virtio_device_t *vdev, uint8_t status)
     VIRTIO_DEVICE_SET_STATUS(vdev, VIRTIO_DEVICE_GET_STATUS(vdev) & (~status));
 }
 
-/* A small wrapper to also acknowledge the interrupt when it's handled.
+/*
+ * A small wrapper to also acknowledge the interrupt when it's handled.
  * I really need an EIO hook for the vring so I can ack the interrupt once we
  * know that we'll be handling the IRQ but before we invoke the callback since
  * the callback may notify the host which results in the host attempting to
@@ -237,7 +238,7 @@ virtio_get_pci_bus_interface_standard(PDEVICE_OBJECT device_object,
                                        &event,
                                        &io_status_block);
     if (irp != NULL) {
-        irp_stack = IoGetNextIrpStackLocation( irp );
+        irp_stack = IoGetNextIrpStackLocation(irp);
         irp_stack->MinorFunction = IRP_MN_QUERY_INTERFACE;
         irp_stack->Parameters.QueryInterface.InterfaceType =
             (LPGUID)&GUID_BUS_INTERFACE_STANDARD;
@@ -248,7 +249,8 @@ virtio_get_pci_bus_interface_standard(PDEVICE_OBJECT device_object,
             (PINTERFACE)bus_interface_standard;
         irp_stack->Parameters.QueryInterface.InterfaceSpecificData = NULL;
 
-        /* Initialize the status to error in case the bus driver does not
+        /*
+         * Initialize the status to error in case the bus driver does not
          * set it correctly.
          */
         irp->IoStatus.Status = STATUS_NOT_SUPPORTED;

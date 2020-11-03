@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
@@ -39,7 +39,8 @@ virtio_print_str(char *str)
 
     char *c;
 
-    /* Spin locks don't protect against irql > 2.  So if we come in at a
+    /*
+     * Spin locks don't protect against irql > 2.  So if we come in at a
      * higl level, just print it and we'll have to maually sort out the
      * the possible mixing of multiple output messages.
      */

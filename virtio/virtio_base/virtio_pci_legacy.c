@@ -312,7 +312,8 @@ virtio_dev_legacy_init(virtio_device_t *vdev,
     virtio_pci_device_ops.reset = virtio_dev_legacy_reset;
     virtio_pci_device_ops.get_features = virtio_dev_legacy_get_features;
     virtio_pci_device_ops.set_features = virtio_dev_legacy_set_features;
-    virtio_pci_device_ops.set_config_vector = virtio_dev_legacy_set_config_vector;
+    virtio_pci_device_ops.set_config_vector =
+        virtio_dev_legacy_set_config_vector;
     virtio_pci_device_ops.set_queue_vector = virtio_dev_legacy_set_queue_vector;
     virtio_pci_device_ops.query_queue_alloc = virtio_dev_legacy_query_vq_alloc;
     virtio_pci_device_ops.setup_queue = virtio_dev_legacy_vq_setup;

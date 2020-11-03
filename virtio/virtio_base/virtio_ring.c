@@ -70,9 +70,10 @@ vring_add_buf(virtio_queue_t *vq,
     if (vq->num_free < out + in) {
         DPRINTK(DPRTL_UNEXPD, ("Can't add buf len %i - avail = %i\n",
             out + in, vq->num_free));
-        /* notify the host immediately if we are out of
+        /*
+         * notify the host immediately if we are out of
          * descriptors in tx ring
-        */
+         */
         if (out) {
             vring_queue_notify(vq);
         }
@@ -94,7 +95,7 @@ vring_add_buf(virtio_queue_t *vq,
     for (; in; i = vq->vring.desc[i].next, in--) {
         vq->vring.desc[i].addr = sg->phys_addr;
         vq->vring.desc[i].len = sg->len;
-        vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
+        vq->vring.desc[i].flags = VRING_DESC_F_NEXT | VRING_DESC_F_WRITE;
         DPRINTK(DPRTL_TRC, ("%s >>> sg phys %x, size %d\n",
             __func__,  (uint32_t)vq->vring.desc[i].addr,
             vq->vring.desc[i].len));
@@ -110,8 +111,10 @@ vring_add_buf(virtio_queue_t *vq,
     /* Set token. */
     vq->data[head] = data;
 
-    /* Put entry in available array (but don't update avail->idx until they
-    * do sync).  FIXME: avoid modulus here? */
+    /*
+     * Put entry in available array (but don't update avail->idx until they
+     * do sync).  FIXME: avoid modulus here?
+     */
     avail = vq->vring.avail->idx % vq->vring.num;
     vq->vring.avail->ring[avail] = (uint16_t)head;
 
@@ -156,7 +159,7 @@ vring_add_buf_indirect(virtio_queue_t *vq,
         vr_desc[i].addr = sg->phys_addr;
         vr_desc[i].len = sg->len;
         vr_desc[i].next = i + 1;
-        vr_desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
+        vr_desc[i].flags = VRING_DESC_F_NEXT | VRING_DESC_F_WRITE;
         sg++;
     }
 
@@ -180,9 +183,10 @@ vring_add_buf_indirect(virtio_queue_t *vq,
     /* Set token. */
     vq->data[head] = data;
 
-    /* Put entry in available array (but don't update avail->idx until they
-    * do sync).  FIXME: avoid modulus here?
-    */
+    /*
+     * Put entry in available array (but don't update avail->idx until they
+     * do sync).  FIXME: avoid modulus here?
+     */
     avail = vq->vring.avail->idx % vq->vring.num;
     vq->vring.avail->ring[avail] = (uint16_t)head;
 
@@ -255,9 +259,11 @@ vring_get_buf(virtio_queue_t *vq, unsigned int *len)
     detach_buf(vq, i);
     vq->last_used_idx++;
 
-    /* If we expect an interrupt for the next entry, tell host
+    /*
+     * If we expect an interrupt for the next entry, tell host
      * by writing event index and flush out the write before
-     * the read in the next get_buf call. */
+     * the read in the next get_buf call.
+     */
     if (!(vq->vring.avail->flags & VRING_AVAIL_F_NO_INTERRUPT)) {
         vring_used_event(&vq->vring) = vq->last_used_idx;
         mb();
@@ -290,8 +296,7 @@ vring_kick_prepare(virtio_queue_t *vq)
     uint16_t new, old;
     BOOLEAN needs_kick;
 
-    /* We need to expose available array entries before checking avail
-     * event. */
+    /*We need to expose available array entries before checking avail event. */
     mb();
 
     old = (uint16_t)(vq->vring.avail->idx - vq->num_added);
@@ -309,7 +314,8 @@ vring_kick_prepare(virtio_queue_t *vq)
 static void
 vring_queue_notify(virtio_queue_t *vq)
 {
-    /* we write the queue's selector into the notification register to
+    /*
+     * we write the queue's selector into the notification register to
      * signal the other end
      */
     RPRINTK(DPRTL_RING, ("[%s] write port %x, idx %x\n", __func__,
@@ -321,7 +327,8 @@ void
 vring_kick_always(virtio_queue_t *vq)
 {
 
-    /* Descriptors and available array need to be set before we expose the
+    /*
+     * Descriptors and available array need to be set before we expose the
      * new available array entries.
      */
     wmb();
@@ -354,7 +361,8 @@ vring_disable_interrupt(virtio_queue_t *vq)
 BOOLEAN
 vring_enable_interrupt(virtio_queue_t *vq)
 {
-    /* We optimistically turn back on interrupts, then check if there was
+    /*
+     * We optimistically turn back on interrupts, then check if there was
      * more to do.
      */
     vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
