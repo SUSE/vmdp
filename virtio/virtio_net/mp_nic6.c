@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -157,7 +157,7 @@ VNIFCopyNetBuffer(PNET_BUFFER nb, TCB *tcb, uint32_t adjust)
             ("NdisQueryMdl: cnt %d, mdl %p, cl %x, dl %x, off %x, dest %p\n",
             loop_cnt, cur_mdl, cur_len, data_len, offset, pDest));
         NdisQueryMdl(cur_mdl, &pSrc, &cur_len, NormalPagePriority);
-        DPRINTK(DPRTL_TRC, ("Copy: mdl len %d.\n", cur_len-offset));
+        DPRINTK(DPRTL_TRC, ("Copy: mdl len %d.\n", cur_len - offset));
         DPRINTK(DPRTL_TRC, ("              src %p, cl %x\n", pSrc, cur_len));
         if (pSrc == NULL) {
             bytes_copied = 0;
@@ -751,7 +751,7 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
                                 NET_BUFFER_DATA_LENGTH(tcb->nb),
                                 sg_cnt);
             if (adapter->cur_tx_tasks & (VNIF_CHKSUM_IPV4_TCP
-                                         | VNIF_CHKSUM_IPV6_TCP )) {
+                                         | VNIF_CHKSUM_IPV6_TCP)) {
                 flags |= NETTXF_data_validated | NETTXF_csum_blank;
             }
         }
@@ -820,7 +820,8 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
         adapter->path[path_id].sending_nbl = NULL;
     }
 
-    /* All the NetBuffers in the NetBufferList has been processed,
+    /*
+     * All the NetBuffers in the NetBufferList has been processed,
      * If the NetBufferList is in queue now, dequeue it.
      */
     if (nb_to_send == NULL) {
@@ -836,7 +837,8 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
         DPRINTK(DPRTL_UNEXPDTX, ("** Didn't finish sending the nb_to_send.\n"));
     }
 
-    /* As far as the miniport knows, the NetBufferList has been sent out.
+    /*
+     * As far as the miniport knows, the NetBufferList has been sent out.
      * Complete the NetBufferList now.  Error case.
      *
      * This only happens if the first net buffer fials.
@@ -1037,7 +1039,8 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
         }
         VNIF_SET_TX_RSP_CONS(adapter, path_id, prod);
 
-        /* Set a new event, then check for race with update of tx_cons.
+        /*
+         * Set a new event, then check for race with update of tx_cons.
          * Note that it is essential to schedule a callback, no matter
          * how few buffers are pending. Even if there is space in the
          * transmit ring, higher layers may be blocked because too much
@@ -1046,7 +1049,9 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
          */
         VNIF_SET_TX_EVENT(adapter, path_id, prod);
         KeMemoryBarrier();
-    } while (VNIF_HAS_UNCONSUMED_RESPONSES(adapter->path[path_id].tx, cons, prod));
+    } while (VNIF_HAS_UNCONSUMED_RESPONSES(adapter->path[path_id].tx,
+                                           cons,
+                                           prod));
 
     vnif_free_send_tcbs(adapter, tcb_to_free, path_id);
 
@@ -1072,7 +1077,11 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
             nb_list = VNIF_GET_NET_BUFFER_LIST_FROM_QUEUE_LINK(pEntry);
             adapter->path[path_id].sending_nbl = nb_list;
 
-            status = VNIFSendNetBufferList(adapter, nb_list, path_id, TRUE, TRUE);
+            status = VNIFSendNetBufferList(adapter,
+                                           nb_list,
+                                           path_id,
+                                           TRUE,
+                                           TRUE);
             if (status != NDIS_STATUS_SUCCESS &&
                 status != NDIS_STATUS_PENDING) {
                 break;
@@ -1137,7 +1146,7 @@ MPSendNetBufferLists(
 
     dispatch_level = NDIS_TEST_SEND_AT_DISPATCH_LEVEL(SendFlags);
     do {
-        if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_PAUSING|VNF_ADAPTER_PAUSED)) {
+        if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_PAUSING | VNF_ADAPTER_PAUSED)) {
             status =  NDIS_STATUS_PAUSED;
             PRINTK(("MPSendNetBufferLists: adapter paused %x.\n",
                     adapter->adapter_flags));
@@ -1154,7 +1163,8 @@ MPSendNetBufferLists(
             break;
         }
 
-        /* adapter is ready, send this net buffer list, in this case,
+        /*
+         * Adapter is ready, send this net buffer list, in this case,
          * we always return pending
          */
         old_path_id = (UINT)-1;
@@ -1185,7 +1195,8 @@ MPSendNetBufferLists(
             }
             ASSERT(nb_cnt > 0);
             VNIF_GET_NET_BUFFER_LIST_REF_COUNT(cur_nb_list) = nb_cnt;
-            /* queue is not empty or tcb is not available, or another
+            /*
+             * Queue is not empty or tcb is not available, or another
              * thread is sending a NetBufferList.
              */
             if (!IsQueueEmpty(&adapter->path[path_id].send_wait_queue) ||
@@ -1274,14 +1285,16 @@ vnif_priority_packet_adj(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nbl, RCB *rcb)
         DPRINTK(DPRTL_PRI, ("802.1.p page[14] = %x, pri = %x.\n",
             data_buf[14], p8021->TagHeader.UserPriority));
 
-        /* Copy the MAC header to fill in the space
+        /*
+         * Copy the MAC header to fill in the space
          * occupied by the priority bytes.
          */
         for (k = P8021_VLAN_BYTE, j = SRC_ADDR_END_BYTE;
             j >= 0; k--, j--) {
             data_buf[k] = data_buf[j];
         }
-        /* Don't worry about the offset, just adjust the
+        /*
+         * Don't worry about the offset, just adjust the
          * mdl start address.  Fix the address when the
          * packet is returned.
          */
@@ -1974,7 +1987,8 @@ VNIFFreeQueuedSendPackets(PVNIF_ADAPTER adapter, NDIS_STATUS status)
             for (; nb != NULL; nb = NET_BUFFER_NEXT_NB(nb)) {
                 VNIF_GET_NET_BUFFER_LIST_REF_COUNT(nb_list)--;
             }
-            /* If Ref count goes to 0, then complete it.
+            /*
+             * If Ref count goes to 0, then complete it.
              * Otherwise, Send interrupt DPC would complete it later
              */
             if (VNIF_GET_NET_BUFFER_LIST_REF_COUNT(nb_list) == 0) {

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
@@ -194,8 +194,8 @@ vnif_miniport_interrupt_dpc(
                     && (VNIF_RING_HAS_UNCONSUMED_RESPONSES(
                             adapter->path[path_id].u.vq.tx))) {
                 DPRINTK(DPRTL_DPC,
-                        ("%s more tx work: msg_id %d path_id %d int_status %d\n",
-                        __func__, msg_id, path_id, int_status));
+                       ("%s more tx work: msg_id %d path_id %d int_status %d\n",
+                       __func__, msg_id, path_id, int_status));
                 more_to_do = VNIF_TX_INT;
             }
         }

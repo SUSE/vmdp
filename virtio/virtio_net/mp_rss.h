@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2019-2020 SUSE LLC
@@ -29,8 +29,7 @@
 
 #define VNIF_NO_RECEIVE_QUEUE (-2)
 
-typedef enum VNIF_RSS_MODE_s
-{
+typedef enum VNIF_RSS_MODE_s {
     VNIF_RSS_DISABLED = 0,
     VNIF_RSS_HASHING  = 1,
     VNIF_RSS_FULL     = 2,
@@ -44,7 +43,7 @@ typedef enum VNIF_RSS_MODE_s
 #define VNIF_MAX_NUM_RSS_QUEUES 16
 #define VNIF_DEFAULT_NUM_RSS_QUEUES 8
 
-#define IS_POWER_OF_TWO(_num) (((_num) != 0) && (((_num) & ( (_num) - 1)) == 0))
+#define IS_POWER_OF_TWO(_num) (((_num) != 0) && (((_num) & ((_num) - 1)) == 0))
 
 #define vnif_set_proc_num_to_group_affinity(_proc_num, _affinity)           \
 {                                                                           \
@@ -92,8 +91,7 @@ typedef enum VNIF_RSS_MODE_s
     }                                                                       \
 }
 
-typedef struct _hash_sg_entry
-{
+typedef struct _hash_sg_entry {
     PCHAR chunkPtr;
     ULONG chunkLen;
 } hash_sg_entry_t;
@@ -103,9 +101,6 @@ typedef struct _vnif_rss_s {
     CCHAR q_indirection_tbl[VNIF_RSS_MAX_INDRECTION_TBL_SIZE];
     CCHAR hash_secret_key[VNIF_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION];
     PCHAR           cpu_idx_mapping;
-    #if 0
-    void            **rss2_queue_map;
-    #endif
     USHORT          *rss2_queue_map;
     ULONG           cpu_idx_mapping_sz;
     ULONG           hash_mask;

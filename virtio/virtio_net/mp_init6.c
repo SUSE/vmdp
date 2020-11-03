@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -212,7 +212,8 @@ VNIFSetScatterGatherDma(PVNIF_ADAPTER adapter)
     return status;
 }
 
-/* Used to override defaults as set through the NIC's properties.  The
+/*
+ * Used to override defaults as set through the NIC's properties.  The
  * hardware now says that it only supports these latests settings.
  */
 void
@@ -276,7 +277,8 @@ VNIFSetOffloadAttributes(PVNIF_ADAPTER adapter)
         NDIS_SIZEOF_MINIPORT_ADAPTER_OFFLOAD_ATTRIBUTES_REVISION_1,
         sizeof(NDIS_MINIPORT_ADAPTER_OFFLOAD_ATTRIBUTES)));
 
-    /* Not supported values are 0, so just fill in the headers and
+    /*
+     * Not supported values are 0, so just fill in the headers and
      * those values we support.
      */
     connection.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
@@ -301,10 +303,12 @@ VNIFSetOffloadAttributes(PVNIF_ADAPTER adapter)
     hw_offload.Header.Revision = NDIS_OFFLOAD_REVISION_1;
     hw_offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_1;
 
-    /* Normally we would set the hardware capabilities based on what the
+    /*
+     * Normally we would set the hardware capabilities based on what the
      * backend reports.  But with checksum offloads we will report the
      * hardware capabilites based on what checksum parameters have been
-     * enabled as long as the backend supports the enabled parameter. */
+     * enabled as long as the backend supports the enabled parameter.
+     */
 
     /* Set what IPV4 checksum offloads the hardware supports. */
     if (adapter->hw_tasks & VNIF_CHKSUM_TXRX_SUPPORTED) {
@@ -484,8 +488,10 @@ VNIFSetOffloadAttributes(PVNIF_ADAPTER adapter)
                 def_offload.Checksum.IPv6Receive.UdpChecksum));
     }
 
-    /* Unlike checksum offloads, we will set the hardware capabilities for
-     * LSO offloads based on what the backend reports. */
+    /*
+     * Unlike checksum offloads, we will set the hardware capabilities for
+     * LSO offloads based on what the backend reports.
+     */
 
     /* Set LSO offloads for hardware and what is enabled. */
     if (adapter->hw_tasks & VNIF_LSO_V1_SUPPORTED) {
@@ -765,11 +771,12 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
             NdisZeroMemory(adapter->path[p].rcb_rp.rcb_array,
                            sizeof(RCB *) * adapter->num_rcb);
 
-            /* We have to initialize all of RCBs before receiving any data. The RCB
-             * is the control block for a single packet data structure. And we
-             * should pre-allocate the buffer and memory for receive. Because ring
-             * buffer is not initialized at the moment, putting RCB grant reference
-             * onto rx_ring.req is deferred.
+            /*
+             * We have to initialize all of RCBs before receiving any data. The
+             * RCB is the control block for a single packet data structure. And
+             * we * should pre-allocate the buffer and memory for receive.
+             * Because ring buffer is not initialized at the moment, putting
+             * RCB grant reference * onto rx_ring.req is deferred.
              */
             for (i = 0; i < adapter->num_rcb; i++) {
                 VNIF_ALLOCATE_MEMORY(
@@ -789,11 +796,13 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
                 rcb->index = i;
                 rcb->path_id = p;
 
-                /* Setting rcb->grant_rx_ref = GRANT_INVALID_REF; was handled
+                /*
+                 * Setting rcb->grant_rx_ref = GRANT_INVALID_REF; was handled
                  * by the memset.
                  */
 
-                /* there used to be a bytes header option in xenstore for
+                /*
+                 * there used to be a bytes header option in xenstore for
                  * receive page but now it is hardwired to 0.
                  */
 

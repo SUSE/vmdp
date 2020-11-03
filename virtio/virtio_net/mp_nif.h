@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
@@ -57,7 +57,7 @@ typedef struct _vnif_xen_s {
 
 /* Packet data has been validated against protocol checksum. */
 #define _NETTXF_data_validated (1)
-#define  NETTXF_data_validated (1U<<_NETTXF_data_validated)
+#define  NETTXF_data_validated (1U << _NETTXF_data_validated)
 
 #define VNIF_FREE_SHARED_MEMORY VNIFV_FREE_SHARED_MEMORY
 

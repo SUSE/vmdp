@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2017 Novell, Inc.
@@ -168,7 +168,8 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
                     hdr->csum_offset));
         }
         if (gso_mss) {
-            /* When copying the packet buffers to one buffer, need to
+            /*
+             * When copying the packet buffers to one buffer, need to
              * get the ip header len, tcp header len, and do the checksums.
              * These are already done if a sg list is obtained for the packet.
              */
@@ -180,8 +181,8 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
         }
     } else {
         for (sg_cnt = 0; sg_cnt < tcb->sg_cnt; sg_cnt++) {
-            sg[sg_cnt+1].phys_addr = tcb->sg[sg_cnt].phys_addr;
-            sg[sg_cnt+1].len = tcb->sg[sg_cnt].len;
+            sg[sg_cnt + 1].phys_addr = tcb->sg[sg_cnt].phys_addr;
+            sg[sg_cnt + 1].len = tcb->sg[sg_cnt].len;
         }
         sg_cnt++; /* Add one for the header. */
     }
@@ -190,8 +191,7 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
         hdr = (virtio_net_hdr_t *)tcb->data;
         hdr->flags |= VIRTIO_NET_HDR_F_NEEDS_CSUM;
         hdr->gso_type = tcb->ip_version == IPV4 ?
-            VIRTIO_NET_HDR_GSO_TCPV4:
-            VIRTIO_NET_HDR_GSO_TCPV6;
+            VIRTIO_NET_HDR_GSO_TCPV4 : VIRTIO_NET_HDR_GSO_TCPV6;
         hdr->hdr_len  = ETH_HEADER_SIZE
             + tcb->ip_hdr_len
             + tcb->tcp_hdr_len;
@@ -231,18 +231,20 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
         ghdr.gso_size = hdr->gso_size;
         ghdr.csum_start = hdr->csum_start;
         ghdr.csum_offset = hdr->csum_offset;
-        PRINTK(("LSO: f %x t %x hl %d gs %d cs %d co %d pl %d ip %d tl %d sg %d %d %d\n",
+        PRINTK(("LSO: f %x t %x hl %d gs %d cs %d co %d\n",
             hdr->flags,
             hdr->gso_type,
             hdr->hdr_len,
             hdr->gso_size,
             hdr->csum_start,
-            hdr->csum_offset,
+            hdr->csum_offset));
+        PRINTK(("     pl %d ip %d tl %d sgc %d sg0 %d sg1 %d\n",
             gso_info.LsoV1TransmitComplete.TcpPayload,
             tcb->ip_hdr_len,
             tcb->tcp_hdr_len,
             sg_cnt,
-            sg[0].len, sg[1].len));
+            sg[0].len,
+            sg[1].len));
         if (sg_cnt == 2 && (dbg_print_mask & DPRTL_LSO)) {
             PRINTK(("%p: ", tcb->data));
             for (k = 0; k < adapter->buffer_offset; k++) {
@@ -538,7 +540,11 @@ VNIFV_RING_FINAL_CHECK_FOR_RESPONSES(void *vq, int *more_to_do)
 static uint32_t vnif_dump_print_cnt = VNIF_DUMP_PRINT_CNT;
 
 void
-VNIFV_DUMP(PVNIF_ADAPTER adapter, UINT path_id, PUCHAR str, uint32_t rxtx, uint32_t force)
+VNIFV_DUMP(PVNIF_ADAPTER adapter,
+           UINT path_id,
+           PUCHAR str,
+           uint32_t rxtx,
+           uint32_t force)
 {
 }
 

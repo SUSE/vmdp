@@ -34,7 +34,8 @@ static __inline BOOLEAN
 vnif_should_exit_txrx_dpc(PVNIF_ADAPTER adapter, ULONG txrx_ind, UINT path_id)
 {
     NdisAcquireSpinLock(&adapter->adapter_flag_lock);
-    /* Don't do VNIF_SET_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS);
+    /*
+     * Don't do VNIF_SET_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS);
      * because we want the test and set of the flags to be under
      * the same spinlock.
      */
@@ -323,7 +324,8 @@ calculate_rx_checksum(RCB *rcb,
                 cur_len = rcb->len;
                 w = (uint16_t *)rcb->page;
             } else {
-                /* We have one byte left in the current page and more data
+                /*
+                 * We have one byte left in the current page and more data
                  * in another fragment. Take the current byte and one from
                  * the next fragment. Due to the byte swapping, put the last
                  * byte in the lower portion on the uint16 and the first byte
@@ -340,14 +342,16 @@ calculate_rx_checksum(RCB *rcb,
         }
     }
 
-    /* If len is 1 there ist still on byte left. We add a padding
+    /*
+     * If len is 1 there ist still on byte left. We add a padding
      * byte (0xFF) to build a 16 bit word.
      */
     if (len > 0) {
         sum += *w & 0xFF;
     }
 
-    /* Keep only the last 16 bits of the 32 bit calculated sum and
+    /*
+     * Keep only the last 16 bits of the 32 bit calculated sum and
      * add the carries.
      */
     sum = (sum >> 16) + (sum & 0xFFFF);
@@ -425,8 +429,7 @@ calculate_pseudo_ipv4_header_checksum(void *hdr)
 }
 
 #ifdef DBG
-typedef struct giph_s
-{
+typedef struct giph_s {
     USHORT iplen;
     USHORT payload;
     USHORT spayload;
@@ -478,8 +481,7 @@ calculate_pseudo_ipv6_header_checksum(void *hdr,
     {
         giph.ipph_length = pseudo_hdr.ipph_length;
         giph.chksum = checksum;
-        if (giph.payload != giph.ipph_length || giph.spayload != giph.flen)
-        {
+        if (giph.payload != giph.ipph_length || giph.spayload != giph.flen) {
             RPRINTK(DPRTL_LSO,
                     ("ipv%d: iplen %d load %d %d ipph_length %d %d chksum %x\n",
                 pseudo_hdr.ipph_protocol,
@@ -585,7 +587,8 @@ calculate_ip_checksum(uint8_t *pkt_buf)
     w = buff;
     buff[5] = 0;
 
-    /* make 16 bit words out of every two adjacent 8 bit words in the packet
+    /*
+     * Make 16 bit words out of every two adjacent 8 bit words in the packet
      * and add them up
      */
     sum = 0;
@@ -593,14 +596,16 @@ calculate_ip_checksum(uint8_t *pkt_buf)
         sum += *w++;
         ip_hdr_sz -= 2;
     }
-    /* If len is 1 there ist still on byte left. We add a padding
+    /*
+     * If len is 1 there ist still on byte left. We add a padding
      * byte (0xFF) to build a 16 bit word.
      */
     if (ip_hdr_sz > 0) {
         sum += *w & 0xFF;
     }
 
-    /* Keep only the last 16 bits of the 32 bit calculated sum and
+    /*
+     * Keep only the last 16 bits of the 32 bit calculated sum and
      * add the carries.
      */
     sum = (sum >> 16) + (sum & 0xFFFF);
@@ -641,7 +646,8 @@ get_ipv6_hdr_len_and_protocol(ipv6_header_t *ipv6_hdr,
 
             next_hdr = ext_hdr->ip6ext_next_header;
 
-            /* Extinsion header lengths do not include the first 8 octets
+            /*
+             * Extinsion header lengths do not include the first 8 octets
              * (bytes). Header length is the number of octet (byte) units.
              */
             ip_hdr_len += IPV6_EXT_HDR_FIXED_LEN
@@ -1271,7 +1277,7 @@ vnif_send_arp(PVNIF_ADAPTER adapter)
     if (status == STATUS_SUCCESS) {
         DPRINTK(DPRTL_ON, ("%s: ip wstr = %ws.\n", __func__, ip_addr_buf));
         w = ip_addr_buf;
-        while (*w != 0 && *(w+1) != 0) {
+        while (*w != 0 && *(w + 1) != 0) {
             w += vnif_wstr_to_str(w, ip_str);
             DPRINTK(DPRTL_ON, ("%s: ip astr = %s.\n", __func__, ip_str));
             vnif_ip_str_to_ip(ip_str, ip_addr);

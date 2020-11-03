@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -149,7 +149,8 @@
                                 + TCP_HEADER_SIZE)
 
 #define VNIF_CHECKSUM_OFFLOAD_INFO_BITS 0x1c
-                                        /* Bit possition of:
+                                        /*
+                                         * Bit possition of:
                                          * info->Transmit.TcpChecksum
                                          * info->Transmit.UdpChecksum
                                          * info->Transmit.IpHeaderChecksum
@@ -169,7 +170,7 @@
 
 #define VNIF_RESOURCE_BUF_SIZE                      \
     (sizeof(NDIS_RESOURCE_LIST) +                   \
-    (10*sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR)))
+    (10 * sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR)))
 
 /* Checksum actions that can be performed. */
 #define VNIF_CHKSUM_ACTION_DISABLE  0x0
@@ -383,7 +384,7 @@
     if ((_rcb)->cnt) {                                                  \
         PRINTK(("vnif_rcb_verify: %s, %p rcb %d %d use count %d.\n",    \
             (_adapter)->node_name, (_rcb), (_rcb)->index,               \
-            (_rcb)->path_id,(_rcb)->cnt));                              \
+            (_rcb)->path_id, (_rcb)->cnt));                             \
     }                                                                   \
     VNIFInterlockedIncrement((_rcb)->cnt);                              \
 }
@@ -727,8 +728,7 @@ typedef struct vnif_path_s {
 } vnif_path_t;
 
 /***************************************************************************/
-typedef struct _VNIF_ADAPTER
-{
+typedef struct _VNIF_ADAPTER {
     PUCHAR              node_name;
     union {
         vnif_xen_t      x;
@@ -963,7 +963,7 @@ typedef struct ipv4_pseudo_header_s {
     UCHAR       ipph_zero;             /* 0 */
     UCHAR       ipph_protocol;         /* TCP/UDP */
     USHORT      ipph_length;           /* TCP/UDP length */
-}ipv4_pseudo_header_t;
+} ipv4_pseudo_header_t;
 
 typedef struct ipv6_pseudo_header_s {
     IPV6_ADDRESS ipph_src;              /* Source address */
@@ -973,7 +973,7 @@ typedef struct ipv6_pseudo_header_s {
     UCHAR        z2;                    /* 0 */
     UCHAR        z3;                    /* 0 */
     UCHAR        ipph_protocol;         /* TCP/UDP */
-}ipv6_pseudo_header_t;
+} ipv6_pseudo_header_t;
 #pragma pack(pop)
 
 typedef struct ip_pkt_info_s {
@@ -1216,7 +1216,7 @@ void VNIFReceivePacketsPostStats(PVNIF_ADAPTER adapter, UINT path_id,
                                  uint32_t ring_size,
     uint32_t cnt);
 void VNIFReturnRcbStats(PVNIF_ADAPTER adapter, RCB *rcb);
-NDIS_TIMER_FUNCTION VNIFPvStatTimerDpc;;
+NDIS_TIMER_FUNCTION VNIFPvStatTimerDpc;
 void vnif_dpc(PKDPC dpc, PVNIF_ADAPTER adapter, void *s1, void *s2);
 void VNIFIndicateLinkStatus(PVNIF_ADAPTER adapter, uint32_t status);
 
@@ -1339,7 +1339,8 @@ get_ip_pkt_info(RCB *rcb, uint32_t buf_offset, UINT pkt_total_len)
                 break;
             }
 
-            /* get_ipv6_hdr_len_and_protocol does the
+            /*
+             * get_ipv6_hdr_len_and_protocol does the
              * rcb->pkt_info.ip_hdr_len > pkt_len test
              */
             get_ipv6_hdr_len_and_protocol(ipv6_hdr,

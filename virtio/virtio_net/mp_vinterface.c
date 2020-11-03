@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -167,7 +167,8 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
     RPRINTK(DPRTL_ON, ("VNIFFindAdapter: IN\n"));
     status = NDIS_STATUS_SUCCESS;
     do {
-        /* All adapter fields are zeroed out when adapter was allocated.
+        /*
+         * All adapter fields are zeroed out when adapter was allocated.
          * No need to set any values to 0.
          */
 
@@ -338,7 +339,8 @@ vnif_init_tx(PVNIF_ADAPTER adapter)
     UINT i;
     UINT p;
 
-    /* Allocate for each TCB, because sizeof(TCB) is less than PAGE_SIZE,
+    /*
+     * Allocate for each TCB, because sizeof(TCB) is less than PAGE_SIZE,
      * it will not cross page boundary.
      */
     for (i = 0; i < adapter->num_paths; i++) {
@@ -421,8 +423,8 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
         RPRINTK(DPRTL_INIT,
                 ("%s: virtio_q_setup [%d] rx[%d] m %d tx[%d] m %d\n",
                  __func__, i,
-                 i*2, adapter->path[i].u.vq.rx_msg,
-                 (i*2) + 1, adapter->path[i].u.vq.tx_msg));
+                 i * 2, adapter->path[i].u.vq.rx_msg,
+                 (i * 2) + 1, adapter->path[i].u.vq.tx_msg));
         adapter->path[i].u.vq.rx = VIRTIO_DEVICE_QUEUE_SETUP(
             &adapter->u.v.vdev,
             i * 2,
@@ -557,23 +559,21 @@ vnif_send_control_msg(PVNIF_ADAPTER adapter,
                 PRINTK(("%s - ERROR: get_buf failed (%d)\n", __func__, i));
             } else if (len != sizeof(virtio_net_ctrl_ack_t)) {
                 PRINTK(("%s - ERROR: wrong len %d\n", __func__, len));
-            }
-            else if (*(virtio_net_ctrl_ack_t *)(pBase + offset) != VNIF_NET_OK) {
+            } else if (*(virtio_net_ctrl_ack_t *)(pBase + offset) !=
+                       VNIF_NET_OK) {
                 PRINTK(("%s - ERROR: error %d returned for class %d\n",
                         __func__, *(virtio_net_ctrl_ack_t *)(pBase + offset),
                         cls));
             } else {
                 RPRINTK(DPRTL_ON,
-                        ("%s OK(%d, %d.%d, buffers of size %d and %d) \n",
+                        ("%s OK(%d, %d.%d, buffers of size %d and %d)\n",
                         __func__, i, cls, cmd, size1, size2));
                 cc = TRUE;
             }
-        }
-        else {
+        } else {
             PRINTK(("%s - ERROR: add_buf failed\n", __func__));
         }
-    }
-    else {
+    } else {
         PRINTK(("%s (buffer %d, %d) - ERROR: message too LARGE\n",
                 __func__, size1, size2));
     }
@@ -843,7 +843,8 @@ VNIFV_Quiesce(PVNIF_ADAPTER adapter)
         vnif_call_txrx_interrupt_dpc(adapter);
         KeLowerIrql(old_irql);
 
-        /* Only need to wory about the receives that are in the process of
+        /*
+         * Only need to wory about the receives that are in the process of
          * VNIFReceivePackets and xennet_return_packet.
          */
         waiting = adapter->nBusyRecv;

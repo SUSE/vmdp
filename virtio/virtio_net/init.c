@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -173,7 +173,8 @@ VNIFSetupNdisAdapterTx(PVNIF_ADAPTER adapter)
         }
 #endif
 
-        /* Allocate for each TCB, because sizeof(TCB) is less than PAGE_SIZE,
+        /*
+         * Allocate for each TCB, because sizeof(TCB) is less than PAGE_SIZE,
          * it will not cross page boundary.
          */
 
@@ -222,7 +223,8 @@ VNIFSetupNdisAdapterTx(PVNIF_ADAPTER adapter)
 #endif
         }
 
-        /* No need to set adapter->grant_tx_ref[i] = GRANT_INVALID_REF;
+        /*
+         * No need to set adapter->grant_tx_ref[i] = GRANT_INVALID_REF;
          * It was handled by memset of adapter.
          */
 
@@ -541,9 +543,9 @@ VNIFFreeAdapter(PVNIF_ADAPTER adapter, NDIS_STATUS status)
     }
 
     mac = adapter->CurrentAddress[MAC_LAST_DIGIT];
-    RPRINTK(DPRTL_ON,("VNIF: VNIFFreeAdapter %x - IN\n", mac));
+    RPRINTK(DPRTL_ON, ("VNIF: VNIFFreeAdapter %x - IN\n", mac));
     if (adapter->node_name != NULL) {
-        RPRINTK(DPRTL_ON,("\tFor %s\n", adapter->node_name));
+        RPRINTK(DPRTL_ON, ("\tFor %s\n", adapter->node_name));
     }
 
     VNIFDeregisterHardwareResources(adapter);
@@ -630,7 +632,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         return NDIS_STATUS_FAILURE;
     }
 
-    /* Read NetworkAddress registry value and use it as the current address
+    /*
+     * Read NetworkAddress registry value and use it as the current address
      * if there is a software configurable NetworkAddress specified in
      * the registry.
      */
@@ -700,8 +703,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         if (adapter->hw_tasks & VNIF_CHKSUM_TXRX_SUPPORTED) {
             VNIFInitChksumOffload(adapter,
                                   VNIF_CHKSUM_IPV4_TCP,
-                                  returned_value->ParameterData.IntegerData
-                                    & VNIF_CHKSUM_ACTION_TXRX);
+                                  returned_value->ParameterData.IntegerData &
+                                      VNIF_CHKSUM_ACTION_TXRX);
         }
     } else {
         VNIFInitChksumOffload(adapter, VNIF_CHKSUM_IPV4_TCP,
@@ -719,8 +722,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         if (adapter->hw_tasks & VNIF_CHKSUM_TXRX_SUPPORTED) {
             VNIFInitChksumOffload(adapter,
                                   VNIF_CHKSUM_IPV4_UDP,
-                                  returned_value->ParameterData.IntegerData
-                                    & VNIF_CHKSUM_ACTION_TXRX);
+                                  returned_value->ParameterData.IntegerData &
+                                      VNIF_CHKSUM_ACTION_TXRX);
         }
     } else {
         VNIFInitChksumOffload(adapter, VNIF_CHKSUM_IPV4_UDP,
@@ -738,8 +741,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         if (adapter->hw_tasks & VNIF_CHKSUM_TXRX_IPV6_SUPPORTED) {
             VNIFInitChksumOffload(adapter,
                                   VNIF_CHKSUM_IPV6_TCP,
-                                  returned_value->ParameterData.IntegerData
-                                    & VNIF_CHKSUM_ACTION_TXRX);
+                                  returned_value->ParameterData.IntegerData &
+                                      VNIF_CHKSUM_ACTION_TXRX);
         }
     } else {
         VNIFInitChksumOffload(adapter, VNIF_CHKSUM_IPV6_TCP,
@@ -757,8 +760,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         if (adapter->hw_tasks & VNIF_CHKSUM_TXRX_IPV6_SUPPORTED) {
             VNIFInitChksumOffload(adapter,
                                   VNIF_CHKSUM_IPV6_UDP,
-                                  returned_value->ParameterData.IntegerData
-                                    & VNIF_CHKSUM_ACTION_TXRX);
+                                  returned_value->ParameterData.IntegerData &
+                                      VNIF_CHKSUM_ACTION_TXRX);
         }
     } else {
         VNIFInitChksumOffload(adapter, VNIF_CHKSUM_IPV6_UDP,
@@ -818,7 +821,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             ("VNIF: NdisReadConfiguration LSO V2 IPv6 %x (status %x)\n",
              adapter->lso_enabled, status));
 
-        /* With the hardware supporting LSO V2 IpV6, check if extension
+        /*
+         * With the hardware supporting LSO V2 IpV6, check if extension
          * headers support is also to be enabled.
          */
         NdisReadConfiguration(
@@ -849,7 +853,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
     if (status == NDIS_STATUS_SUCCESS) {
         adapter->lso_data_size = returned_value->ParameterData.IntegerData;
 
-        /* Too large of a value will be handled in the specific
+        /*
+         * Too large of a value will be handled in the specific
          * VNIFV_SetupAdapterInterface and VNIFX_SetupAdapterInterface.
          */
         if (adapter->lso_data_size < LSO_MIN_DATA_SIZE) {
@@ -877,8 +882,9 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         }
     }
     RPRINTK(DPRTL_INIT,
-        ("VNIF: NdisReadConfiguration FragmentedReceives status %x, hw_tasks %x val %d\n",
-         status, adapter->hw_tasks, returned_value->ParameterData.IntegerData));
+        ("VNIF: %s FragmentedReceives status %x, hw_tasks %x val %d\n",
+         __func__, status, adapter->hw_tasks,
+         returned_value->ParameterData.IntegerData));
 
     NdisReadConfiguration(
         &status,
@@ -1093,7 +1099,8 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             adapter->tx_throttle_stop =
                 returned_value->ParameterData.IntegerData;
         } else {
-            /* It makes no sense to have the stop value greater than the
+            /*
+             * It makes no sense to have the stop value greater than the
              * start value.  Set the stop to the start and then write
              * the value back to the registry so that NIC configuration
              * will accurately reflect what is being used.

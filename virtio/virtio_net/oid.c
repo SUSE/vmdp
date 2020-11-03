@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -596,7 +596,8 @@ MPQueryInformation(
             pTaskOffload->TaskBufferLength =
                 OffloadTasks[i].TaskBufferLength;
 
-            /* There is a description mismatch between DDK and DDK sample
+            /*
+             * There is a description mismatch between DDK and DDK sample
              * code * on OffsetNextTask member of NDIS_TASK_OFFLOAD. We
              * are referring to the sample code.
              */
@@ -681,9 +682,10 @@ MPQueryInformation(
         RPRINTK(DPRTL_RSS,
                 ("%s: OID_GEN_RECEIVE_HASH\n", __func__));
         /*
-        pInfo = &u.RSSHashKeyParameters;
-        ulSize = ParaNdis6_QueryReceiveHash(&pContext->RSSParameters, &u.RSSHashKeyParameters);
-        */
+         * pInfo = &u.RSSHashKeyParameters;
+         * ulSize = ParaNdis6_QueryReceiveHash(&pContext->RSSParameters,
+         *                                     &u.RSSHashKeyParameters);
+         */
         break;
 #endif
 
@@ -1353,7 +1355,7 @@ VNIFSetMulticastList(
     if (InformationBufferLength >
             (VNIF_MAX_MCAST_LIST * ETH_LENGTH_OF_ADDRESS)) {
         *BytesNeeded = VNIF_MAX_MCAST_LIST * ETH_LENGTH_OF_ADDRESS;
-        return NDIS_STATUS_MULTICAST_FULL;;
+        return NDIS_STATUS_MULTICAST_FULL;
     }
 
     NdisZeroMemory(adapter->MCList,

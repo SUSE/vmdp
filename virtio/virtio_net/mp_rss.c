@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2019-2020 SUSE LLC
@@ -93,7 +93,7 @@ vnif_rss_alloc_cpu_idx_mapping(PVNIF_ADAPTER adapter)
 
 
 
-    for(i = 0; i < active_proc_cnt; i++) {
+    for (i = 0; i < active_proc_cnt; i++) {
         adapter->rss.cpu_idx_mapping[i] = VNIF_NO_RECEIVE_QUEUE;
     }
 
@@ -137,7 +137,7 @@ vnif_rss_fill_cpu_mapping(vnif_rss_t *rss, UINT num_receive_queues)
             }
 
             if (i < rss->cpu_idx_mapping_sz) {
-              RPRINTK(DPRTL_RSS,
+                RPRINTK(DPRTL_RSS,
                 ("  q_indirection[%d] <- cpu_idx_mapping[%d] = %d pn %d g %d\n",
                 i,
                 cur_proc_idx,
@@ -148,8 +148,7 @@ vnif_rss_fill_cpu_mapping(vnif_rss_t *rss, UINT num_receive_queues)
 
             rss->q_indirection_tbl[i] = rss->cpu_idx_mapping[cur_proc_idx];
 
-        }
-        else {
+        } else {
             rss->cpu_idx_mapping[i] = VNIF_NO_RECEIVE_QUEUE;
         }
     }
@@ -170,7 +169,8 @@ vnif_rss_fill_cpu_mapping(vnif_rss_t *rss, UINT num_receive_queues)
          i < rss->indirection_tbl_sz / sizeof(PROCESSOR_NUMBER);
          i++) {
         if (rss->q_indirection_tbl[i] == VNIF_NO_RECEIVE_QUEUE) {
-            /* If some hash values remains unassigned after the first pass,
+            /*
+             * If some hash values remains unassigned after the first pass,
              * either because mapping processor number to index failed or
              * there are not enough queues, reassign the hash values to the
              * first queue
@@ -240,7 +240,9 @@ vnif_rss_setup_q_map(PVNIF_ADAPTER adapter,
     rss_idx = 0;
     rss_tbl_sz = rss_params->IndirectionTableSize / sizeof(PROCESSOR_NUMBER);
     active_proc_cnt = KeQueryActiveProcessorCountEx(ALL_PROCESSOR_GROUPS);
-    RPRINTK(DPRTL_INIT, ("%s: active_proc_cnt %d\n", __func__, active_proc_cnt));
+    RPRINTK(DPRTL_INIT, ("%s: active_proc_cnt %d\n",
+                         __func__,
+                         active_proc_cnt));
 
     cpu_index_tbl = (USHORT *)NdisAllocateMemoryWithTagPriority(
         adapter->AdapterHandle,
@@ -265,16 +267,14 @@ vnif_rss_setup_q_map(PVNIF_ADAPTER adapter,
                                           cpu_index_tbl,
                                           VNIF_POOL_TAG);
             return NDIS_STATUS_SOFT_ERRORS;
-        }
-        else if (cpu_idx >= active_proc_cnt) {
+        } else if (cpu_idx >= active_proc_cnt) {
             PRINTK(("[%s]  CPU index %lu exceeds CPU range %lu\n",
                     __func__, cpu_idx, active_proc_cnt));
             NdisFreeMemoryWithTagPriority(adapter->AdapterHandle,
                                           cpu_index_tbl,
                                           VNIF_POOL_TAG);
             return NDIS_STATUS_SOFT_ERRORS;
-        }
-        else {
+        } else {
             RPRINTK(DPRTL_INIT, ("  cpu_index_tbl[cpu_idx %d] = path_idx %d\n",
                 cpu_idx, path_idx));
             cpu_index_tbl[cpu_idx] = path_idx;
@@ -388,7 +388,8 @@ vnif_rss_move_rx(PVNIF_ADAPTER adapter)
         while (!IsListEmpty(&adapter->rcv_q[i].rcv_to_process)) {
             RPRINTK(DPRTL_RSS, ("%s[%d]: %d ==> 0\n", __func__, i, j++));
             rcb = (RCB *) RemoveHeadList(&adapter->rcv_q[i].rcv_to_process);
-            InsertTailList(&adapter->rcv_q[no_q_idx].rcv_to_process, &rcb->list);
+            InsertTailList(&adapter->rcv_q[no_q_idx].rcv_to_process,
+                           &rcb->list);
         }
         NdisReleaseSpinLock(&adapter->rcv_q[i].rcv_to_process_lock);
     }
@@ -464,8 +465,8 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
              > sizeof(adapter->rss.indirection_tbl))
                 || (rss_params_len < (rss_params->IndirectionTableOffset
                                       + rss_params->IndirectionTableSize))
-                || !IS_POWER_OF_TWO( rss_params->IndirectionTableSize
-                                     / sizeof(PROCESSOR_NUMBER) ))) {
+                || !IS_POWER_OF_TWO(rss_params->IndirectionTableSize
+                                    / sizeof(PROCESSOR_NUMBER)))) {
         PRINTK(("[%s] invalid length (2), flags %x\n",
                 __func__, rss_params->Flags));
         return NDIS_STATUS_INVALID_LENGTH;
@@ -481,8 +482,8 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
         return NDIS_STATUS_INVALID_LENGTH;
     }
 
-    proc_mask_size = rss_params->NumberOfProcessorMasks
-        * rss_params->ProcessorMasksEntrySize;
+    proc_mask_size = rss_params->NumberOfProcessorMasks *
+        rss_params->ProcessorMasksEntrySize;
     if (rss_params_len < rss_params->ProcessorMasksOffset + proc_mask_size) {
         PRINTK(("%s Invalid len rss_params->NumberOfProcessorMasks %d sz %d\n",
               __func__,
@@ -538,7 +539,7 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
         adapter->rss.hash_secret_key_sz = rss_params->HashSecretKeySize;
 
         NdisMoveMemory(adapter->rss.hash_secret_key,
-                       (char*)rss_params + rss_params->HashSecretKeyOffset,
+                       (char *)rss_params + rss_params->HashSecretKeyOffset,
                        rss_params->HashSecretKeySize);
 
         RPRINTK(DPRTL_RSS, ("Hash Secret Key: sz %d mask %x info %x\n",
@@ -549,9 +550,10 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
         while (i < adapter->rss.hash_secret_key_sz) {
             j = 0;
             while (j < 10 && i < adapter->rss.hash_secret_key_sz) {
-                DPRINTK(DPRTL_RSS, ("%02x ", (UINT8)adapter->rss.hash_secret_key[i]));
-                i++;
-                j++;
+                DPRINTK(DPRTL_RSS, ("%02x ",
+                                    (UINT8)adapter->rss.hash_secret_key[i]));
+                                    i++;
+                                    j++;
             }
             DPRINTK(DPRTL_RSS, ("\n"));
         }
@@ -637,7 +639,7 @@ vnif_rss_toeplitz_hash(hash_sg_entry_t *sg_buf,
     next_key_byte = full_key + sizeof(first_key_word);
     first_key_word = RtlUlongByteSwap(*(uint32_t *)full_key);
 
-    for(sg_entry = sg_buf; sg_entry < sg_buf + sg_entries; ++sg_entry) {
+    for (sg_entry = sg_buf; sg_entry < sg_buf + sg_entries; ++sg_entry) {
         for (byte = 0; byte < sg_entry->chunkLen; ++byte) {
             for (bit = 0; bit <= TOEPLITZ_MAX_BIT_NUM; ++bit) {
                 if (TOEPLITZ_BYTE_HAS_BIT(sg_entry->chunkPtr[byte], bit)) {
@@ -767,7 +769,7 @@ vnif_rss_get_rcb_target_info(PVNIF_ADAPTER adapter,
 
     if (adapter->rss.rss_mode != VNIF_RSS_FULL
             || adapter->rss.first_q_indirection_idx ==
-                    VNIF_INVALID_INDIRECTION_INDEX ) {
+                    VNIF_INVALID_INDIRECTION_INDEX) {
         return;
     }
 
@@ -935,22 +937,22 @@ void vnif_rss_dbg_hash_type(PVNIF_ADAPTER adapter,
                     addr = 2;
                     break;
                 case 0x030001c8:
-                    addr= 3;
+                    addr = 3;
                     break;
                 case 0x040001c8:
-                    addr= 4;
+                    addr = 4;
                     break;
                 case 0x050001c8:
-                    addr= 5;
+                    addr = 5;
                     break;
                 case 0x060001c8:
-                    addr= 6;
+                    addr = 6;
                     break;
                 case 0x070001c8:
-                    addr= 7;
+                    addr = 7;
                     break;
                 case 0x080001c8:
-                    addr= 8;
+                    addr = 8;
                     break;
                 case 0x0501010a:
                 default:
@@ -1051,22 +1053,22 @@ void vnif_rss_dbg_hash_type(PVNIF_ADAPTER adapter,
                     addr = 2;
                     break;
                 case 0x030001c8:
-                    addr= 3;
+                    addr = 3;
                     break;
                 case 0x040001c8:
-                    addr= 4;
+                    addr = 4;
                     break;
                 case 0x050001c8:
-                    addr= 5;
+                    addr = 5;
                     break;
                 case 0x060001c8:
-                    addr= 6;
+                    addr = 6;
                     break;
                 case 0x070001c8:
-                    addr= 7;
+                    addr = 7;
                     break;
                 case 0x080001c8:
-                    addr= 8;
+                    addr = 8;
                     break;
                 case 0x0501010a:
                 default:
@@ -1162,7 +1164,9 @@ vnif_rss_dbg_dump_map(PVNIF_ADAPTER adapter)
     }
     if (maybe) {
         PRINTK(("hash info %x\n", adapter->rss.hash_info));
-        for (cpu_idx = 0; cpu_idx < adapter->rss.cpu_idx_mapping_sz; cpu_idx++) {
+        for (cpu_idx = 0;
+                cpu_idx < adapter->rss.cpu_idx_mapping_sz;
+                cpu_idx++) {
             rcvq = adapter->rss.cpu_idx_mapping[cpu_idx];
             if (rcvq == VNIF_NO_RECEIVE_QUEUE) {
                 rcvq = 0;
@@ -1190,7 +1194,7 @@ vnif_rss_dbg_dump_map(PVNIF_ADAPTER adapter)
     if (g_running_hypervisor == HYPERVISOR_KVM) {
         for (j = 0; j < adapter->num_paths; j++) {
             PRINTK((" %7x", adapter->path[j].u.vq.rx->vring.avail->flags));
-            if(adapter->path[j].u.vq.rx->vring.avail->flags
+            if (adapter->path[j].u.vq.rx->vring.avail->flags
                && VRING_AVAIL_F_NO_INTERRUPT){
                 adapter->path[j].u.vq.rx->vring.avail->flags &=
                     ~VRING_AVAIL_F_NO_INTERRUPT;
@@ -1201,7 +1205,6 @@ vnif_rss_dbg_dump_map(PVNIF_ADAPTER adapter)
 
 
     PRINTK(("\nIP mapping\n"));
-    //for (i = 1; i < 9; i++) {
     for (i = 1; i < 2; i++) {
         PRINTK(("%d:", i));
         for (j = 0; j < 4; j++) {
@@ -1215,7 +1218,6 @@ vnif_rss_dbg_dump_map(PVNIF_ADAPTER adapter)
         PRINTK(("\n"));
     }
     PRINTK(("TCP mapping\n"));
-    //for (i = 1; i < 9; i++) {
     for (i = 1; i < 2; i++) {
         PRINTK(("%d:", i));
         for (j = 0; j < 4; j++) {

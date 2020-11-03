@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -425,7 +425,8 @@ VNIFInitialize(PVNIF_ADAPTER adapter,
     }
 
 #ifdef NDIS50_MINIPORT
-    /* Register a shutdown handler for NDIS50 or earlier miniports
+    /*
+     * Register a shutdown handler for NDIS50 or earlier miniports
      * For NDIS51 miniports, set AdapterShutdownHandler.
      */
     NdisMRegisterAdapterShutdownHandler(
@@ -610,7 +611,9 @@ vnif_free_rcb_array(PVNIF_ADAPTER adapter, rcb_ring_pool_t *rcb_pool)
             }
             NdisFreeMemory(rcb_pool->rcb_array[i], sizeof(RCB), 0);
         }
-        NdisFreeMemory(rcb_pool->rcb_array, sizeof(void *) * adapter->num_rcb, 0);
+        NdisFreeMemory(rcb_pool->rcb_array,
+                       sizeof(void *) * adapter->num_rcb,
+                       0);
         rcb_pool->rcb_array = NULL;
     }
 }

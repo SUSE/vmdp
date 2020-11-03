@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -397,13 +397,15 @@ MPPnPEventNotify(
         break;
 
     case NdisDevicePnPEventRemoved:
-        /* Called when NDIS receives IRP_MN_REMOVE_DEVICE.
+        /*
+         * Called when NDIS receives IRP_MN_REMOVE_DEVICE.
          * NDIS calls MiniportHalt function after this call returns.
          */
         break;
 
     case NdisDevicePnPEventSurpriseRemoved:
-        /* Called when NDIS receives IRP_MN_SUPRISE_REMOVAL.
+        /*
+         * Called when NDIS receives IRP_MN_SUPRISE_REMOVAL.
          * NDIS calls MiniportHalt function after this call returns.
          */
         VNIF_SET_FLAG(adapter, VNF_ADAPTER_SURPRISE_REMOVED);
@@ -414,13 +416,15 @@ MPPnPEventNotify(
         break;
 
     case NdisDevicePnPEventStopped:
-        /* Called when NDIS receives IRP_MN_STOP_DEVICE.
+        /*
+         * Called when NDIS receives IRP_MN_STOP_DEVICE.
          * NDIS calls MiniportHalt function after this call returns.
          */
         break;
 
     case NdisDevicePnPEventPowerProfileChanged:
-        /* After initializing a miniport driver and after miniport driver
+        /*
+         * After initializing a miniport driver and after miniport driver
          * receives an OID_PNP_SET_POWER notification that specifies
          * a device power state of NdisDeviceStateD0 (the powered-on state),
          * NDIS calls the miniport's MiniportPnPEventNotify function with

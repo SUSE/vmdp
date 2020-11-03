@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2019-2020 SUSE LLC
@@ -43,8 +43,7 @@
 #define VNIF_MAX_TX_SG_ELEMENTS 36
 
 #ifndef NDIS60_MINIPORT
-typedef enum _NET_IF_MEDIA_DUPLEX_STATE
-{
+typedef enum _NET_IF_MEDIA_DUPLEX_STATE {
     MediaDuplexStateUnknown,
     MediaDuplexStateHalf,
     MediaDuplexStateFull
@@ -84,7 +83,7 @@ typedef struct _TCB {
     UINT                    index;
 #if defined XENNET || defined PVVXNET
     grant_ref_t             grant_tx_ref;
-#endif    
+#endif
     uint16_t                ip_hdr_len;
     uint16_t                tcp_hdr_len;
     uint16_t                flags;
@@ -142,8 +141,7 @@ typedef struct _RCB {
 #endif
 } RCB, *PRCB;
 
-typedef struct _rcb_ring_pool
-{
+typedef struct _rcb_ring_pool {
     LIST_ENTRY          rcb_free_list;
     RCB                 **rcb_array;
     RCB                 *rcb_ring[NET_RX_RING_SIZE];
@@ -152,8 +150,7 @@ typedef struct _rcb_ring_pool
 #endif
 } rcb_ring_pool_t;
 
-typedef struct _rcv_to_process_q
-{
+typedef struct _rcv_to_process_q {
     LIST_ENTRY          rcv_to_process;
     NDIS_SPIN_LOCK      rcv_to_process_lock;
     KDPC                rcv_q_dpc;

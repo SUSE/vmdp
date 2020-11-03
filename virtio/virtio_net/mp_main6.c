@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -45,11 +45,15 @@ DriverEntry6(PVOID DriverObject, PVOID RegistryPath)
 
     mp_char.Header.Type = NDIS_OBJECT_TYPE_MINIPORT_DRIVER_CHARACTERISTICS;
 #ifdef NDIS620_MINIPORT
-    mp_char.Header.Size = NDIS_SIZEOF_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_2;
-    mp_char.Header.Revision = NDIS_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_2;
+    mp_char.Header.Size =
+        NDIS_SIZEOF_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_2;
+    mp_char.Header.Revision =
+        NDIS_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_2;
 #else
-    mp_char.Header.Size = NDIS_SIZEOF_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_1;
-    mp_char.Header.Revision = NDIS_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_1;
+    mp_char.Header.Size =
+        NDIS_SIZEOF_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_1;
+    mp_char.Header.Revision =
+        NDIS_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_1;
 #endif
 
     mp_char.MajorNdisVersion    = NDIS_MINIPORT_MAJOR_VERSION;
@@ -115,7 +119,10 @@ MPCancelSends(NDIS_HANDLE MiniportAdapterContext, PVOID CancelId)
 
         NdisAcquireSpinLock(&adapter->path[i].tx_path_lock);
 
-        /* Walk through the send wait queue and complete sends with matching Id */
+        /*
+         * Walk through the send wait queue and complete sends
+         * with matching Id
+         */
         do {
             if (IsQueueEmpty(&adapter->path[i].send_wait_queue)) {
                 break;
@@ -131,7 +138,8 @@ MPCancelSends(NDIS_HANDLE MiniportAdapterContext, PVOID CancelId)
                 if ((nb_list_id == CancelId) &&
                         (nb_list != adapter->path[i].sending_nbl)) {
                     /* This packet has the right CancelId */
-                    NET_BUFFER_LIST_STATUS(nb_list) = NDIS_STATUS_REQUEST_ABORTED;
+                    NET_BUFFER_LIST_STATUS(nb_list) =
+                        NDIS_STATUS_REQUEST_ABORTED;
                     adapter->nWaitSend--;
                     next_entry = entry->Next;
 

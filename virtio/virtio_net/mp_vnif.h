@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2019-2020 SUSE LLC
@@ -179,7 +179,7 @@ void VNIFV_SET_TX_RSP_CONS(struct _VNIF_ADAPTER *adapter, UINT path_id,
 void VNIFV_SET_RX_RSP_CONS(struct _VNIF_ADAPTER *adapter, UINT path_id,
                            UINT cons);
 void VNIFV_SET_TX_EVENT(struct _VNIF_ADAPTER *adapter, UINT path_id, UINT prod);
-void VNIFV_SET_RX_EVENT(struct _VNIF_ADAPTER *adapter, UINT path_id,UINT prod);
+void VNIFV_SET_RX_EVENT(struct _VNIF_ADAPTER *adapter, UINT path_id, UINT prod);
 void VNIFV_RX_RING_KICK_ALWAYS(void *path);
 void VNIFV_RX_NOTIFY(struct _VNIF_ADAPTER *adapter, UINT path_id,
                      UINT rcb_added_to_ring, UINT old);

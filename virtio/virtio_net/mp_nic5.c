@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -124,7 +124,8 @@ VNIFCopyPacket(TCB *tcb, PNDIS_BUFFER CurrentBuffer,
     }
 
     if (BytesCopied < ETH_MIN_PACKET_SIZE) {
-        /* This would be the case if the packet size is less than
+        /*
+         * This would be the case if the packet size is less than
          * ETH_MIN_PACKET_SIZE
          */
         NdisZeroMemory(pDest, ETH_MIN_PACKET_SIZE - BytesCopied);
@@ -241,8 +242,7 @@ vnif_build_sg_ex(PVNIF_ADAPTER adapter, TCB *tcb, PNDIS_BUFFER current_buffer,
 
         page_offset = (ULONG_PTR)virtual_addr & (PAGE_SIZE - 1);
 
-        if (((cur_len & (PAGE_SIZE - 1)) == 0)
-                /* && dest_len == 0 */ && page_offset == 0) {
+        if (((cur_len & (PAGE_SIZE - 1)) == 0) && page_offset == 0) {
             addr = MmGetPhysicalAddress(virtual_addr);
             tcb->sg[sg_idx].phys_addr = addr.QuadPart;
             tcb->sg[sg_idx].len = cur_len;
@@ -279,7 +279,8 @@ vnif_build_sg_ex(PVNIF_ADAPTER adapter, TCB *tcb, PNDIS_BUFFER current_buffer,
                     sg_idx++;
 
                     if (cur_len) {
-                        cur_tcb = (TCB *)RemoveHeadList(&adapter->path[0].tcb_free_list);
+                        cur_tcb = (TCB *)
+                            RemoveHeadList(&adapter->path[0].tcb_free_list);
                         cur_tcb->next = NULL;
                         pDest = cur_tcb->data;
                         dest_len = 0;
@@ -566,7 +567,8 @@ MPSendPackets(
 int
 VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
 {
-    /* this function is to be called within the dpc
+    /*
+     * This function is to be called within the dpc
      * to free those completed send packets.
      */
     PNDIS_PACKET TxPacketArray[NET_TX_RING_SIZE];
