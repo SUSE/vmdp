@@ -272,7 +272,8 @@ virtio_bln_balloon_pages(vbln_dev_extn_t *fdx)
     virtio_bln_ulong_t actual_pages;
 
     do {
-        /* Since this is on a work item, DPCs and higer will preempt
+        /*
+         *Since this is on a work item, DPCs and higer will preempt
          * so no need to yield.
          */
         actual_pages = 0;
@@ -324,7 +325,7 @@ virtio_bln_worker(PDEVICE_OBJECT fdo, PVOID context)
     if (context == NULL) {
         return;
     }
-    vwork_item = (virtio_bln_work_item_t * )context;
+    vwork_item = (virtio_bln_work_item_t *)context;
     fdx = vwork_item->fdx;
 
     virtio_bln_balloon_pages(fdx);
@@ -353,7 +354,7 @@ virtio_bln_dpc(PKDPC dpc, void *context, void *s1, void *s2)
         return;
     }
     fdx = (vbln_dev_extn_t *)context;
-    RPRINTK(DPRTL_DPC,("virtio_bln_dpc: in, power %x, pnp %x.\n",
+    RPRINTK(DPRTL_DPC, ("virtio_bln_dpc: in, power %x, pnp %x.\n",
         fdx->power_state, fdx->pnpstate));
 
     KeAcquireInStackQueuedSpinLock(&fdx->balloon_lock, &lh);
@@ -524,7 +525,7 @@ wdm_device_virtio_init(PFDO_DEVICE_EXTENSION fdx)
     uint64_t guest_features;
     NTSTATUS status = STATUS_SUCCESS;
 
-    RPRINTK(DPRTL_ON, ("%s %s: in\n",VDEV_DRIVER_NAME, __func__));
+    RPRINTK(DPRTL_ON, ("%s %s: in\n", VDEV_DRIVER_NAME, __func__));
     do {
         virtio_bln_dev_reset(fdx);
 
