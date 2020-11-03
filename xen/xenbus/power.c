@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -150,8 +150,7 @@ xenbus_dpc_shutdown(PKDPC dpc, void *context, void *s1, void *s2)
     if (dev_ext == NULL) {
         PRINTK(("** Powering down for shutdown, NULL.\n"));
         HYPERVISOR_shutdown(SHUTDOWN_poweroff);
-    }
-    else if (dev_ext->syspower == PowerActionShutdown) {
+    } else if (dev_ext->syspower == PowerActionShutdown) {
         PRINTK(("** Powering down for shutdown.\n"));
         HYPERVISOR_shutdown(SHUTDOWN_poweroff);
     } else if (dev_ext->syspower == PowerActionShutdownReset) {
@@ -264,15 +263,15 @@ FDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         unregister_xenbus_watch(&vscsi_watch);
         unregister_xenbus_watch(&vusb_watch);
 
-        /* Since we are hibernating, we need to give back any ballooned
+        /*
+         * Since we are hibernating, we need to give back any ballooned
          * pages to Windows else the hibernate will hang.
          */
         balloon_do_reservation(BALLOON_MAX_RESERVATION);
-    }
-    else if (minor_func == IRP_MN_SET_POWER &&
-             powerType == SystemPowerState &&
-             powerState.SystemState == PowerSystemWorking &&
-             fdx->power_state == PowerSystemHibernate) {
+    } else if (minor_func == IRP_MN_SET_POWER &&
+            powerType == SystemPowerState &&
+            powerState.SystemState == PowerSystemWorking &&
+            fdx->power_state == PowerSystemHibernate) {
         RPRINTK(DPRTL_ON, ("FDO_Power: srt %p, [0] %p, [1] %p, irql %d\n",
                            fdx, fdx->info[0], fdx->info[1],
                            KeGetCurrentIrql()));
@@ -395,7 +394,8 @@ PDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
                         ("    PDO_Power: Halting irp %p, %p, %s\n",
                          Irp, pdx->frontend_dev, pdx->Nodename));
 
-                /* We'll try once from here.  If still outstanding
+                /*
+                 * We'll try once from here.  If still outstanding
                  * resources, we will try from FDO_Power.
                  */
                 ioctl_data.cmd = PV_SUSPEND;

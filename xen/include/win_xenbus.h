@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -63,7 +63,8 @@
 #define SHUTDOWN_POWEROFF   SHUTDOWN_poweroff
 #define SHUTDOWN_REBOOT     SHUTDOWN_reboot
 #define SHUTDOWN_SUSPEND    SHUTDOWN_suspend
-/* Code 3 is SHUTDOWN_CRASH, which we don't use because the domain can only
+/*
+ *Code 3 is SHUTDOWN_CRASH, which we don't use because the domain can only
  * report a crash, not be instructed to crash!
  * HALT is the same as POWEROFF, as far as we're concerned.  The tools use
  * the distinction when we return the reason code to them.

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -35,7 +35,8 @@ static uint32_t active_evtchns;
 static uint32_t masked_evtchns;
 static uint64_t int_count[MAX_EVTCHN_PORTS] = {0};
 
-/* Interrupt handling:
+/*
+ * Interrupt handling:
  * Because only the event_channel has allocate a shared irq
  * for all child devices, child devices cannot set their own
  * ISR. Different from Linux situation, in Windows, we use Dpc
@@ -123,7 +124,8 @@ find_free_evtchn()
     return MAX_EVTCHN;
 }
 
-/* Registered Dpc routine will receive 3 additional parameters:
+/*
+ * Registered Dpc routine will receive 3 additional parameters:
  * The first is the 3rd argument dpccontext passed to register_dpc
  * the second is the 4th argument context the caller registered in
  * the register_dpc. The third is the device extension of xenbus,
@@ -145,7 +147,8 @@ register_dpc_to_evtchn(ULONG evtchn,
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
-    /* system1 must be non NULL for disks and null for all other devices.
+    /*
+     * system1 must be non NULL for disks and null for all other devices.
      * Disks do not have dpcs created for them.
      * Disks with a dpcroutine and context just need their routine called.
      * Disks without a dpcroutine have the interrupt and will schedule
@@ -156,8 +159,7 @@ register_dpc_to_evtchn(ULONG evtchn,
         if (system1 != NULL) {
             evtchns[evtchn].u.routine = dpcroutine;
             evtchns[evtchn].context = dpccontext;
-        }
-        else {
+        } else {
             dpc = ExAllocatePoolWithTag(NonPagedPoolNx,
                 sizeof(KDPC), XENBUS_POOL_TAG);
             if (dpc == NULL) {
@@ -263,7 +265,8 @@ uint32_t cpu_ints_claimed;
 #define INC_CPU_INTS_CLAIMED()
 #endif
 
-/* We use critical section to do the real ISR thing, so we can
+/*
+ * We use critical section to do the real ISR thing, so we can
  * ``generate'' our own interrupt
  */
 
@@ -314,7 +317,8 @@ BOOLEAN EvtchnISR(void *context)
             if (evtchn->wants_int_indication) {
                 *(evtchn->wants_int_indication) = 1;
 
-                /* If the disk registered a dpc, call it.  Otherwise
+                /*
+                 * If the disk registered a dpc, call it.  Otherwise
                  * return and the disk will process at interrupt time.
                  */
                 if (evtchn->u.routine) {

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
@@ -85,7 +85,8 @@ xenbus_ioctl(PFDO_DEVICE_EXTENSION fdx, PIRP Irp)
         IoSetCancelRoutine (Irp, xenbus_cancel_ioctl);
         if (Irp->Cancel) {
             if (IoSetCancelRoutine (Irp, NULL) != NULL) {
-                /* Since we were able to clear the cancel routine, then
+                /*
+                 * Since we were able to clear the cancel routine, then
                  * we can return canceled.  Otherwise the cancel routine
                  * will take care of it.
                  */
@@ -99,7 +100,7 @@ xenbus_ioctl(PFDO_DEVICE_EXTENSION fdx, PIRP Irp)
         InsertTailList(&fdx->shutdown_requests, &ioctl->list);
         Irp->Tail.Overlay.DriverContext[3] = ioctl;
         XenReleaseSpinLock(&fdx->qlock, lh);
-        status = STATUS_PENDING;;
+        status = STATUS_PENDING;
         break;
     }
 

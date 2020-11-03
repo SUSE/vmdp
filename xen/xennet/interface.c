@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -485,13 +485,12 @@ again:
         goto abort_transaction;
     }
 
-    /* Setting "feature-gso-tcpv4" causes Hot replace D3 power test to
+    /*
+     * Setting "feature-gso-tcpv4" causes Hot replace D3 power test to
      * blue screen.
      */
 
-    /*
-    * this field is for backward compatibility
-    */
+    /* this field is for backward compatibility */
     DPR_INIT(("VNIF: xenbus writing copy-delivery-offset.\n"));
     err = xenbus_printf(xbt, Adapter->vif.node_name,
                         "copy-delivery-offset", "%u", 0);
@@ -565,7 +564,7 @@ VNIFInitRxGrants(PVNIF_ADAPTER adapter)
     }
 
     NdisInitializeListHead(&adapter->RecvFreeList);
-    for (i = 0; i < adapter->num_rcb /*VNIF_RCB_ARRAY_SIZE*/; i++) {
+    for (i = 0; i < adapter->num_rcb; i++) {
         rcb = adapter->RCBArray[i];
         ref = gnttab_claim_grant_reference(&adapter->vif.gref_rx_head);
         if ((signed short)ref < 0) {

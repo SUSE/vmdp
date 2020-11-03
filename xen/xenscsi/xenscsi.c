@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2012-2020 SUSE LLC
@@ -82,22 +82,21 @@ XenScsiIoctl(XENSCSI_DEVICE_EXTENSION *dev_ext, pv_ioctl_t data);
 static uint32_t g_interrupt_count;
 
 
-/*++
-
-Routine Description:
-
-    This routine initializes the XenScsi Storage class driver.
-
-Arguments:
-
-    DriverObject - Pointer to driver object created by system.
-    RegistryPath - Pointer to the name of the services node for this driver.
-
-Return Value:
-
-    The function value is the final status from the initialization operation.
-
---*/
+/*
+ * Routine Description:
+ *
+ *  This routine initializes the XenScsi Storage class driver.
+ *
+ * Arguments:
+ *
+ *     DriverObject - Pointer to driver object created by system.
+ *     RegistryPath - Pointer to the name of the services node for this driver.
+ *
+ * Return Value:
+ *
+ *     The function value is the final status from the initialization operation.
+ *
+ */
 
 ULONG
 XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
@@ -144,7 +143,8 @@ XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
     hwInitializationData.HwStartIo = XenScsiStartIo;
     hwInitializationData.HwBuildIo = XenScsiBuildIo;
 
-    /* For StorPort MapBuffers is set to STOR_MAP_NON_READ_WRITE_BUFFERS so
+    /*
+     * For StorPort MapBuffers is set to STOR_MAP_NON_READ_WRITE_BUFFERS so
      * that virtual addresses are only generated for non read/write requests.
      */
     hwInitializationData.MapBuffers = STOR_MAP_NON_READ_WRITE_BUFFERS;
@@ -450,7 +450,8 @@ XenScsiPassiveInit(XENSCSI_DEVICE_EXTENSION *dev_ext)
         return TRUE;
     }
 
-    /* When coming up from hibernate, we need to do the claim since
+    /*
+     * When coming up from hibernate, we need to do the claim since
      * we disconnected form the backend.
      */
     if (dev_ext->op_mode == OP_MODE_NORMAL
@@ -474,14 +475,16 @@ XenScsiXenbusInit(XENSCSI_DEVICE_EXTENSION *dev_ext)
     RPRINTK(DPRTL_INIT, ("XenScsiXenbusInit - op_mode %x, state %x\n",
         dev_ext->op_mode, dev_ext->state));
 
-    /* Need to init xenbus if xenscsi has the device or we are doing
+    /*
+     * Need to init xenbus if xenscsi has the device or we are doing
      * a crashdump or hybernate.  If xenscsi has the the device mem
      * will contain a value.  If xenbus has the device it will be null.
      */
     if (dev_ext->mem != NULL
             || dev_ext->op_mode == OP_MODE_HIBERNATE
             || dev_ext->op_mode == OP_MODE_CRASHDUMP) {
-        /* When restarting from hibernate etc. we always need to
+        /*
+         * When restarting from hibernate etc. we always need to
          * init the shared info in OP_MODE_NORMAL.
          * Xenbus has already done the shared init when it has the device.
          */
@@ -537,7 +540,8 @@ XenScsiClaim(XENSCSI_DEVICE_EXTENSION *dev_ext)
     struct vscsi_front_info *info;
     NTSTATUS status;
 
-    /* The info array of pointers comes form xenbus and all pointers
+    /*
+     * The info array of pointers comes form xenbus and all pointers
      * will be null to start with but will be filled out already
      * when hibernating.
      */
@@ -555,7 +559,8 @@ XenScsiClaim(XENSCSI_DEVICE_EXTENSION *dev_ext)
             XenScsiIoctl, XenScsiIoctl);
         if (status == STATUS_NO_MORE_ENTRIES
                 || status == STATUS_RESOURCE_IN_USE) {
-            /* There are no more devices to claim or we are still installing
+            /*
+             * There are no more devices to claim or we are still installing
              * so return success.
              */
             RPRINTK(DPRTL_ON,
@@ -586,7 +591,8 @@ XenScsiClaim(XENSCSI_DEVICE_EXTENSION *dev_ext)
         status = vscsi_probe(dev_ext->info);
         if (status != STATUS_SUCCESS) {
             PRINTK(("  vscsi_probe failed: %x\n", status));
-            /* We cannot release the device because the next time through
+            /*
+             * We cannot release the device because the next time through
              * the loop we would just try to claim it again.
              */
             break;
@@ -619,7 +625,8 @@ XenScsiInitHiberCrashInfo(XENSCSI_DEVICE_EXTENSION *dev_ext,
 {
     uint32_t j;
 
-    /* The info array of pointers comes form xenbus and all pointers
+    /*
+     * The info array of pointers comes form xenbus and all pointers
      * will be null to start with but will be filled out already
      * when hibernating.
      */
@@ -634,7 +641,8 @@ XenScsiInitHiberCrashInfo(XENSCSI_DEVICE_EXTENSION *dev_ext,
             info->shadow[j].req.nr_segments = 0;
         }
 
-        /* In hibernate mode we get a new dev_ext, but we are using
+        /*
+         * In hibernate mode we get a new dev_ext, but we are using
          * the original info.  Replace the original dev_ext in info
          * with the one used to hibernate.
          */
@@ -823,10 +831,10 @@ XenScsiVerifySGL(xenscsi_srb_extension *srb_ext, ULONG tlen)
 
     len = 0;
     for (i = 0; i < srb_ext->sgl->NumberOfElements; i++) {
-        if ((((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart)
-                & (PAGE_SIZE - 1)
-            && ((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart)
-                & 0x1ff)) {
+        if ((((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart) &
+                (PAGE_SIZE - 1)
+            && ((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart) &
+                0x1ff)) {
             DPRINTK(DPRTL_ON,
                 ("XenScsiVerifySGL va %p:SGL element %x not aligned;%x.\n",
                 srb_ext->va, i,
@@ -1004,8 +1012,8 @@ XenScsiStartReadWrite(XENSCSI_DEVICE_EXTENSION *dev_ext,
 
     if (srb_ext->sys_sgl) {
         /* If not on a good xen boundry, double buffer. */
-        if ((((uint32_t)srb_ext->sys_sgl->List[0].PhysicalAddress.QuadPart)
-                    & 0x1ff)) {
+        if ((((uint32_t)srb_ext->sys_sgl->List[0].PhysicalAddress.QuadPart) &
+                0x1ff)) {
             DPRINTK(DPRTL_MM,
                 ("%x  Need to alloc: srb %p, op %x, addr %x, len %d irql %d\n",
                 Srb->TargetId,
@@ -1038,7 +1046,8 @@ XenScsiStartReadWrite(XENSCSI_DEVICE_EXTENSION *dev_ext,
                     xenscsi_cp_from_sa(srb_ext->sa, srb_ext->sys_sgl,
                         srb_ext->va);
 
-                    /* Rather than doing xenscsi_unmap_system_address(
+                    /*
+                     * Rather than doing xenscsi_unmap_system_address(
                      * srb_ext->sa, srb_ext->sys_sgl); here, just let the
                      * normal xenscsi_save_system_address() and
                      * xenscsi_unmap_system_addresses() take care of it.
@@ -1144,7 +1153,8 @@ XenScsiInterruptPoll(XENSCSI_DEVICE_EXTENSION *dev_ext)
                         KeGetCurrentProcessorNumber(),
                         KeGetCurrentIrql()));
 
-    /* If not doing a hibernate or crash dump, let xenbus handle the
+    /*
+     * If not doing a hibernate or crash dump, let xenbus handle the
      * interrupt and call us back.
      */
     claimed = FALSE;
@@ -1245,7 +1255,8 @@ XenScsiAdapterControl (
             if (dev_ext->info) {
                 vscsi_quiesce(dev_ext->info);
                 if (dev_ext->state == UNLOADING) {
-                    /* It's safe to free resources since we are not
+                    /*
+                     * It's safe to free resources since we are not
                      * setting up for a hibernate or xenbus has the
                      * device and we will go through the relase and
                      * claim process.
@@ -1356,7 +1367,8 @@ XenScsiFreeResource(struct vscsi_front_info *info, uint32_t info_idx,
     release_data.type = vscsi;
     dev_ext = info->xbdev;
     if (dev_ext) {
-        /* We don't need to unregister watches here.  If we get here due
+        /*
+         * We don't need to unregister watches here.  If we get here due
          * to a shutdown/hibernate/crashdump, the watch has already been
          * unregistered in disconnect_backend.  It we get here from a
          * resume ,we didn't need to unregister the watches.
@@ -1405,7 +1417,8 @@ XenScsiResume(XENSCSI_DEVICE_EXTENSION *dev_ext, uint32_t suspend_canceled)
 
     g_interrupt_count = 0;
     if (suspend_canceled) {
-        /* We were only suspneded long enough to do a checkpoint. Just
+        /*
+         * We were only suspneded long enough to do a checkpoint. Just
          * mark the state as working and continue as if nothing happened.
          */
         dev_ext->state = WORKING;
@@ -1428,7 +1441,8 @@ XenScsiSuspend(XENSCSI_DEVICE_EXTENSION *dev_ext, uint32_t reason)
     if (reason == SHUTDOWN_suspend) {
         XENSCSI_SET_FLAG(dev_ext->xenscsi_locks, (BLK_RSU_L | BLK_SIO_L));
 
-        /* We won't grab the StartIoLock so that we stay at irql 0.
+        /*
+         * We won't grab the StartIoLock so that we stay at irql 0.
          * Let the state prevent us from doing I/O until we have resumed
          * and have finished initalizing.
          */

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -518,7 +518,8 @@ xenbus_xen_shared_init(uint64_t mmio, uint8_t *mem, uint32_t mmio_len,
                            shared_info_area));
         shared_info_area->vcpu_info[0].evtchn_upcall_mask = 0;
 
-        /* Save off gfdo at the end of share_info_area.  We can then
+        /*
+         * Save off gfdo at the end of share_info_area.  We can then
          * retrieve it during a hibernate or crashdump.
          */
         xenbus_shared_info = (xenbus_shared_info_t *)(shared_info_area + 1);

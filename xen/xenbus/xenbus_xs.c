@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -107,8 +107,7 @@ XenbusDpcRoutine(
             xenbus_watch_work_scheduled = 1;
             if (DpcContext == NULL) {
                 PRINTK(("XenbusDpcRoutine: DpcContext is NULL\n"));
-            }
-            else {
+            } else {
                 xenbus_watch_work_item = IoAllocateWorkItem(
                     (PDEVICE_OBJECT)DpcContext);
                 if (xenbus_watch_work_item != NULL) {
@@ -133,7 +132,7 @@ get_error(const char *errorstring)
 {
     unsigned int i, len;
 
-    len = (sizeof(xsd_errors)/sizeof(xsd_errors[0]));
+    len = (sizeof(xsd_errors) / sizeof(xsd_errors[0]));
     for (i = 0; i < len; i++) {
         if (strcmp(errorstring, xsd_errors[i].errstring) == 0) {
             break;
@@ -391,7 +390,7 @@ xs_talkv(struct xenbus_transaction t,
 
     for (i = 0; i < num_vecs; i++) {
         DPRINTK(DPRTL_XS, ("xs_talkv: xb_write iovec\n"));
-        err = xb_write(iovec[i].iov_base, iovec[i].iov_len);;
+        err = xb_write(iovec[i].iov_base, iovec[i].iov_len);
         if (err) {
             XENBUS_CLEAR_FLAG(xenbus_wait_events, XS_REQUEST);
             XENBUS_CLEAR_FLAG(xenbus_locks, X_XSL);
@@ -585,7 +584,8 @@ xenbus_exists(struct xenbus_transaction t,
     return 1;
 }
 
-/* Get the value of a single file.
+/*
+ * Get the value of a single file.
  * Returns a kmalloced value: call free() on it after use.
  * len indicates length in bytes.
  */
@@ -612,7 +612,8 @@ xenbus_read(struct xenbus_transaction t,
 }
 
 
-/* Write the value of a single file.
+/*
+ * Write the value of a single file.
  * Returns -err on failure.
  */
 int
@@ -634,7 +635,7 @@ xenbus_write(struct xenbus_transaction t,
     iovec[1].iov_len = strlen(string);
 
     ret = xs_error(xs_talkv(t, XS_WRITE, iovec,
-        sizeof(iovec)/sizeof(iovec[0]), NULL));
+        sizeof(iovec) / sizeof(iovec[0]), NULL));
     ExFreePool(path);
     return ret;
 }
@@ -675,7 +676,8 @@ xenbus_rm(struct xenbus_transaction t, const char *dir, const char *node)
 }
 
 
-/* Start a transaction: changes by others will not be seen during this
+/*
+ * Start a transaction: changes by others will not be seen during this
  * transaction, and changes will not be visible to others until end.
  */
 int
@@ -716,7 +718,8 @@ xenbus_transaction_start(struct xenbus_transaction *t)
     return 0;
 }
 
-/* End a transaction.
+/*
+ * End a transaction.
  * If abandon is true, transaction is discarded instead of committed.
  */
 int
@@ -804,7 +807,7 @@ xs_watch(const char *path, const char *token)
     iov[1].iov_len = strlen(token) + 1;
 
     return xs_error(xs_talkv(XBT_NIL, XS_WATCH, iov,
-        sizeof(iov)/sizeof(iov[0]), NULL));
+        sizeof(iov) / sizeof(iov[0]), NULL));
 }
 
 static int
@@ -818,7 +821,7 @@ xs_unwatch(const char *path, const char *token)
     iov[1].iov_len = strlen(token) + 1;
 
     return xs_error(xs_talkv(XBT_NIL, XS_UNWATCH, iov,
-        sizeof(iov)/sizeof(iov[0]), NULL));
+        sizeof(iov) / sizeof(iov[0]), NULL));
 }
 
 static struct xenbus_watch *
@@ -1056,7 +1059,8 @@ xb_read_fast(void *buf, uint32_t offset, unsigned int len)
     while (len != 0) {
         src = xenbus_get_input_chunk(cons, prod, intf->rsp, &avail);
         if (avail == 0) {
-            /* This can only happen if (prod - cons) < len and
+            /*
+             * This can only happen if (prod - cons) < len and
              * this shouldn't happen if the backend only advances
              * after writing the whole chunk.  But if it does happen
              * just returning will eventually cause a re-read and
@@ -1279,7 +1283,8 @@ xenbus_suspend(PFDO_DEVICE_EXTENSION fdx, uint32_t reason)
     xenbus_prepare_shared_for_init(fdx, SHARED_INFO_NOT_INITIALIZED);
 
     if (pvctrl_flags & XENBUS_PVCTRL_MIGRATE_DO_INTERRUPTS) {
-        /* Disconnect the interrupt so we won't be called on resume before we
+        /*
+         * Disconnect the interrupt so we won't be called on resume before we
          * can get everything reinitialized.
          */
         PRINTK(("xenbus_suspend: IoDisconnectInterrupt\n"));
@@ -1393,7 +1398,8 @@ xenbus_shutdown(PFDO_DEVICE_EXTENSION fdx, uint32_t reason)
     RPRINTK(DPRTL_ON, ("==> xenbus_shutdown: irql %x\n",
                        KeGetCurrentIrql()));
 
-    /* Check the registry to see if anyone expects to be notified of a
+    /*
+     * Check the registry to see if anyone expects to be notified of a
      * shutdown via the registry.
      */
     notify = XENBUS_UNDEFINED_SHUTDOWN_NOTIFICATION;
@@ -1448,7 +1454,8 @@ xenbus_shutdown(PFDO_DEVICE_EXTENSION fdx, uint32_t reason)
                 IoCompleteRequest(irp, IO_NO_INCREMENT);
                 XenAcquireSpinLock(&fdx->qlock, &lh);
             } else {
-                /* Cancel routine will run as soon as we release the lock.
+                /*
+                 * Cancel routine will run as soon as we release the lock.
                  * So let it complete the request and free the record.
                  */
                 RPRINTK(DPRTL_ON,
@@ -1690,7 +1697,8 @@ shutdown_handler(struct xenbus_watch *watch,
     }
 
     if (str[0] != '\0') {
-        /* By writing to the control, the watch will fire again.
+        /*
+         * By writing to the control, the watch will fire again.
          * Don't write the null string if it is already NULL.
          */
         xenbus_write(xbt, "control", "shutdown", "");

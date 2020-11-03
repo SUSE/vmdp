@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -30,36 +30,36 @@
 
 DLLEXPORT extern PUCHAR hypercall_page;
 
-#define HYPERCALL_EVENT_CHANNEL_OP  __HYPERVISOR_event_channel_op*32
-#define HYPERCALL_SET_GDT           __HYPERVISOR_set_gdt*32
-#define HYPERCALL_STACK_SWITCH      __HYPERVISOR_stack_switch*32
-#define HYPERCALL_SCHED_OP          __HYPERVISOR_sched_op*32
-#define HYPERCALL_SET_TIMER         __HYPERVISOR_set_timer_op*32
-#define HYPERCALL_SET_DEBUGREG      __HYPERVISOR_set_debugreg*32
-#define HYPERCALL_MEMORY_OP         __HYPERVISOR_memory_op*32
-#define HYPERCALL_MULTICALL         __HYPERVISOR_multicall*32
-#define HYPERCALL_ACM               __HYPERVISOR_acm_op*32
-#define HYPERCALL_XEN_VERSION       __HYPERVISOR_xen_version*32
-#define HYPERCALL_PHYSDEV           __HYPERVISOR_physdev_op*32
-#define HYPERCALL_VM_ASSIST         __HYPERVISOR_vm_assist*32
-#define HYPERCALL_NMI               __HYPERVISOR_nmi_op*32
-#define HYPERCALL_HVM               __HYPERVISOR_hvm_op*32
-#define HYPERCALL_CALLBACK          __HYPERVISOR_callback_op*32
-#define HYPERCALL_XENOPROF          __HYPERVISOR_xenoprof_op*32
-#define HYPERCALL_SET_TRAP_TABLE    __HYPERVISOR_set_trap_table*32
-#define HYPERCALL_MMU_UPDATE        __HYPERVISOR_mmu_update*32
-#define HYPERCALL_MMUEXT_OP         __HYPERVISOR_mmuext_op*32
-#define HYPERCALL_SET_CALLBACKS     __HYPERVISOR_set_callbacks*32
-#define HYPERCALL_FPU_TASKSWITCH    __HYPERVISOR_fpu_taskswitch*32
-#define HYPERCALL_GET_DEBUGREG      __HYPERVISOR_get_debugreg*32
-#define HYPERCALL_UPDATE_DESCRIPTOR __HYPERVISOR_update_descriptor*32
-#define HYPERCALL_CONSOLE_IO        __HYPERVISOR_console_io*32
-#define HYPERCALL_PHYSDEV_OP_COMPAT __HYPERVISOR_physdev_op_compat*32
-#define HYPERVISOR_GRANT_TABLE_OP   __HYPERVISOR_grant_table_op*32
-#define HYPERCALL_VCPU_OP           __HYPERVISOR_vcpu_op*32
-#define HYPERCALL_SCHED_OP_COMPAT   __HYPERVISOR_sched_op_compat*32
+#define HYPERCALL_EVENT_CHANNEL_OP  __HYPERVISOR_event_channel_op * 32
+#define HYPERCALL_SET_GDT           __HYPERVISOR_set_gdt * 32
+#define HYPERCALL_STACK_SWITCH      __HYPERVISOR_stack_switch * 32
+#define HYPERCALL_SCHED_OP          __HYPERVISOR_sched_op * 32
+#define HYPERCALL_SET_TIMER         __HYPERVISOR_set_timer_op * 32
+#define HYPERCALL_SET_DEBUGREG      __HYPERVISOR_set_debugreg * 32
+#define HYPERCALL_MEMORY_OP         __HYPERVISOR_memory_op * 32
+#define HYPERCALL_MULTICALL         __HYPERVISOR_multicall * 32
+#define HYPERCALL_ACM               __HYPERVISOR_acm_op * 32
+#define HYPERCALL_XEN_VERSION       __HYPERVISOR_xen_version * 32
+#define HYPERCALL_PHYSDEV           __HYPERVISOR_physdev_op * 32
+#define HYPERCALL_VM_ASSIST         __HYPERVISOR_vm_assist * 32
+#define HYPERCALL_NMI               __HYPERVISOR_nmi_op * 32
+#define HYPERCALL_HVM               __HYPERVISOR_hvm_op * 32
+#define HYPERCALL_CALLBACK          __HYPERVISOR_callback_op * 32
+#define HYPERCALL_XENOPROF          __HYPERVISOR_xenoprof_op * 32
+#define HYPERCALL_SET_TRAP_TABLE    __HYPERVISOR_set_trap_table * 32
+#define HYPERCALL_MMU_UPDATE        __HYPERVISOR_mmu_update * 32
+#define HYPERCALL_MMUEXT_OP         __HYPERVISOR_mmuext_op * 32
+#define HYPERCALL_SET_CALLBACKS     __HYPERVISOR_set_callbacks * 32
+#define HYPERCALL_FPU_TASKSWITCH    __HYPERVISOR_fpu_taskswitch * 32
+#define HYPERCALL_GET_DEBUGREG      __HYPERVISOR_get_debugreg * 32
+#define HYPERCALL_UPDATE_DESCRIPTOR __HYPERVISOR_update_descriptor * 32
+#define HYPERCALL_CONSOLE_IO        __HYPERVISOR_console_io * 32
+#define HYPERCALL_PHYSDEV_OP_COMPAT __HYPERVISOR_physdev_op_compat * 32
+#define HYPERVISOR_GRANT_TABLE_OP   __HYPERVISOR_grant_table_op * 32
+#define HYPERCALL_VCPU_OP           __HYPERVISOR_vcpu_op * 32
+#define HYPERCALL_SCHED_OP_COMPAT   __HYPERVISOR_sched_op_compat * 32
 #define HYPERCALL_EVENT_CHANNEL_OP_COMPAT                                   \
-                                    __HYPERVISOR_event_channel_op_compat*32
+                                    __HYPERVISOR_event_channel_op_compat * 32
 /*
  * We add a local variable to circumvent problems brought by inline assembly.
  * when hypercall_page is imported, the code cl generated for ``__asm add eax,
@@ -301,15 +301,6 @@ HYPERVISOR_event_channel_op(
     int j;
 
     return _hypercall2(hpg, HYPERCALL_EVENT_CHANNEL_OP, _cmd, arg);
-#if 0
-    if (unlikely(rc == -ENOSYS)) {
-        struct evtchn_op op;
-        op.cmd = cmd;
-        memcpy(&op.u, arg, sizeof(op.u));
-        rc = _hypercall1(hpg, HYPERCALL_EVENT_CHANNEL_OP_COMPAT, &op);
-        memcpy(arg, &op.u, sizeof(op.u));
-    }
-#endif
 }
 
 static __inline xen_long_t

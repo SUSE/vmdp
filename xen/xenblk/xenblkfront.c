@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -48,7 +48,8 @@ static void kick_pending_request_queues(struct blkfront_info *);
 static void blkif_restart_queue(IN PDEVICE_OBJECT DevObject, IN PVOID Context);
 static void blkif_completion(struct blkfront_info *info, unsigned long id);
 
-/* Entry point to this code when a new device is created.  Allocate the basic
+/*
+ * Entry point to this code when a new device is created.  Allocate the basic
  * structures and the ring buffer for communication with the backend, and
  * inform the backend of the appropriate details for those.  Switch to
  * Initialised state.
@@ -124,7 +125,8 @@ blkfront_probe(struct blkfront_info *info)
              info->nodename, KeGetCurrentIrql(),
              KeGetCurrentProcessorNumber()));
 
-    /* We don't actually want to wait any time because we may be
+    /*
+     * We don't actually want to wait any time because we may be
      * at greater than PASSIVE_LEVEL.
      */
     while (1) {
@@ -271,7 +273,7 @@ xenblk_get_xenstore_max_segs(struct blkfront_info *info)
     RPRINTK(DPRTL_ON, ("  BLKIF_MAX_INDIRECT_PAGES_PER_REQUEST %u\n",
                        BLKIF_MAX_INDIRECT_PAGES_PER_REQUEST));
     RPRINTK(DPRTL_ON, ("  BLK_MAX_RING_PAGE_ORDER %u\n",
-                       BLK_MAX_RING_PAGE_ORDER ));
+                       BLK_MAX_RING_PAGE_ORDER));
     RPRINTK(DPRTL_ON, ("  BLK_MAX_RING_PAGES %u\n",
                        BLK_MAX_RING_PAGES));
     RPRINTK(DPRTL_ON, ("  BLK_MAX_RING_SIZE %u\n",
@@ -426,14 +428,15 @@ xenblk_dump_ring_info(struct blkfront_info *info)
     PRINTK(("  __RING_SIZE %u\n",
             (unsigned int)__WIN_RING_SIZE(info->ring.sring, PAGE_SIZE)));
     PRINTK(("  __RING_SIZE * 4 %u\n",
-            (unsigned int)__WIN_RING_SIZE(info->ring.sring, 4*PAGE_SIZE)));
+            (unsigned int)__WIN_RING_SIZE(info->ring.sring, 4 * PAGE_SIZE)));
     PRINTK(("  __RD32(%x) / %u\n", (4096 -
           (ULONG_PTR)&(info->ring.sring)->ring + (ULONG_PTR)(info->ring.sring)),
             sizeof((info->ring.sring)->ring[0])));
 
     RPRINTK(DPRTL_ON, ("sring_t %x, req %x, rsp %x, ring %x.\n",
         sizeof(blkif_sring_t), sizeof(blkif_request_t),
-        sizeof(blkif_response_t), __WIN_RING_SIZE(info->ring.sring, PAGE_SIZE)));
+        sizeof(blkif_response_t), __WIN_RING_SIZE(info->ring.sring,
+        PAGE_SIZE)));
     RPRINTK(DPRTL_FRNT, ("off ring %x, h %x, id %x, s %x, seg %x\n",
         offsetof(blkif_sring_t, ring),
         offsetof(blkif_request_t, handle),
@@ -620,8 +623,7 @@ fail:
 }
 
 
-/* Callback received when the backend's state changes.
- */
+/* Callback received when the backend's state changes. */
 static XenbusState
 backend_changed(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
@@ -666,7 +668,8 @@ backend_changed(struct xenbus_watch *watch,
         break;
     case XenbusStateClosed:
         if (info && info->nodename) {
-            PRINTK(("blkfront: %s backend_changed to closed\n",info->nodename));
+            PRINTK(("blkfront: %s backend_changed to closed\n",
+                    info->nodename));
         } else {
             PRINTK(("blkfront: backend_changed to closed\n"));
         }
@@ -684,7 +687,8 @@ backend_changed(struct xenbus_watch *watch,
         connect(info);
 
         XENBLK_CLEAR_FLAG(info->xenblk_locks, (BLK_CON_L | BLK_INT_L));
-        XENBLK_CLEAR_FLAG(info->cpu_locks,(1 << KeGetCurrentProcessorNumber()));
+        XENBLK_CLEAR_FLAG(info->cpu_locks,
+                          (1 << KeGetCurrentProcessorNumber()));
         break;
 
     case XenbusStateClosing:
@@ -716,8 +720,10 @@ backend_changed(struct xenbus_watch *watch,
                 ("blkfront:backend_changed is closing - switch to closed.\n"));
         xenbus_switch_state(info->nodename, XenbusStateClosed);
 
-        /* Since we unregistered the watch and switched the state to closed,
-         * do any cleanup up work here. */
+        /*
+         * Since we unregistered the watch and switched the state to closed,
+         * do any cleanup up work here.
+         */
         found = 0;
         for (i = 0; i < info->ring_size; i++) {
             if (info->ring_refs[i] != GRANT_INVALID_REF) {
@@ -747,7 +753,8 @@ backend_changed(struct xenbus_watch *watch,
 }
 
 
-/* Invoked when the backend is finally 'ready' (and has told produced
+/*
+ * Invoked when the backend is finally 'ready' (and has told produced
  * the details about the physical device - #sectors, size, etc).
  */
 static void
@@ -783,7 +790,8 @@ connect(struct blkfront_info *info)
             RPRINTK(DPRTL_FRNT, ("  updating sectors from %lld to %lld\n",
                      info->sectors, sectors));
             info->sectors = sectors;
-            /* A BusChangeDetected notification doesn't trigger a
+            /*
+             * A BusChangeDetected notification doesn't trigger a
              * SCSIOP_READ_CAPACITY to let the upper layers know
              * of the change.  We will leave that to diskpart or
              * Disk Management to do a rescan to reflect the change.
@@ -1129,7 +1137,8 @@ do_blkif_ind_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
     InterlockedIncrement(&info->req);
 #endif
 
-    /* Check if there are virtual and system addresses that need to be
+    /*
+     * Check if there are virtual and system addresses that need to be
      * freed and unmapped now that we are at DPC time.
      */
     xenblk_unmap_system_addresses(info);
@@ -1335,7 +1344,8 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
     InterlockedIncrement(&info->req);
 #endif
 
-    /* Check if there are virtual and system addresses that need to be
+    /*
+     * Check if there are virtual and system addresses that need to be
      * freed and unmapped now that we are at DPC time.
      */
     xenblk_unmap_system_addresses(info);
@@ -1391,7 +1401,8 @@ XenBlkCompleteRequest(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
 #endif
         }
 
-        /* Save the virtual and system addresses so that they can be
+        /*
+         * Save the virtual and system addresses so that they can be
          * freed and unmapped at DPC time rather than at interrupt time.
          */
         xenblk_save_system_address(info, srb_ext);
@@ -1463,9 +1474,9 @@ blkif_complete_int(struct blkfront_info *info)
 
                 blkif_completion(info, id);
                 /*
-                blkif_completion(&info->shadow[id]);
-                    is done right after GET_ID_FROM_FREE_LIST
-                */
+                 * blkif_completion(&info->shadow[id]);
+                 * is done right after GET_ID_FROM_FREE_LIST
+                 */
 
 #ifdef DBG
                 if (info->shadow[id].seq > info->cseq) {
@@ -1477,8 +1488,7 @@ blkif_complete_int(struct blkfront_info *info)
                         (SCSI_REQUEST_BLOCK *)info->shadow[id].request);
                     o++;
 
-                }
-                else if (o) {
+                } else if (o) {
                     DPRINTK(DPRTL_FRNT,
                         ("XENBLK: sequence, %x - %x: req %p, status %x, o %d\n",
                         info->shadow[id].seq, info->cseq,
@@ -1645,7 +1655,8 @@ blkif_disconnect_backend(XENBLK_DEVICE_EXTENSION *dev_ext)
     for (i = 0; i < dev_ext->max_targets; i++) {
         info = dev_ext->info[i];
         if (info) {
-            /* Since we are doing the disconnect, unregister the watch so
+            /*
+             * Since we are doing the disconnect, unregister the watch so
              * we wont get a callback after we have freed resources.
              */
             unregister_xenbus_watch(&info->watch);

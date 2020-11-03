@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -345,7 +345,7 @@ PDOQueryDeviceCaps(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     RtlCopyMemory(
       devcap->DeviceState,
       parentcap.DeviceState,
-      (PowerSystemShutdown+1) * sizeof(DEVICE_POWER_STATE));
+      (PowerSystemShutdown + 1) * sizeof(DEVICE_POWER_STATE));
 
     RPRINTK(DPRTL_PNP,
             ("PDOQueryDeviceCaps default DeviceState 1 %x, 2 %x, 3 %x, h %x\n",
@@ -386,7 +386,8 @@ PDOQueryDeviceCaps(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     devcap->DeviceD1 = TRUE;
     devcap->DeviceD2 = FALSE;
 
-    /* Specifies whether the device can respond to an external wake
+    /*
+     * Specifies whether the device can respond to an external wake
      * signal while in the D0, D1, D2, and D3 state.
      * Set these bits explicitly.
      */
@@ -458,7 +459,7 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         if (status != STATUS_SUCCESS) {
             break;
         }
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length *sizeof(WCHAR),
+        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length * sizeof(WCHAR),
             XENBUS_POOL_TAG);
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -645,11 +646,12 @@ PDOQueryResourceRequirements(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 
     fdx = pdx->ParentFdo->DeviceExtension;
 
-    /* Note the IO_RESOURCE_REQUIREMENTS_LIST structure includes
+    /*
+     * Note the IO_RESOURCE_REQUIREMENTS_LIST structure includes
      * IO_RESOURCE_LIST  List[1]; if we specify more than one
      * resource, we must include IO_RESOURCE_LIST size
      * in the  resourceListSize calculation.
-    */
+     */
     resourceListSize = sizeof(IO_RESOURCE_REQUIREMENTS_LIST)
         + sizeof(IO_RESOURCE_LIST);
 
@@ -684,7 +686,7 @@ PDOQueryResourceRequirements(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     descriptor->u.Memory.MinimumAddress.QuadPart = fdx->mmio;
     descriptor->u.Memory.MaximumAddress.QuadPart = fdx->mmio;
     RPRINTK(DPRTL_ON, ("Mem: len %x, min %llx %llx, max %llx\n",
-                       fdx->mmiolen-1,
+                       fdx->mmiolen - 1,
                        fdx->mmio,
                        descriptor->u.Memory.MinimumAddress.QuadPart,
                        descriptor->u.Memory.MaximumAddress.QuadPart));
@@ -726,7 +728,8 @@ PDOQueryDeviceRelations(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
             break;
         }
 
-        /* There is only one PDO pointer in the structure
+        /*
+         * There is only one PDO pointer in the structure
          * for this relation type. The PnP Manager removes
          * the reference to the PDO when the driver or application
          * un-registers for notification on the device.
@@ -912,9 +915,9 @@ PDOQueryInterface(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         std_interface = (BUS_INTERFACE_STANDARD *)
             irpStack->Parameters.QueryInterface.Interface;
         RPRINTK(DPRTL_ON,
-                ("PDOQueryInterface: STANDARD %p, %s\n\ts %d\n\tv %d\n\tc %p\n",
-                 pdx, pdx->Nodename, std_interface->Size, std_interface->Version,
-                 std_interface->Context));
+            ("PDOQueryInterface: STANDARD %p, %s\n\ts %d\n\tv %d\n\tc %p\n",
+             pdx, pdx->Nodename, std_interface->Size, std_interface->Version,
+             std_interface->Context));
 
         std_interface->Size = sizeof(BUS_INTERFACE_STANDARD);
         std_interface->Version = 1;
@@ -994,7 +997,8 @@ GetDeviceCapabilities(IN PDEVICE_OBJECT DeviceObject,
     status = IoCallDriver(targetObject, pnpIrp);
     if (status == STATUS_PENDING) {
 
-        /* Block until the irp comes back.
+        /*
+         * Block until the irp comes back.
          * Important thing to note here is when you allocate
          * the memory for an event in the stack you must do a
          * KernelMode wait instead of UserMode to prevent

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -448,7 +448,8 @@ xenbus_get_startup_params(void)
         use_pv_drivers &= ~XENBUS_PROBE_PV_XENBLK_MIGRATED_FLAG;
         updated_use_pv_drivers = use_pv_drivers;
 
-        /* xenblk.sys has been renamed and so won't load.  Set the migrate
+        /*
+         * xenblk.sys has been renamed and so won't load.  Set the migrate
          * flag so that we can let the xensvc know to rename xenblk back.
          */
         use_pv_drivers = XENBUS_PROBE_PV_XENBLK_MIGRATED_FLAG;
@@ -609,7 +610,7 @@ xenbus_get_startup_params(void)
     gGNTTAB_LIST_END = (gNR_GRANT_ENTRIES + 1);
 
     PRINTK(("Xenbus: using grant_frames = %d, entries = %d.\n",
-            gNR_GRANT_FRAMES, gNR_GRANT_ENTRIES ));
+            gNR_GRANT_FRAMES, gNR_GRANT_ENTRIES));
 
     return use_pv_drivers;
 }
@@ -793,7 +794,8 @@ xenbus_shutdown_setup(uint32_t *shutdown, uint32_t *notify)
                 shutdown,
                 sizeof(uint32_t));
             if (!NT_SUCCESS(status)) {
-                /* If we failed to write the string, no need to load.
+                /*
+                 * If we failed to write the string, no need to load.
                  * Others will not see the value.
                  */
                 PRINTK(("xenbus: failed to set shutdown value.\n"));
@@ -810,7 +812,8 @@ xenbus_shutdown_setup(uint32_t *shutdown, uint32_t *notify)
                 notify,
                 sizeof(uint32_t));
             if (!NT_SUCCESS(status)) {
-                /* If we failed to write the string, no need to load.
+                /*
+                 * If we failed to write the string, no need to load.
                  * Others will not see the value.
                  */
                 PRINTK(("xenbus: failed to set shutdown_notification.\n"));

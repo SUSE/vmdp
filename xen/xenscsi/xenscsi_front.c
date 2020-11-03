@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -59,7 +59,8 @@ kasprintf(size_t len, const char *fmt, ...)
     return p;
 }
 
-/* Entry point to this code when a new device is created.  Allocate the basic
+/*
+ * Entry point to this code when a new device is created.  Allocate the basic
  * structures and the ring buffer for communication with the backend, and
  * inform the backend of the appropriate details for those.  Switch to
  * Initialised state.
@@ -87,11 +88,11 @@ vscsi_probe(struct vscsi_front_info *info)
 
     info->shadow_free = 0;
     for (i = 0; i < VSCSI_RING_SIZE; i++) {
-        info->shadow[i].req.id = i+1;
+        info->shadow[i].req.id = i + 1;
         info->shadow[i].req.nr_segments = 0;
         info->shadow[i].request = NULL;
     }
-    info->shadow[VSCSI_RING_SIZE-1].req.id = 0x0fff;
+    info->shadow[VSCSI_RING_SIZE - 1].req.id = 0x0fff;
 
     InitializeListHead(&info->watch.list);
     info->watch.callback = vs_backend_changed;
@@ -112,7 +113,8 @@ vscsi_probe(struct vscsi_front_info *info)
              info->nodename, KeGetCurrentIrql(),
              KeGetCurrentProcessorNumber()));
 
-    /* We don't actually want to wait any time because we may be
+    /*
+     * We don't actually want to wait any time because we may be
      * at greater than PASSIVE_LEVEL.
      */
     while (1) {
@@ -362,7 +364,7 @@ vs_parse_vdev_str(char *str, uint16_t *chn, uint16_t *tid, uint16_t *lun)
         PRINTK(("vs_parse_vdev_str: failed to find the first :\n"));
         return STATUS_UNSUCCESSFUL;
     }
-    DPRINTK(DPRTL_INIT, ("1: str[%d] = %c\n", i-1, str[i-1]));
+    DPRINTK(DPRTL_INIT, ("1: str[%d] = %c\n", i - 1, str[i - 1]));
 
     for (j = 0, i++ ; j < 3 && str[i] != ':' && str[i] != '\0'; i++, j++) {
         tmp[j] = str[i];
@@ -371,7 +373,7 @@ vs_parse_vdev_str(char *str, uint16_t *chn, uint16_t *tid, uint16_t *lun)
         PRINTK(("vs_parse_vdev_str: failed to find the second :\n"));
         return STATUS_UNSUCCESSFUL;
     }
-    DPRINTK(DPRTL_INIT, ("2: str[%d] = %c\n", i-1, str[i-1]));
+    DPRINTK(DPRTL_INIT, ("2: str[%d] = %c\n", i - 1, str[i - 1]));
     tmp[j] = '\0';
     *chn = (uint16_t)atoi(tmp);
 
@@ -382,7 +384,7 @@ vs_parse_vdev_str(char *str, uint16_t *chn, uint16_t *tid, uint16_t *lun)
         PRINTK(("vs_parse_vdev_str: failed to find the third :\n"));
         return STATUS_UNSUCCESSFUL;
     }
-    DPRINTK(DPRTL_INIT, ("3: str[%d] = %c\n", i-1, str[i-1]));
+    DPRINTK(DPRTL_INIT, ("3: str[%d] = %c\n", i - 1, str[i - 1]));
     tmp[j] = '\0';
     *tid = (uint16_t)atoi(tmp);
 
@@ -393,7 +395,7 @@ vs_parse_vdev_str(char *str, uint16_t *chn, uint16_t *tid, uint16_t *lun)
         PRINTK(("vs_parse_vdev_str: failed to find the null\n"));
         return STATUS_UNSUCCESSFUL;
     }
-    DPRINTK(DPRTL_INIT, ("4: str[%d] = %c\n", i-1, str[i-1]));
+    DPRINTK(DPRTL_INIT, ("4: str[%d] = %c\n", i - 1, str[i - 1]));
     tmp[j] = '\0';
     *lun = (uint16_t)atoi(tmp);
 
@@ -889,7 +891,8 @@ vs_map_data_for_request(vscsi_front_info_t *info,
         return 0;
     }
 
-    /* nr_pages may be 1 more that the number of pages needed by
+    /*
+     * nr_pages may be 1 more that the number of pages needed by
      * DataTransferLength if the first and last element sum to PAGE_SIZE.
      */
     nr_pages = ((srb->DataTransferLength + PAGE_SIZE - 1) >> PAGE_SHIFT) + 1;
@@ -957,7 +960,8 @@ vs_map_data_for_request(vscsi_front_info_t *info,
         pfn = (ULONG)(sg->PhysicalAddress.QuadPart >> PAGE_SHIFT);
 
         while (len > 0 && data_len > 0) {
-            /* sg sends a scatterlist that is larger than
+            /*
+             * sg sends a scatterlist that is larger than
              * the data_len it wants transferred for certain
              * IO sizes
              */
@@ -1124,7 +1128,8 @@ vscsi_do_request(vscsi_front_info_t *info, SCSI_REQUEST_BLOCK *srb)
     }
 #endif
 
-    /* Check if there are virtual and system addresses that need to be
+    /*
+     * Check if there are virtual and system addresses that need to be
      * freed and unmapped now that we are at DPC time.
      */
     xenscsi_unmap_system_addresses(info);
@@ -1323,7 +1328,8 @@ vs_complete_request(struct vscsi_front_info *info, SCSI_REQUEST_BLOCK *srb,
             DPRINTK(DPRTL_MM, ("\tRtlCopyMemory done.\n"));
         }
 
-        /* Save the virtual and system addresses so that they can be
+        /*
+         * Save the virtual and system addresses so that they can be
          * freed and unmapped at DPC time rather than at interrupt time.
          */
         xenscsi_save_system_address(info, srb_ext);
@@ -1380,7 +1386,8 @@ vscsi_complete_int(struct vscsi_front_info *info)
                 ring_rsp = RING_GET_RESPONSE(&info->ring, i);
                 id = ring_rsp->rqid;
 
-                /* vs_completion(&info->shadow[id]);
+                /*
+                 * vs_completion(&info->shadow[id]);
                  * is done right after GET_ID_FROM_FREE_LIST
                  */
 
@@ -1565,7 +1572,8 @@ vscsi_disconnect_backend(XENSCSI_DEVICE_EXTENSION *dev_ext)
     info = dev_ext->info;
     XenAcquireSpinLock(&info->lock, &lh);
     if (info->xbdev) {
-        /* Since we are doing the disconnect, unregister the watch so
+        /*
+         * Since we are doing the disconnect, unregister the watch so
          * we wont get a callback after we have freed resources.
          */
         unregister_xenbus_watch(&info->watch);

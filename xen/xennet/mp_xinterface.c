@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -152,7 +152,8 @@ VNIFX_FindAdapter(PVNIF_ADAPTER adapter)
 
     status = NDIS_STATUS_SUCCESS;
     do {
-        /* All adapter fields are zeroed out when adapter was allocated.
+        /*
+         * All adapter fields are zeroed out when adapter was allocated.
          * No need to set any values to 0.
          */
 
@@ -312,7 +313,8 @@ VNIFX_FindAdapter(PVNIF_ADAPTER adapter)
             if (str) {
                 RPRINTK(DPRTL_ON, ("  feature-split-event-channels str: %s\n",
                                    str));
-                adapter->u.x.feature_split_evtchn = (UCHAR)cmp_strtoul(str, NULL, 10);
+                adapter->u.x.feature_split_evtchn =
+                    (UCHAR)cmp_strtoul(str, NULL, 10);
                 RPRINTK(DPRTL_ON, ("  feature-split-event-channels val: %d\n",
                                    adapter->u.x.feature_split_evtchn));
                 xenbus_free_string(str);
@@ -901,8 +903,7 @@ again:
         }
     }
 
-    /* this field is for backward compatibility
-     */
+    /* this field is for backward compatibility */
     RPRINTK(DPRTL_INIT, ("VNIF: xenbus writing copy-delivery-offset.\n"));
     err = xenbus_printf(xbt, Adapter->node_name,
         "copy-delivery-offset", "%u", 0);
@@ -915,7 +916,8 @@ again:
     RPRINTK(DPRTL_INIT, ("VNIF: xenbus writing feature-no-csum-offload.\n"));
     err = xenbus_printf(xbt, Adapter->node_name,
         "feature-no-csum-offload", "%d",
-        !(Adapter->cur_rx_tasks & (VNIF_CHKSUM_IPV4_TCP|VNIF_CHKSUM_IPV4_UDP)));
+        !(Adapter->cur_rx_tasks
+            & (VNIF_CHKSUM_IPV4_TCP | VNIF_CHKSUM_IPV4_UDP)));
     if (err) {
         PRINTK(("VNIF: xenbus writing feature-no-csum-offload fail.\n"));
         goto abort_transaction;
@@ -925,7 +927,7 @@ again:
     err = xenbus_printf(xbt, Adapter->node_name,
         "feature-ipv6-csum-offload", "%d",
         !!(Adapter->cur_rx_tasks
-            & (VNIF_CHKSUM_IPV6_TCP |VNIF_CHKSUM_IPV6_UDP )));
+            & (VNIF_CHKSUM_IPV6_TCP | VNIF_CHKSUM_IPV6_UDP)));
     if (err) {
         PRINTK(("VNIF: xenbus writing feature-ipv6-csum-offload fail.\n"));
         goto abort_transaction;
@@ -1002,7 +1004,8 @@ VNIFInitRxGrants(PVNIF_ADAPTER adapter)
                 rcb = rcb_rp->rcb_array[i];
                 ref = gnttab_claim_grant_reference(&xq->gref_rx_head);
                 if ((signed short)ref < 0) {
-                    PRINTK(("VNIF: gnttab_claim_grant_reference gref_rx_head.\n"));
+                    PRINTK((
+                        "VNIF: gnttab_claim_grant_reference gref_rx_head.\n"));
                     NdisReleaseSpinLock(&adapter->path[p].rx_path_lock);
                     return NDIS_STATUS_FAILURE;
                 }
@@ -1068,7 +1071,8 @@ VNIFInitTxGrants(PVNIF_ADAPTER adapter)
 #endif
     adapter->nBusySend = 0;
 
-    /* Allocate for each TCB, because sizeof(TCB) is less than PAGE_SIZE,
+    /*
+     * Allocate for each TCB, because sizeof(TCB) is less than PAGE_SIZE,
      * it will not cross page boundary.
      */
     for (p = 0; p < adapter->num_paths; p++) {
@@ -1107,7 +1111,8 @@ VNIFOutstanding(PVNIF_ADAPTER adapter)
             tcb = adapter->path[p].u.xq.tx_packets[cnt];
             if (tcb > (TCB *)NET_TX_RING_SIZE) {
                 outstanding++;
-                gnt_flags = gnttab_query_foreign_access_flags(tcb->grant_tx_ref);
+                gnt_flags =
+                    gnttab_query_foreign_access_flags(tcb->grant_tx_ref);
                 if (gnt_flags & (GTF_reading | GTF_writing)) {
                     PRINTK(("\n\tid %x, refs %x, flags %x",
                         cnt, tcb->grant_tx_ref, gnt_flags));
@@ -1187,7 +1192,8 @@ VNIFX_Quiesce(PVNIF_ADAPTER adapter)
         vnif_call_txrx_interrupt_dpc(adapter);
         KeLowerIrql(old_irql);
 
-        /* Only need to wory about the receives that are in the process of
+        /*
+         * Only need to wory about the receives that are in the process of
          * VNIFReceivePackets and xennet_return_packet.
          */
         waiting = adapter->nBusyRecv;
@@ -1209,14 +1215,14 @@ VNIFX_Quiesce(PVNIF_ADAPTER adapter)
             adapter->adapter_flags, waiting, wait_count));
         if (adapter->nBusyRecv) {
             for (p = 0; p < adapter->num_paths; p++) {
-                PRINTK(("\t[%d]:rcvs outstanding %d: pvt %x, srsp %x, rsc %x busy %d\n",
+                PRINTK(("\t[%d]:nbusy %d: pvt %x, srsp %x, rsc %x busy %d\n",
                     p,
                     adapter->nBusyRecv,
                     adapter->path[p].u.xq.rx_front_ring.req_prod_pvt,
                     adapter->path[p].u.xq.rx_front_ring.sring->rsp_prod,
                     adapter->path[p].u.xq.rx_front_ring.rsp_cons,
                     adapter->path[p].u.xq.rx_front_ring.sring->rsp_prod -
-                    adapter->path[p].u.xq.rx_front_ring.rsp_cons));
+                        adapter->path[p].u.xq.rx_front_ring.rsp_cons));
                 busy_r += adapter->path[p].u.xq.rx_front_ring.sring->rsp_prod -
                     adapter->path[p].u.xq.rx_front_ring.rsp_cons;
             }
@@ -1228,8 +1234,8 @@ VNIFX_Quiesce(PVNIF_ADAPTER adapter)
                     adapter->nBusySend,
                     adapter->path[p].u.xq.tx_front_ring.req_prod_pvt,
                     adapter->path[p].u.xq.tx_front_ring.rsp_cons));
-                PRINTK(("\t[%d]: sring: req_prd %x, rsp_prd %x, req_evt %x, rsp_evt %x\n",
-                    p,
+                PRINTK((
+                    "\tsring: rq_prd %x, rsp_prd %x, rq_evt %x, rsp_evt %x\n",
                     adapter->path[p].u.xq.tx_front_ring.sring->req_prod,
                     adapter->path[p].u.xq.tx_front_ring.sring->rsp_prod,
                     adapter->path[p].u.xq.tx_front_ring.sring->req_event,
@@ -1248,7 +1254,7 @@ VNIFX_Quiesce(PVNIF_ADAPTER adapter)
         }
     }
     RPRINTK(DPRTL_ON, ("VNIF: VNIFQuiesce OUT busy_r %d\n", busy_r));
-    return 0; //waiting;
+    return 0;
 }
 
 static void
@@ -1385,7 +1391,8 @@ VNIFX_DisconnectBackend(PVNIF_ADAPTER adapter)
 
     VNIF_SET_FLAG(adapter, VNF_DISCONNECTED);
 
-    /* Make sure we are out of the DPC and that NDIS doesn't have any
+    /*
+     * Make sure we are out of the DPC and that NDIS doesn't have any
      * of our receives before continuing.
      */
     if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS)
@@ -1421,7 +1428,8 @@ VNIFX_DisconnectBackend(PVNIF_ADAPTER adapter)
     }
 
     if (!VNIF_TEST_FLAG(adapter, VNF_ADAPTER_DETACHING)) {
-        /* Switch the state to closing, closed, initializign.  This will
+        /*
+         * Switch the state to closing, closed, initializign.  This will
          * allow the backend to release its references.
          */
         unregister_xenbus_watch(&adapter->u.x.backend_watch);
@@ -1568,7 +1576,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
         }
         for (i = 0; i < adapter->num_rcv_queues; ++i) {
             if (!IsListEmpty(&adapter->rcv_q[i].rcv_to_process)) {
-            PRINTK(("%s: RecvToProcess[%d] not empty\n", __func__, i));
+                PRINTK(("%s: RecvToProcess[%d] not empty\n", __func__, i));
             }
         }
         if (adapter->nBusySend) {
@@ -1598,7 +1606,8 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
                 adapter->nWaitSend, adapter->adapter_flags));
 #else
             PRINTK(("MPResume %s: nBusySend = %d, flags = 0x%x\n",
-                adapter->u.x.otherend, adapter->nBusySend, adapter->adapter_flags));
+                adapter->u.x.otherend, adapter->nBusySend,
+                adapter->adapter_flags));
 #endif
         }
         if (status == STATUS_SUCCESS) {
@@ -1623,14 +1632,16 @@ MPSuspend(PVNIF_ADAPTER adapter, uint32_t reason)
     PRINTK(("MPSuspend: %s, due to %x\n", adapter->node_name, reason));
     VNIF_SET_FLAG(adapter, VNF_ADAPTER_SUSPENDING);
     if (reason == SHUTDOWN_suspend) {
-        /* We could force a wait here, but then that's what
+        /*
+         * We could force a wait here, but then that's what
          * adapter->resource_timeout is for.
          */
         VNIFQuiesce(adapter);
         VNIF_SET_FLAG(adapter, VNF_ADAPTER_SUSPENDED);
         VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_SUSPENDING);
 
-        /* Make sure we are out of the DPC and that NDIS doesn't have any
+        /*
+         * Make sure we are out of the DPC and that NDIS doesn't have any
          * of our receives before returning.
          */
         if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS)
@@ -1651,7 +1662,7 @@ MPSuspend(PVNIF_ADAPTER adapter, uint32_t reason)
         }
         for (i = 0; i < adapter->num_rcv_queues; ++i) {
             if (!IsListEmpty(&adapter->rcv_q[i].rcv_to_process)) {
-            PRINTK(("%s: RecvToProcess[%d] not empty\n", __func__, i));
+                PRINTK(("%s: RecvToProcess[%d] not empty\n", __func__, i));
             }
         }
         waiting = adapter->nBusyRecv;

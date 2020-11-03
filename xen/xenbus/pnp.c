@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -122,7 +122,8 @@ FDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
         ExAcquireFastMutex(&fdx->Mutex);
 
-        /* Test the alloc of gfdx was successful.  If not do the best
+        /*
+         * Test the alloc of gfdx was successful.  If not do the best
          * we can with fdx.
          */
         if (gfdx) {
@@ -210,7 +211,8 @@ FDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         /* Seems we crash if we try to print from here down. */
         IoDetachDevice(fdx->LowerDevice);
 
-        /* The DeviceObject, aka gfdo, should be able to be set to NULL
+        /*
+         * The DeviceObject, aka gfdo, should be able to be set to NULL
          * eventhough there is an interaction between xnebus and xenblk.
          */
         xs_cleanup();
@@ -228,7 +230,8 @@ FDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
         ExAcquireFastMutex(&fdx->Mutex);
 
-        /* upper drivers may already presented a relation,
+        /*
+         * Upper drivers may already presented a relation,
          * we should keep the existing ones and add ours.
          */
         oldRelations = (PDEVICE_RELATIONS) Irp->IoStatus.Information;
@@ -391,7 +394,7 @@ FDOSetResources(IN PFDO_DEVICE_EXTENSION fdx,
 
     portBase.QuadPart = 0;
     memBase.QuadPart = 0;
-    mmiolen = 0;;
+    mmiolen = 0;
     irqshared = FALSE;
     for (i = 0; i < nres; i++, resource++) {
         switch (resource->Type) {
@@ -468,8 +471,8 @@ FDOSetResources(IN PFDO_DEVICE_EXTENSION fdx,
     }
 
     PRINTK(
-            ("XenBus resources: vector %x, irql %x, dev %x, aff %x sharing %d.\n",
-            fdx->vector, fdx->irql, fdx->dvector, fdx->affinity, irqshared));
+        ("XenBus resources: vector %x, irql %x, dev %x, aff %x sharing %d.\n",
+         fdx->vector, fdx->irql, fdx->dvector, fdx->affinity, irqshared));
 
     status = IoConnectInterrupt(
         &DriverInterruptObj,

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -304,7 +304,8 @@ xenbus_switch_state(const char *nodename, enum xenbus_state state)
     return 0;
 }
 
-/* xenbus_get_pv_port_options remains as a dll export so that older version
+/*
+ * xenbus_get_pv_port_options remains as a dll export so that older version
  * of xenblk will still load.
  */
 uint32_t
@@ -316,7 +317,8 @@ xenbus_get_pv_port_options(xenbus_pv_port_options_t *options)
     uint32_t shutdown_reason;
     uint32_t val;
 
-    /* Need to use the current value of use_pv_drivers since
+    /*
+     * Need to use the current value of use_pv_drivers since
      * xenbus_determine_pv_driver_usage() may block due to
      * the registry not being available now.
      */
@@ -517,10 +519,12 @@ xenbus_register_xenblk(void *controller,
                     }
                 }
 
-                /* We didn't find the BOOT_DISK_NODE_NAME so look for the
+                /*
+                 * We didn't find the BOOT_DISK_NODE_NAME so look for the
                  * first disk in the list.  This still doesn't ensure that
                  * we will find the right disk due to load order but at
-                 * least gives us a chance to do the crahsdump. */
+                 * least gives us a chance to do the crahsdump.
+                 */
                 for (entry = fdx->ListOfPDOs.Flink;
                         entry != &fdx->ListOfPDOs;
                         entry = entry->Flink) {
@@ -537,11 +541,11 @@ xenbus_register_xenblk(void *controller,
                 RPRINTK(DPRTL_ON, ("xenbus_register_xenblk: normal.\n"));
                 for (i = 0; i < fdx->max_info_entries; i++) {
                     RPRINTK(DPRTL_ON,
-                            ("xenbus_register_xenblk: i %d, info %p, &info %p.\n",
-                             i, fdx->info[i], &fdx->info[i]));
+                        ("xenbus_register_xenblk: i %d, info %p, &info %p.\n",
+                         i, fdx->info[i], &fdx->info[i]));
                     if (fdx->info[i] == NULL) {
                         RPRINTK(DPRTL_ON,
-                                ("xenbus_register_xenblk: emtpy entry %d.\n", i));
+                            ("xenbus_register_xenblk: emtpy entry %d.\n", i));
                         *info = &fdx->info[i];
                         return STATUS_SUCCESS;
                     }
@@ -646,7 +650,8 @@ xenbus_claim_device(void *dev, void *controller,
                     && pdx->frontend_dev == NULL) {
                 if ((type == vbd || type == vscsi) &&
                         (use_pv_drivers & XENBUS_PROBE_PV_INSTALL_DISK_FLAG)) {
-                    /* While we are still in the process of installing
+                    /*
+                     * While we are still in the process of installing
                      * so we don't want xenblk to use the device yet.
                      */
                     PRINTK(("xenbus_claim_device: vbd installing.\n"));
@@ -763,9 +768,11 @@ xenbus_release_device(void *dev, void *controller,
                         XenbusDestroyPDO(pdx->Self);
                         ExFreePool(pdx->Self);
 
-                        /* For vbd disks using one controller, see if we
+                        /*
+                         * For vbd disks using one controller, see if we
                          * need to also remove the pdo associated with
-                         * the controller */
+                         * the controller
+                         */
                         if (fdx && pdx->Type == vbd
                                 && (pvctrl_flags &
                                     XENBUS_PVCTRL_USE_JUST_ONE_CONTROLLER)) {
@@ -867,7 +874,8 @@ xenbus_print_str(char *str)
     XEN_LOCK_HANDLE lh;
     char *c;
 
-    /* Spin locks don't protect against irql > 2.  So if we come in at a
+    /*
+     * Spin locks don't protect against irql > 2.  So if we come in at a
      * higl level, just print it and we'll have to maually sort out the
      * the possible mixing of multiple output messages.
      */

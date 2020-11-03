@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -91,23 +91,21 @@ static uint32_t g_interrupt_count;
 uint32_t g_max_segs_per_req = XENBLK_DEFAULT_MAX_SEGS;
 
 
-/*++
-
-Routine Description:
-
-    This routine initializes the XenBlk Storage class driver.
-
-Arguments:
-
-    DriverObject - Pointer to driver object created by system.
-    RegistryPath - Pointer to the name of the services node for this driver.
-
-Return Value:
-
-    The function value is the final status from the initialization operation.
-
---*/
-
+/*
+ * Routine Description:
+ *
+ *  This routine initializes the XenBlk Storage class driver.
+ *
+ * Arguments:
+ *
+ *  DriverObject - Pointer to driver object created by system.
+ *   RegistryPath - Pointer to the name of the services node for this driver.
+ *
+ * Return Value:
+ *
+ *   The function value is the final status from the initialization operation.
+ *
+ */
 ULONG
 XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
 {
@@ -158,7 +156,8 @@ XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
     hwInitializationData.HwStartIo = XenBlkStartIo;
     hwInitializationData.HwBuildIo = XenBlkBuildIo;
 
-    /* For StorPort MapBuffers is set to STOR_MAP_NON_READ_WRITE_BUFFERS so
+    /*
+     * For StorPort MapBuffers is set to STOR_MAP_NON_READ_WRITE_BUFFERS so
      * that virtual addresses are only generated for non read/write requests.
      */
     hwInitializationData.MapBuffers = STOR_MAP_NON_READ_WRITE_BUFFERS;
@@ -334,7 +333,8 @@ XenBlkFindAdapter(
         config_info->NumberOfPhysicalBreaks  =
             dev_ext->info[0]->max_segs_per_req;
     } else {
-        /* Must be during install.  Just do default.  It will get fixed
+        /*
+         * Must be during install.  Just do default.  It will get fixed
          * up on the next boot.
          */
         config_info->MaximumTransferLength   =
@@ -385,7 +385,8 @@ XenBlkFindAdapter(
         RPRINTK(DPRTL_INIT, ("  setting Dma32BitAddresses to TRUE\n")));
     }
 
-    /* InitiatorBusId[0] should only be set in the scsi port model.
+    /*
+     * InitiatorBusId[0] should only be set in the scsi port model.
      * If not set to 7, secondary disks don't show up.
      */
     config_info->InitiatorBusId[0]       = 7;
@@ -506,7 +507,8 @@ XenBlkInit(XENBLK_DEVICE_EXTENSION *dev_ext)
         return;
     }
 
-    /* When coming up from hibernate, we need to do the claim since
+    /*
+     * When coming up from hibernate, we need to do the claim since
      * we disconnected form the backend.
      */
     if (dev_ext->op_mode == OP_MODE_NORMAL
@@ -530,14 +532,16 @@ XenBlkXenbusInit(XENBLK_DEVICE_EXTENSION *dev_ext)
             ("XenBlk: XenBlkXenbusInit - op_mode %x, state %x\n",
              dev_ext->op_mode, dev_ext->state));
 
-    /* Need to init xenbus if xenblk has the device or we are doing
+    /*
+     * Need to init xenbus if xenblk has the device or we are doing
      * a crashdump or hybernate.  If xenblk has the the device mem
      * will contain a value.  If xenbus has the device it will be null.
      */
     if (dev_ext->mem != NULL
             || dev_ext->op_mode == OP_MODE_HIBERNATE
             || dev_ext->op_mode == OP_MODE_CRASHDUMP) {
-        /* When restarting from hibernate etc. we always need to
+        /*
+         * When restarting from hibernate etc. we always need to
          * init the shared info in OP_MODE_NORMAL.
          * Xenbus has already done the shared init when it has the device
          */
@@ -573,7 +577,8 @@ XenBlkClaim(XENBLK_DEVICE_EXTENSION *dev_ext)
     NTSTATUS status;
     uint32_t i;
 
-    /* The info array of pointers comes form xenbus and all pointers
+    /*
+     * The info array of pointers comes form xenbus and all pointers
      * will be null to start with but will be filled out already
      * when hibernating.
      */
@@ -594,7 +599,8 @@ XenBlkClaim(XENBLK_DEVICE_EXTENSION *dev_ext)
             XenBlkIoctl, XenBlkIoctl);
         if (status == STATUS_NO_MORE_ENTRIES
                 || status == STATUS_RESOURCE_IN_USE) {
-            /* There are no more devices to claim or we are still installing
+            /*
+             * There are no more devices to claim or we are still installing
              * so return success.
              */
             RPRINTK(DPRTL_INIT,
@@ -640,7 +646,8 @@ XenBlkClaim(XENBLK_DEVICE_EXTENSION *dev_ext)
         status = blkfront_probe(info);
         if (status != STATUS_SUCCESS) {
             PRINTK(("  blkfront_probe failed: %x\n", status));
-            /* We cannot release the device because the next time through
+            /*
+             * We cannot release the device because the next time through
              * the loop we would just try to claim it again.
              */
             if (status != STATUS_NO_SUCH_DEVICE) {
@@ -668,7 +675,8 @@ XenBlkInitHiberCrashInfo(XENBLK_DEVICE_EXTENSION *dev_ext,
 {
     uint32_t j;
 
-    /* The info array of pointers comes form xenbus and all pointers
+    /*
+     * The info array of pointers comes form xenbus and all pointers
      * will be null to start with but will be filled out already
      * when hibernating.
      */
@@ -683,7 +691,8 @@ XenBlkInitHiberCrashInfo(XENBLK_DEVICE_EXTENSION *dev_ext,
             info->shadow[j].req.nr_segments = 0;
         }
 
-        /* In hibernate mode we get a new dev_ext, but we are using
+        /*
+         * In hibernate mode we get a new dev_ext, but we are using
          * the original info.  Replace the original dev_ext in info
          * with the one used to hibernate.
          */
@@ -986,10 +995,10 @@ XenBlkStartIo(XENBLK_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
                     ("%x: SCSIOP_WRITE SCSIOP_READ %x, dev=%x,srb=%x\n",
                      Srb->TargetId, Srb->Cdb[0], dev_ext, Srb));
             CDPRINTK(DPRTL_COND, 0, 0, 1,
-                       ("XenBlkStartIo id %d i %d c %d: dev %p s %x srb %p do\n",
-                       Srb->TargetId,
-                       KeGetCurrentIrql(), KeGetCurrentProcessorNumber(),
-                       dev_ext, dev_ext->state, Srb));
+                    ("XenBlkStartIo id %d i %d c %d: dev %p s %x srb %p do\n",
+                    Srb->TargetId,
+                    KeGetCurrentIrql(), KeGetCurrentProcessorNumber(),
+                    dev_ext, dev_ext->state, Srb));
 
             status = do_blkif_request(info, Srb);
             if (status  == STATUS_SUCCESS) {
@@ -1159,12 +1168,12 @@ XenBlkStartIo(XENBLK_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
                     break;
                 }
                 default:
-                    RPRINTK( DPRTL_ON, ("Invalid Inquery Page Request\n"));
+                    RPRINTK(DPRTL_ON, ("Invalid Inquery Page Request\n"));
                     Srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
                     break;
                 }
             } else {
-                RPRINTK( DPRTL_ON, ("Invalid Inquery Request\n"));
+                RPRINTK(DPRTL_ON, ("Invalid Inquery Request\n"));
                 Srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
             }
 
@@ -1349,10 +1358,10 @@ XenBlkVerifySGL(xenblk_srb_extension *srb_ext, ULONG tlen)
 
     len = 0;
     for (i = 0; i < srb_ext->sgl->NumberOfElements; i++) {
-        if ((((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart)
-                & (PAGE_SIZE - 1)
-            && ((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart)
-                & 0x1ff)) {
+        if ((((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart) &
+                (PAGE_SIZE - 1)
+            && ((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart) &
+                0x1ff)) {
             PRINTK(("XenBlkVerifySGL va %p:SGL element %x not aligned;%x.\n",
                 srb_ext->va, i,
                 ((uint32_t)srb_ext->sgl->List[i].PhysicalAddress.QuadPart)));
@@ -1447,8 +1456,8 @@ XenBlkStartReadWrite(XENBLK_DEVICE_EXTENSION *dev_ext,
     srb_ext->sys_sgl = xenblk_build_sgl(dev_ext, Srb);
     if (srb_ext->sys_sgl) {
         /* If not on a sector boundry, double buffer. */
-        if ((((uint32_t)srb_ext->sys_sgl->List[0].PhysicalAddress.QuadPart)
-                    & 0x1ff)) {
+        if ((((uint32_t)srb_ext->sys_sgl->List[0].PhysicalAddress.QuadPart) &
+                0x1ff)) {
 #ifdef DBG
             DPRINTK(DPRTL_MM,
                 ("%x alloc va: srb %p op %x els %d tlen %d, irq %d\n",
@@ -1459,9 +1468,9 @@ XenBlkStartReadWrite(XENBLK_DEVICE_EXTENSION *dev_ext,
                  KeGetCurrentIrql()));
             for (i = 0; i < srb_ext->sys_sgl->NumberOfElements; i++) {
                 DPRINTK(DPRTL_MM,
-                    ("   el[%d]: paddr %x, len %d\n", i,
-                     (uint32_t)srb_ext->sys_sgl->List[i].PhysicalAddress.QuadPart,
-                     srb_ext->sys_sgl->List[i].Length));
+                   ("   el[%d]: paddr %x, len %d\n", i,
+                   (uint32_t)srb_ext->sys_sgl->List[i].PhysicalAddress.QuadPart,
+                   srb_ext->sys_sgl->List[i].Length));
             }
 #endif
 
@@ -1651,7 +1660,8 @@ XenBlkInterruptPoll(XENBLK_DEVICE_EXTENSION *dev_ext)
                         KeGetCurrentProcessorNumber(),
                         KeGetCurrentIrql()));
 
-    /* If not doing a hibernate or crash dump, let xenbus handle the
+    /*
+     * If not doing a hibernate or crash dump, let xenbus handle the
      * interrupt and call us back.
      */
     claimed = FALSE;
@@ -1757,7 +1767,8 @@ XenBlkAdapterControl (
             }
 
             if (dev_ext->state == UNLOADING) {
-                /* It's safe to free resources since we are not setting
+                /*
+                 * It's safe to free resources since we are not setting
                  * up for a hibernate or xenbus has the device and we
                  * will go through the relase and claim process.
                  */
@@ -1813,7 +1824,8 @@ XenBlkAdapterControl (
 
         for (i = 0; i < dev_ext->max_targets; i++) {
             if (dev_ext->info[i]) {
-                /* Can't quiesce at this time because the irql
+                /*
+                 * Can't quiesce at this time because the irql
                  * may be too high so just mask.
                  */
                 mask_evtchn(dev_ext->info[i]->evtchn);
@@ -1872,7 +1884,8 @@ XenBlkFreeResource(struct blkfront_info *info, uint32_t info_idx,
     release_data.action = action;
     release_data.type = vbd;
     if (info) {
-        /* We don't need to unregister watches here.  If we get here due
+        /*
+         * We don't need to unregister watches here.  If we get here due
          * to a shutdown/hibernate/crashdump, the watch has already been
          * unregistered in disconnect_backend.  It we get here from a
          * resume ,we didn't need to unregister the watches.
@@ -1918,7 +1931,8 @@ XenBlkResume(XENBLK_DEVICE_EXTENSION *dev_ext, uint32_t suspend_canceled)
 
     g_interrupt_count = 0;
     if (suspend_canceled) {
-        /* We were only suspneded long enough to do a checkpoint. Just
+        /*
+         * We were only suspneded long enough to do a checkpoint. Just
          * mark the state as working and continue as if nothing happened.
          */
         dev_ext->state = WORKING;

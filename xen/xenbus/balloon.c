@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
@@ -50,7 +50,7 @@ L"\\Registry\\Machine\\HARDWARE\\RESOURCEMAP\\System Resources\\Physical Memory"
 #define DERIVE_OS_MEM_FROM_OS 1
 #define DERIVE_OS_MEM_FROM_XENSTORE 2
 
-#define PAGES2KB(_p) ((_p) << (PAGE_SHIFT-10))
+#define PAGES2KB(_p) ((_p) << (PAGE_SHIFT - 10))
 #define MB2PAGES(mb) ((mb) << (20 - PAGE_SHIFT))
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -63,7 +63,8 @@ struct balloon_stats {
     xen_ulong_t current_pages;
     xen_ulong_t target_pages;
 
-    /* Drivers may alter the memory reservation independently, but they
+    /*
+     * Drivers may alter the memory reservation independently, but they
      * must inform the balloon driver so we avoid hitting the hard limit.
      */
     xen_ulong_t driver_pages;
@@ -86,8 +87,8 @@ static xen_ulong_t num_physpages;
 static KSPIN_LOCK balloon_lock = 0xbad;
 static PMDL mdl_head;
 static PMDL mdl_tail;
-DWORD vm_page_adjustment = 0;
-DWORD derive_os_mem = 0;
+DWORD vm_page_adjustment;
+DWORD derive_os_mem;
 
 /* We increase/decrease in batches which fit in a page */
 static xen_ulong_t frame_list[PAGE_SIZE / sizeof(xen_ulong_t)];
@@ -172,7 +173,8 @@ balloon_minimum_target(void)
 {
     xen_ulong_t min_pages, curr_pages = current_target();
 
-    /* Simple continuous piecewiese linear function:
+    /*
+     * Simple continuous piecewiese linear function:
      *  max MiB -> min MiB  gradient
      *       0     0
      *      16    16
@@ -639,7 +641,8 @@ balloon_init(void)
             __func__, derive_os_mem, vm_page_adjustment));
 
     if (derive_os_mem == 0) {
-        /* Only need to get the derive_os_mem and vm_page_adjustment if they
+        /*
+         * Only need to get the derive_os_mem and vm_page_adjustment if they
          * haven't been derived yet.  They will already be set when coming
          * back up from a migrate, so no need to get them again.
          */
@@ -648,7 +651,8 @@ balloon_init(void)
 
         status = STATUS_SUCCESS;
 
-        /* The goal here is to get num_physpages equal to the amount RAM
+        /*
+         * The goal here is to get num_physpages equal to the amount RAM
          * reported as installed in the VM.
          */
         balloon_get_page_adjustment_info(&derive_os_mem, &vm_page_adjustment);
@@ -666,11 +670,13 @@ balloon_init(void)
             derive_os_mem = DERIVE_OS_MEM_FROM_XENSTORE;
             pod_target.domid = DOMID_SELF;
             if (version > 0x40002) {
-                status = balloon_get_max_phys_pages_from_xenstore(&totalram_pages);
+                status = balloon_get_max_phys_pages_from_xenstore(
+                    &totalram_pages);
                 if (status == STATUS_SUCCESS) {
                     num_physpages = totalram_pages;
                 } else {
-                    vm_page_adjustment = balloon_default_xenstore_page_adj(version);
+                    vm_page_adjustment = balloon_default_xenstore_page_adj(
+                        version);
                 }
             } else if (version >= 0x40000 || status != STATUS_SUCCESS) {
                 totalram_pages = HYPERVISOR_memory_op(
@@ -678,13 +684,15 @@ balloon_init(void)
                     &pod_target.domid);
                 num_physpages = totalram_pages - vm_page_adjustment;
             } else {
-                totalram_pages = HYPERVISOR_memory_op(XENMEM_current_reservation,
+                totalram_pages = HYPERVISOR_memory_op(
+                    XENMEM_current_reservation,
                     &pod_target.domid);
                 num_physpages = totalram_pages - vm_page_adjustment;
             }
         }
 
-        /* If we fail to get the totalram_pages, we can't recover so don't
+        /*
+         * If we fail to get the totalram_pages, we can't recover so don't
          * do the balloon.
          */
         if ((xen_long_t)totalram_pages == -ENOSYS) {
@@ -750,7 +758,7 @@ balloon_start(PFDO_DEVICE_EXTENSION fdx, uint32_t reason)
         return;
     }
 
-    if (KeGetCurrentIrql() == PASSIVE_LEVEL){
+    if (KeGetCurrentIrql() == PASSIVE_LEVEL) {
         balloon_worker((PDEVICE_OBJECT)fdx, NULL);
         return;
     }

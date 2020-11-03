@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -57,7 +57,8 @@ vnifx_interrupt_dpc(
                             path->path_id,
                             NDIS_INDICATE_ALL_NBLS);
 
-    /* Xenbus will mask the evtchn before scheduling the DPC.
+    /*
+     * Xenbus will mask the evtchn before scheduling the DPC.
      * Unmask here to allow xen to inject more interrupts.
      */
     VNIF_UNMASK(path->tx_evtchn);
@@ -84,7 +85,8 @@ vnifx_split_interrupt_dpc(vnif_xq_path_t *path, ULONG txrx_ind)
                             path->path_id,
                             NDIS_INDICATE_ALL_NBLS);
 
-    /* Xenbus will mask the evtchn before scheduling the DPC.
+    /*
+     * Xenbus will mask the evtchn before scheduling the DPC.
      * Unmask here to allow xen to inject more interrupts.
      */
     if (txrx_ind == VNF_ADAPTER_RX_DPC_IN_PROGRESS) {
@@ -211,7 +213,8 @@ vnifx_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
                            *prod));
 
         if (gso_mss) {
-            /* When copying the packet buffers to one buffer, need to
+            /*
+             * When copying the packet buffers to one buffer, need to
              * get the ip header len, tcp header len, and do the checksums.
              * These are already done if a sg list is obtained for the packet.
              */
@@ -380,7 +383,7 @@ vnifx_get_rx(PVNIF_ADAPTER adapter, UINT path_id,
             cons++;
             if (rx->status <= NETIF_RSP_NULL) {
                 PRINTK(("vnif_get_rx: bad status %x, id %x, cons %x prod %x\n",
-                    rx->status, rx->id, cons-1, prod));
+                    rx->status, rx->id, cons - 1, prod));
                 VNIF_DUMP(adapter, path_id, "get_rx", 1, 1);
             }
 
@@ -395,7 +398,7 @@ vnifx_get_rx(PVNIF_ADAPTER adapter, UINT path_id,
 
             DPRINTK(DPRTL_TRC,
                 ("Doing rx: %p frag len is %d %d, id %x, rid %x, cons %x, %p\n",
-                rcb, rcb->len, *len,  rx->id, (cons - 1) & 255, cons-1,
+                rcb, rcb->len, *len,  rx->id, (cons - 1) & 255, cons - 1,
                 adapter->path[path_id].rcb_rp.rcb_ring[(cons - 1)
                     & (NET_RX_RING_SIZE - 1)]));
 
@@ -433,8 +436,8 @@ vnifx_get_rx(PVNIF_ADAPTER adapter, UINT path_id,
                 if (cons >= prod) {
                     PRINTK(("vnif_get_rx: doing more but no more on ring\n"));
                     PRINTK(("  flags %x cons %x local prod %x, rsp_prod %x\n",
-                     exflags, cons, prod,
-                     adapter->path[path_id].u.xq.rx_front_ring.sring->rsp_prod));
+                    exflags, cons, prod,
+                    adapter->path[path_id].u.xq.rx_front_ring.sring->rsp_prod));
                     break;
                 }
                 rx = RING_GET_RESPONSE(
@@ -581,15 +584,15 @@ VNIFX_SET_TX_EVENT(VNIF_ADAPTER *adapter, UINT path_id, UINT prod)
 {
     adapter->path[path_id].u.xq.tx_front_ring.sring->rsp_event =
         prod + ((adapter->path[path_id].u.xq.tx_front_ring.sring->req_prod
-                    - prod) >> 1 ) + 1;
+                    - prod) >> 1) + 1;
 }
 
 void
 VNIFX_SET_RX_EVENT(VNIF_ADAPTER *adapter, UINT path_id, UINT prod)
 {
     adapter->path[path_id].u.xq.rx_front_ring.sring->rsp_event =
-        prod + ((adapter->path[path_id].u.xq.rx_front_ring.sring->req_prod - prod)
-                >> 1) + 1;
+        prod + ((adapter->path[path_id].u.xq.rx_front_ring.sring->req_prod
+                    - prod) >> 1) + 1;
 }
 
 void
@@ -648,19 +651,19 @@ VNIFX_DATA_VALID_CHECKSUM_VALID(struct _RCB *rcb)
 UINT
 VNIFX_CHECKSUM_SUCCEEDED(struct _RCB *rcb)
 {
-    return (rcb->flags & (NETRXF_data_validated | NETRXF_csum_blank));
+    return rcb->flags & (NETRXF_data_validated | NETRXF_csum_blank);
 }
 
 UINT
 VNIFX_IS_PACKET_DATA_VALID(RCB *rcb)
 {
-    return (rcb->flags & NETRXF_data_validated);
+    return rcb->flags & NETRXF_data_validated;
 }
 
 UINT
 VNIFX_PACKET_NEEDS_CHECKSUM(RCB *rcb)
 {
-    return (rcb->flags & NETRXF_csum_blank);
+    return rcb->flags & NETRXF_csum_blank;
 }
 
 UINT
@@ -754,7 +757,8 @@ VNIFX_DUMP(PVNIF_ADAPTER adapter, UINT path_id, PUCHAR str,
         return;
     }
     if (adapter->dbg_print_cnt < vnif_dump_print_cnt || force) {
-        if (adapter->node_name && adapter->path[path_id].u.xq.rx_front_ring.sring
+        if (adapter->node_name
+                && adapter->path[path_id].u.xq.rx_front_ring.sring
                 && adapter->path[path_id].u.xq.tx_front_ring.sring) {
             DPRINTK(DPRTL_ON, ("%s: %p, %s %d, has %d recv, fltr %x\n",
                 str, adapter, adapter->node_name, adapter->dbg_print_cnt,
@@ -773,9 +777,9 @@ VNIFX_DUMP(PVNIF_ADAPTER adapter, UINT path_id, PUCHAR str,
                     adapter->path[path_id].u.xq.rx_front_ring.sring->req_prod,
                     adapter->path[path_id].u.xq.rx_front_ring.sring->rsp_prod));
                 PRINTK(("%s: sring: req_event 0x%x, rsp_event 0x%x.\n\n",
-                    str,
-                    adapter->path[path_id].u.xq.rx_front_ring.sring->req_event,
-                    adapter->path[path_id].u.xq.rx_front_ring.sring->rsp_event));
+                   str,
+                   adapter->path[path_id].u.xq.rx_front_ring.sring->req_event,
+                   adapter->path[path_id].u.xq.rx_front_ring.sring->rsp_event));
             }
 
             if (rxtx & 2) {
@@ -789,9 +793,9 @@ VNIFX_DUMP(PVNIF_ADAPTER adapter, UINT path_id, PUCHAR str,
                     adapter->path[path_id].u.xq.tx_front_ring.sring->req_prod,
                     adapter->path[path_id].u.xq.tx_front_ring.sring->rsp_prod));
                 PRINTK(("%s: sring: req_event 0x%x, rsp_event 0x%x.\n",
-                    str,
-                    adapter->path[path_id].u.xq.tx_front_ring.sring->req_event,
-                    adapter->path[path_id].u.xq.tx_front_ring.sring->rsp_event));
+                   str,
+                   adapter->path[path_id].u.xq.tx_front_ring.sring->req_event,
+                   adapter->path[path_id].u.xq.tx_front_ring.sring->rsp_event));
             }
             adapter->dbg_print_cnt++;
         } else {

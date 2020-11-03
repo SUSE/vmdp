@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -105,7 +105,8 @@ xenbus_probe_bus(PDEVICE_OBJECT fdo)
                 !(use_pv_drivers & XENBUS_PROBE_PV_NET)) {
             continue;
         } else if (strcmp(dir[i], "vbd") == 0 &&
-                /* This lets us probe for disk during install even though
+                /*
+                 * This lets us probe for disk during install even though
                  * XENBUS_PROBE_PV_DISK may not be set.
                  */
                 !(use_pv_drivers & XENBUS_PROBE_PV_INSTALL_DISK_FLAG) &&
@@ -288,7 +289,8 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
         }
 
         if (xtype == vbd && subtype == disk) {
-            /* We already know that we control disks, but check if we only
+            /*
+             * We already know that we control disks, but check if we only
              * control xvde and greater and no ioemu e.g. hd<x> disks.
              */
             res = xenbus_read(XBT_NIL, otherend, "dev", NULL);
@@ -308,7 +310,8 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
 
                 if (!(use_pv_drivers & XENBUS_PROBE_PV_SDVDISK)) {
                     if (res[0] == 's' && res[1] == 'd') {
-                        /* The disk line was something like: phy:/dev/sdb,sda,w
+                        /*
+                         * The disk line was something like: phy:/dev/sdb,sda,w
                          * XENBUS_PROBE_PV_SDVDISK was not set so don't control
                          */
                         RPRINTK(DPRTL_PROBE,
@@ -326,7 +329,8 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
                 res = xenbus_read(XBT_NIL, otherend, "type", NULL);
                 if (res) {
                     if (strcmp(res, "phy") == 0) {
-                        /* There must be a correspoinging vscsi=[] entry
+                        /*
+                         * There must be a correspoinging vscsi=[] entry
                          * or the disk will not be seen.
                          *
                          * Checking for phy will allow non phy disks to be
@@ -344,7 +348,8 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
         }
 
         if (xtype == vnif) {
-            /* We already know that we control vifs, but check if we only
+            /*
+             * We already know that we control vifs, but check if we only
              * control the type=netfront or type=vif vifs.
              */
             if (use_pv_drivers & XENBUS_PROBE_PV_NFNET) {
@@ -518,7 +523,8 @@ xenbus_determine_creation_type(PFDO_DEVICE_EXTENSION fdx,
                     entry = entry->Flink) {
                 pdx = CONTAINING_RECORD(entry, PDO_DEVICE_EXTENSION, Link);
                 if (pdx->Type == xtype && pdx->origin == created) {
-                    /* We found a device already created so we will
+                    /*
+                     * We found a device already created so we will
                      * allocate this one and any others that come along.
                      */
                     return alloced;
@@ -537,7 +543,8 @@ xenbus_determine_creation_type(PFDO_DEVICE_EXTENSION fdx,
                 entry = entry->Flink) {
             pdx = CONTAINING_RECORD(entry, PDO_DEVICE_EXTENSION, Link);
             if (pdx->Type == xtype && pdx->origin == created) {
-                /* We found a device already created so we will
+                /*
+                 * We found a device already created so we will
                  * allocate this one and any others that come along.
                  */
                 return alloced;

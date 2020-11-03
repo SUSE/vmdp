@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -137,9 +137,10 @@ put_free_entry(grant_ref_t ref)
     XenReleaseSpinLock(&gnttab_list_lock, lh);
 }
 
- /* Public grant-issuing interface functions */
+/* Public grant-issuing interface functions */
 
-/* Typical windows way of usint memory barriers is to set up a mutex protected
+/*
+ * Typical windows way of usint memory barriers is to set up a mutex protected
  * section. The compiler will generate mbs to prevent from reordering. However,
  * since we are writing driver exclusively for Windows 2003 server, here the
  * Windows 2003 only KeMemoryBarrier() is used. This may be subjected to change

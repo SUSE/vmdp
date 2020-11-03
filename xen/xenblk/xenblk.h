@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
@@ -406,7 +406,8 @@ ULONG XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath);
             | ((PCDB)(_srb)->Cdb)->CDB10.LogicalBlockByte1 << 16            \
             | ((PCDB)(_srb)->Cdb)->CDB10.LogicalBlockByte0 << 24)));        \
     } else {                                                                \
-        REVERSE_BYTES_QUAD(&(_req_off), ((PCDB)(_srb)->Cdb)->CDB16.LogicalBlock); \
+        REVERSE_BYTES_QUAD(&(_req_off),                                     \
+                           ((PCDB)(_srb)->Cdb)->CDB16.LogicalBlock);        \
         DPRINTK(DPRTL_TRC,                                                  \
             ("\tREV: %02x%02x%02x%02x%02x%02x%02x%02x, %x%08x.\n",          \
             ((PCDB)(_srb)->Cdb)->CDB16.LogicalBlock[0],                     \

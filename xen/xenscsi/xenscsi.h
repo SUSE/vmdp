@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2012-2020 SUSE LLC
@@ -267,7 +267,8 @@ typedef struct vscsi_dev {
     uint16_t idx;
 } vscsi_dev_t;
 
-/* We have one of these per vbd, whether ide, scsi or 'other'.  They
+/*
+ * We have one of these per vbd, whether ide, scsi or 'other'.  They
  * hang in private_data off the gendisk structure. We may end up
  * putting all kinds of interesting stuff here :-)
  */
