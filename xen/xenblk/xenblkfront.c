@@ -511,6 +511,9 @@ xenblk_setup_indirect_refs(struct blkfront_info *info,
                 return STATUS_UNSUCCESSFUL;
             }
             info->indirect_segs = segs;
+            for (i = old_ring_size; i < ring_size; ++i) {
+                info->indirect_segs[i] = NULL;
+            }
         }
         for (i = old_ring_size; i < ring_size; ++i) {
             info->indirect_segs[i] =
@@ -1729,6 +1732,7 @@ void
 blkif_free(struct blkfront_info *info, int suspend)
 {
     XENBLK_LOCK_HANDLE lh = {0};
+    void *mem_to_free;
     unsigned int i, ring_size;
 
     /* Prevent new requests being issued until we fix things up. */
@@ -1778,8 +1782,10 @@ blkif_free(struct blkfront_info *info, int suspend)
     if (info->indirect_segs != NULL) {
         RPRINTK(DPRTL_ON, ("      blkif_free: free indirect_segs\n"));
         for (i = 0; i < ring_size; i++) {
-            if (info->indirect_segs[i] != NULL) {
-                ExFreePool(info->indirect_segs[i]);
+            /* Use mem_to_free to fix DVL error. */
+            mem_to_free = info->indirect_segs[i];
+            if (mem_to_free != NULL) {
+                ExFreePool(mem_to_free);
             }
         }
         ExFreePool(info->indirect_segs);
@@ -1790,8 +1796,10 @@ blkif_free(struct blkfront_info *info, int suspend)
     if (info->shadow != NULL) {
         RPRINTK(DPRTL_ON, ("      blkif_free: free shadow\n"));
         for (i = 0; i < ring_size; i++) {
-            if (info->shadow[i].frame != NULL) {
-                ExFreePool(info->shadow[i].frame);
+            /* Use mem_to_free to fix DVL error. */
+            mem_to_free = info->shadow[i].frame;
+            if (mem_to_free != NULL) {
+                ExFreePool(mem_to_free);
             }
         }
         ExFreePool(info->shadow);
