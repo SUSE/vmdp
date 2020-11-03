@@ -1,0 +1,10 @@
+DIRS = \
+       virtio_blk \
+       virtio_net \
+       virtio_balloon \
+       virtio_scsi \
+       virtio_serial \
+       virtio_rng \
+       pvcrash_notify \
+       fwcfg \
+       pvvxsvc
