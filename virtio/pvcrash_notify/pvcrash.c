@@ -222,7 +222,7 @@ pvcrash_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 
 
 static VOID
-pvcrash_unload (IN PDRIVER_OBJECT DriverObject)
+pvcrash_unload(IN PDRIVER_OBJECT DriverObject)
 {
     PRINTK(("%s\n", __func__));
     PAGED_CODE();

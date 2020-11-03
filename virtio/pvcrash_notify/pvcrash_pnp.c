@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -205,7 +205,7 @@ pvcrash_start_device(
 }
 
 NTSTATUS
-pvcrash_fdo_pnp( IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
     ULONG length, prevcount, numNew, i;
@@ -313,7 +313,8 @@ pvcrash_fdo_pnp( IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         /* Seems we crash if we try to print from here down. */
         IoDetachDevice(fdx->LowerDevice);
 
-        /* The DeviceObject, aka gfdo, should be able to be set to NULL
+        /*
+         * The DeviceObject, aka gfdo, should be able to be set to NULL
          * eventhough there is an interaction between xnebus and xenblk.
          */
         IoDeleteDevice(DeviceObject);

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -24,8 +24,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __PVCRASH_POWER_H
-#define __PVCRASH_POWER_H
+#ifndef _PVCRASH_POWER_H
+#define _PVCRASH_POWER_H
 
 #include "pvcrash.h"
 
