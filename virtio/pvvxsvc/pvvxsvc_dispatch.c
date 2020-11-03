@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2014-2020 SUSE LLC
@@ -67,7 +67,8 @@ pvvxsvc_dispatch(DWORD dwArgc, LPTSTR *lpszArgv)
 static VOID
 pvvxsvc_dispatch_init(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-    /* Be sure to periodically call pvvxsvc_report_status() with
+    /*
+     * Be sure to periodically call pvvxsvc_report_status() with
      * SERVICE_START_PENDING. If initialization fails, call
      * pvvxsvc_report_status with SERVICE_STOPPED.
      *

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
@@ -69,7 +69,8 @@ pvvxsvc_shutdown_wait_loop(void)
         reg_bn_sys_dev_key = XENBN_SYS_DEVICE_KEY_WSTR;
     }
 
-    /* Open the registry and write that we want to be notified
+    /*
+     * Open the registry and write that we want to be notified
      * when a xm shutdown or reboot is requested.
      */
     if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,
@@ -95,7 +96,8 @@ pvvxsvc_shutdown_wait_loop(void)
                                       0,
                                       KEY_ALL_ACCESS,
                                       &hkey)) {
-        /* We need to do something here so that the first
+        /*
+         * We need to do something here so that the first
          * RegNotifyChangeKeyValue will catch the first
          * change to the registry.
          */
@@ -213,7 +215,8 @@ pvvxsvc_shutdown_system(LPTSTR lpMsg, DWORD delay, BOOL reboot)
     DWORD shutdown_attempts;
     BOOL ss_flag;               /* system shutdown flag */
 
-    /* Get the current process token handle so we can get shutdown
+    /*
+     * Get the current process token handle so we can get shutdown
      * privilege.
      */
     DBG_OUTPUT(TEXT("==> pvvxsvc_shutdown_system ****\n"));

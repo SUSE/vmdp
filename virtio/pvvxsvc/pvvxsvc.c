@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
@@ -115,7 +115,8 @@ wmain()
         return 0;
     }
 
-    /* This call returns when the service has stopped.
+    /*
+     * This call returns when the service has stopped.
      * The process should simply terminate when the call returns.
      */
     DBG_OUTPUT(TEXT("    StartServiceCtrlDispatcher ****\n"));
@@ -196,8 +197,8 @@ static pvvxsvc_msg_box(UINT id)
     hinst = GetModuleHandle(NULL);
 
     LoadString(hinst, MBOX_PVVXSVC_TITLE, title,
-        sizeof(title)/sizeof(title[0]) - 1);
-    LoadString(hinst, id, msg, sizeof(msg)/sizeof(msg[0]) - 1);
+        sizeof(title) / sizeof(title[0]) - 1);
+    LoadString(hinst, id, msg, sizeof(msg) / sizeof(msg[0]) - 1);
 
     MessageBox(NULL, msg, title, MB_OK);
 }
@@ -453,12 +454,12 @@ pvvxsvc_get_last_error_text(LPTSTR lpszBuf, DWORD dwSize)
         NULL);
 
     /* supplied buffer is not long enough */
-    if (!dwRet || ((long)dwSize < (long)dwRet+14)) {
+    if (!dwRet || ((long)dwSize < (long)dwRet + 14)) {
         lpszBuf[0] = TEXT('\0');
     } else {
         if (NULL != lpszTemp) {
             /* remove cr and newline character */
-            lpszTemp[lstrlen(lpszTemp)-2] = TEXT('\0');
+            lpszTemp[lstrlen(lpszTemp) - 2] = TEXT('\0');
             _stprintf_s(lpszBuf, dwSize, TEXT("%s (0x%x)"),
                 lpszTemp, GetLastError());
         }
