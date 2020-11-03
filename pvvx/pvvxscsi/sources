@@ -56,5 +56,18 @@ C_DEFINES = $(C_DEFINES) -DTARGET_OS_Win7 -DPVVX -DCAN_USE_MSI
 C_DEFINES = $(C_DEFINES) -DPVVXSCSI -DUSE_INDIRECT_XENBUS_APIS
 C_DEFINES = $(C_DEFINES) -DVIRTIO_SCSI_DRIVER
 
-!include src_files
-
+SOURCES= \
+    vxsb_entry.c \
+    virtio_scsi.c \
+    virtio_scsi_front.c \
+    virtio_sp_common.c \
+    virtio_ring.c \
+    virtio_pci.c \
+    virtio_pci_legacy.c \
+    virtio_pci_modern.c \
+    hypervsr_is.c \
+    xenscsi.c \
+    xenscsi_front.c \
+    storport_reg.c \
+    xenbus_apis.c \
+    vxscsi.rc

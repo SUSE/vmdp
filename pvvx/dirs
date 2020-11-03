@@ -1,0 +1,5 @@
+DIRS = \
+       pvvxbn \
+       pvvxblk \
+       pvvxnet \
+       pvvxscsi
