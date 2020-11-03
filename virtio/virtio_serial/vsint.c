@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2014-2020 SUSE LLC
@@ -45,7 +45,8 @@ wdm_device_isr(IN PKINTERRUPT InterruptObject, IN PVOID context)
         DPRINTK(DPRTL_ON, ("vserial_isr servicing int %x\n", cc));
         int_serviced = TRUE;
 
-        /* When servicing from the ISR, alway provide S1 with a value
+        /*
+         * When servicing from the ISR, alway provide S1 with a value
          * so that the int DPC will also call the queues DPC. Provide
          * s2 with a value to proccess the ctrl messages.
          */
@@ -119,7 +120,8 @@ vserial_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
     }
 
     if (queue_int) {
-        /* s1 will be set if there are message interrupts to be handled.
+        /*
+         * s1 will be set if there are message interrupts to be handled.
          * If called from the regular interrupt ISR s1 will always be set.
          * If caleed form the message IRS, it will be based on if there
          * a message interrupt or not.

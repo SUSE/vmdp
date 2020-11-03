@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2014-2020 SUSE LLC
@@ -94,7 +94,8 @@ vserial_ctrl_msg_process(PFDO_DEVICE_EXTENSION fdx, port_buffer_t *buf)
             vserial_port_pnp_notify(port);
         }
 
-        /* Someone is listening. Trigger a check to see if we have
+        /*
+         * Someone is listening. Trigger a check to see if we have
          * something waiting to be told.
          */
         if (port->HostConnected) {

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2014-2020 SUSE LLC
@@ -754,7 +754,8 @@ vserial_port_write(PPDO_DEVICE_EXTENSION port, IN PIRP request)
         PRINTK(("Failed to write allocate.\n"));
         request->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
         vserial_complete_request(request, IO_NO_INCREMENT);
-        DPRINTK(DPRTL_ON, ("<-- %s: STATUS_INSUFFICIENT_RESOURCES\n", __func__));
+        DPRINTK(DPRTL_ON, ("<-- %s: STATUS_INSUFFICIENT_RESOURCES\n",
+                           __func__));
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
@@ -766,7 +767,8 @@ vserial_port_write(PPDO_DEVICE_EXTENSION port, IN PIRP request)
         ExFreePoolWithTag(buffer, VSERIAL_POOL_TAG);
         request->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
         vserial_complete_request(request, IO_NO_INCREMENT);
-        DPRINTK(DPRTL_ON, ("<-- %s: STATUS_INSUFFICIENT_RESOURCES\n", __func__));
+        DPRINTK(DPRTL_ON, ("<-- %s: STATUS_INSUFFICIENT_RESOURCES\n",
+                           __func__));
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
@@ -793,7 +795,8 @@ vserial_port_write(PPDO_DEVICE_EXTENSION port, IN PIRP request)
         port->PendingWriteRequest = NULL;
         request->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
         vserial_complete_request(request, IO_NO_INCREMENT);
-        DPRINTK(DPRTL_ON, ("<-- %s: STATUS_INSUFFICIENT_RESOURCES\n", __func__));
+        DPRINTK(DPRTL_ON, ("<-- %s: STATUS_INSUFFICIENT_RESOURCES\n",
+                           __func__));
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 

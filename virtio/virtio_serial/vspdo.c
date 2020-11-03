@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2014-2020 SUSE LLC
@@ -220,7 +220,8 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     case IRP_MN_DEVICE_USAGE_NOTIFICATION:
         RPRINTK(DPRTL_PNP,
             ("PDO_Pnp: IRP_MN_DEVICE_USAGE_NOTIFICATION\n"));
-        /* TODO: We are here failing this Irp. For future VBD support,
+        /*
+         * TODO: We are here failing this Irp. For future VBD support,
          * it is possible that Windows may put a page file on a VBD device,
          * So we must properly handle this Irp in the future.
          */
@@ -233,14 +234,16 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
                 if (stack->Parameters.UsageNotification.InPath &&
                    pdx->pnpstate != Started) {
 
-                    /* Device isn't started.  Don't allow adding a
+                    /*
+                     * Device isn't started.  Don't allow adding a
                      * paging file, but allow a removal of one.
                      */
                     status = STATUS_DEVICE_NOT_READY;
                     break;
                 }
 
-                /* Ensure that this user thread is not suspended while we
+                /*
+                 * Ensure that this user thread is not suspended while we
                  *  are holding the PathCountEvent.
                  */
                 KeEnterCriticalRegion();
@@ -251,14 +254,16 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
                 ASSERT(NT_SUCCESS(status));
                 status = STATUS_SUCCESS;
 
-                /* If the volume is removable we should try to lock it in
+                /*
+                 * If the volume is removable we should try to lock it in
                  * place or unlock it once per paging path count
                  */
                 if (pdx->IsFdo) {
                     PRINTK(("PDO_Pnp: pdx->IsFdo lock.\n"));
                 }
 
-                /* if removing last paging device, need to set DO_POWER_PAGABLE
+                /*
+                 * If removing last paging device, need to set DO_POWER_PAGABLE
                  * bit here, and possible re-set it below on failure.
                  */
                 setPagable = FALSE;
@@ -266,9 +271,10 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
                 if (!stack->Parameters.UsageNotification.InPath &&
                     pdx->PagingPathCount == 1) {
 
-                    /* removing last paging file
+                    /*
+                     * Removing last paging file
                      * must have DO_POWER_PAGABLE bits set, but only
-                     * if noone set the DO_POWER_INRUSH bit
+                     * if noone set the DO_POWER_INRUSH bit.
                      */
                     if ((DeviceObject->Flags & DO_POWER_INRUSH) != 0) {
                         RPRINTK(DPRTL_PNP,
@@ -289,12 +295,14 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
                 }
 
-                /* forward the irp before finishing handling the
-                 * special cases
+                /*
+                 * Forward the irp before finishing handling the
+                 * special cases.
                  */
                 status = PDOForwardIrpSynchronous(pdx, Irp);
 
-                /* now deal with the failure and success cases.
+                /*
+                 * Now deal with the failure and success cases.
                  * note that we are not allowed to fail the irp
                  * once it is sent to the lower drivers.
                  */
@@ -463,7 +471,8 @@ PDOQueryDeviceCaps(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 
     PAGED_CODE();
 
-    /* XXX: I don't fully understand Windows power management mechanism yet.
+    /*
+     * XXX: I don't fully understand Windows power management mechanism yet.
      * This chunck of code is mainly directly copied from DDK samples. As we
      * really don't care more on power state of virtual devices, this may
      * simplified when it's get clear what kind of power management we need.
@@ -491,7 +500,7 @@ PDOQueryDeviceCaps(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     RtlCopyMemory(
       devcap->DeviceState,
       parentcap.DeviceState,
-      (PowerSystemShutdown+1) * sizeof(DEVICE_POWER_STATE));
+      (PowerSystemShutdown + 1) * sizeof(DEVICE_POWER_STATE));
 
     RPRINTK(DPRTL_PNP,
         ("PDOQueryDeviceCaps default DeviceState 1 %x, 2 %x, 3 %x, h %x\n",
@@ -532,7 +541,8 @@ PDOQueryDeviceCaps(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     devcap->DeviceD1 = TRUE;
     devcap->DeviceD2 = FALSE;
 
-    /* Specifies whether the device can respond to an external wake
+    /*
+     * Specifies whether the device can respond to an external wake
      * signal while in the D0, D1, D2, and D3 state.
      * Set these bits explicitly.
      */
@@ -584,7 +594,9 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         RPRINTK(DPRTL_PNP, ("BusQueryDeviceID/HardwareIDs.\n"));
         length = device_id.Length + sizeof(WCHAR) + sizeof(WCHAR); /* 2 NULLs */
 
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length, VSERIAL_POOL_TAG);
+        buffer = ExAllocatePoolWithTag(NonPagedPoolNx,
+                                       length,
+                                       VSERIAL_POOL_TAG);
 
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -607,7 +619,7 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         if (status != STATUS_SUCCESS) {
             break;
         }
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length *sizeof(WCHAR),
+        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length * sizeof(WCHAR),
             VSERIAL_POOL_TAG);
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -669,7 +681,9 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         break;
     case DeviceTextLocationInformation:
         length = (wcslen(VSERIAL_TEXT_LOCATION_NAME_WSTR) + 2) * sizeof(WCHAR);
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length, VSERIAL_POOL_TAG);
+        buffer = ExAllocatePoolWithTag(NonPagedPoolNx,
+                                       length,
+                                       VSERIAL_POOL_TAG);
         if (buffer == NULL) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             PRINTK(("PDOQueryDeviceText Location failed to alloc memory\n"));
@@ -735,7 +749,8 @@ PDOQueryDeviceRelations(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
             break;
         }
 
-        /* There is only one PDO pointer in the structure
+        /*
+         * There is only one PDO pointer in the structure
          * for this relation type. The PnP Manager removes
          * the reference to the PDO when the driver or application
          * un-registers for notification on the device.
@@ -1011,7 +1026,8 @@ GetDeviceCapabilities(
     status = IoCallDriver(targetObject, pnpIrp);
     if (status == STATUS_PENDING) {
 
-        /* Block until the irp comes back.
+        /*
+         * Block until the irp comes back.
          * Important thing to note here is when you allocate
          * the memory for an event in the stack you must do a
          * KernelMode wait instead of UserMode to prevent

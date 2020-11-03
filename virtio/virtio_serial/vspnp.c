@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2014-2020 SUSE LLC
@@ -571,7 +571,8 @@ FDO_Pnp(
         /* Seems we crash if we try to print from here down. */
         IoDetachDevice(fdx->LowerDevice);
 
-        /* The DeviceObject, aka gfdo, should be able to be set to NULL
+        /*
+         * The DeviceObject, aka gfdo, should be able to be set to NULL
          * eventhough there is an interaction between xnebus and xenblk.
          */
         IoDeleteDevice(DeviceObject);
@@ -589,7 +590,8 @@ FDO_Pnp(
 
         ExAcquireFastMutex(&fdx->Mutex);
 
-        /* upper drivers may already presented a relation,
+        /*
+         * Upper drivers may already presented a relation,
          * we should keep the existing ones and add ours.
          */
         oldRelations = (PDEVICE_RELATIONS) Irp->IoStatus.Information;

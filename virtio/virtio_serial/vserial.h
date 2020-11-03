@@ -181,7 +181,8 @@ typedef struct _PDO_DEVICE_EXTENSION {
     PIRP          PendingReadRequest;
     PIRP          PendingWriteRequest;
 
-    /* Hold a list of allocated buffers which were written to the virt queue
+    /*
+     * Hold a list of allocated buffers which were written to the virt queue
      * and was not returned yet.
      */
     SINGLE_LIST_ENTRY   WriteBuffersList;
