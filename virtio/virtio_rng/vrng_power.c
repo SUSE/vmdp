@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -133,7 +133,9 @@ PciDrvDispatchSetPowerState(PDEVICE_OBJECT DeviceObject, PIRP Irp)
     stack = IoGetCurrentIrpStackLocation(Irp);
     powerType = stack->Parameters.Power.Type;
     powerState = stack->Parameters.Power.State;
-    RPRINTK(DPRTL_ON, ("    powerType %x, powerState %x\n", powerType, powerState));
+    RPRINTK(DPRTL_ON, ("    powerType %x, powerState %x\n",
+                       powerType,
+                       powerState));
 
     if (powerType == SystemPowerState) {
         if (powerState.SystemState >= PowerSystemSleeping3 &&

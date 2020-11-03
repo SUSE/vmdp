@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -74,8 +74,7 @@ typedef struct _COMMON_DEVICE_EXTENSION {
 
 } COMMON_DEVICE_EXTENSION, *PCOMMON_DEVICE_EXTENSION;
 
-typedef struct _read_buffer_entry_s
-{
+typedef struct _read_buffer_entry_s {
     SINGLE_LIST_ENTRY list_entry;
     PIRP request;
     PVOID buffer;

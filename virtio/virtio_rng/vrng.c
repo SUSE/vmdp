@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -166,7 +166,7 @@ vrng_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 
 
 static VOID
-vrng_unload (IN PDRIVER_OBJECT DriverObject)
+vrng_unload(IN PDRIVER_OBJECT DriverObject)
 {
     PRINTK(("vrng_unload\n"));
     PAGED_CODE();

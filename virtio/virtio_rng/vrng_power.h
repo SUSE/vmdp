@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -24,8 +24,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __VIRTIO_BLNPWR_H
-#define __VIRTIO_BLNPWR_H
+#ifndef _VIRTIO_BLNPWR_H
+#define _VIRTIO_BLNPWR_H
 
 #include "vrng.h"
 

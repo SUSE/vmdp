@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -81,8 +81,7 @@ vrng_q_init(IN FDO_DEVICE_EXTENSION *fdx)
 
     if (fdx->vq != NULL) {
         status = STATUS_SUCCESS;
-    }
-    else {
+    } else {
         status = STATUS_UNSUCCESSFUL;
     }
 
@@ -304,7 +303,8 @@ vrng_fdo_pnp(
         /* Seems we crash if we try to print from here down. */
         IoDetachDevice(fdx->LowerDevice);
 
-        /* The DeviceObject, aka gfdo, should be able to be set to NULL
+        /*
+         * The DeviceObject, aka gfdo, should be able to be set to NULL
          * eventhough there is an interaction between xnebus and xenblk.
          */
         IoDeleteDevice(DeviceObject);
