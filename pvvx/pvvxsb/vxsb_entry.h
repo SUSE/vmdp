@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2016-2020 SUSE LLC

@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2016-2020 SUSE LLC
@@ -41,7 +41,7 @@ uint32_t dbg_print_mask = DPRTL_ON | DPRTL_INIT | DPRTL_UNEXPD | DPRTL_COND;
 uint32_t conditional_times_printed;
 uint32_t conditional_times_to_print_limit = CONDITIONAL_TIMES_TO_PRINT_LIMIT;
 #else
-uint32_t dbg_print_mask = 0;
+uint32_t dbg_print_mask;
 #endif
 
 static KSPIN_LOCK vxsb_print_lock;
@@ -56,7 +56,8 @@ vxsb_print_str(char *str)
     KLOCK_QUEUE_HANDLE lh;
     char *c;
 
-    /* Spin locks don't protect against irql > 2.  So if we come in at a
+    /*
+     * Spin locks don't protect against irql > 2.  So if we come in at a
      * higl level, just print it and we'll have to maually sort out the
      * the possible mixing of multiple output messages.
      */
@@ -112,9 +113,10 @@ DriverEntry(IN void *DriverObject, IN void *RegistryPath)
             PRINTK(("%s %s.\n", PVVX_LOADING_STR, PVVX_XEN_DRV_STR));
         }
         if (irql == PASSIVE_LEVEL) {
-            /* If we get loaded before xenbus, then we are in a non-normal startup.
-             * In this case we don't want xenblk to continue loading and replace IDE
-             * if xenbus comes up later.
+            /*
+             * If we get loaded before xenbus, then we are in a non-normal
+             * startup.  In this case we don't want xenblk to continue
+             * loading and replace IDE if xenbus comes up later.
              */
             RtlInitUnicodeString(&xenbus_str, XENBUS_DEVICE_NAME_WSTR);
             status = IoGetDeviceObjectPointer(&xenbus_str,
