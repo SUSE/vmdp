@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2018 Virtuozzo International GmbH

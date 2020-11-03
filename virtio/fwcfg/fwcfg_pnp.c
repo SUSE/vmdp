@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2018-2020 SUSE LLC
@@ -138,13 +138,21 @@ fwcfg_prepare_hardware(
         return status;
     }
 
-    if ((status = fwcfg_check_sig(fdx->ioBase))
-            != STATUS_SUCCESS ||
-        (status = fwcfg_check_features(fdx->ioBase, FW_CFG_VERSION_DMA))
-            != STATUS_SUCCESS ||
-        (status = fwcfg_check_dma(fdx->ioBase))
-            != STATUS_SUCCESS) {
-        PRINTK(("%s %s: failed checks 0x%x\n",
+    status = fwcfg_check_sig(fdx->ioBase);
+    if (status != STATUS_SUCCESS) {
+        PRINTK(("%s %s: failed sig check 0x%x\n",
+                VDEV_DRIVER_NAME, __func__, status));
+        return status;
+    }
+    status = fwcfg_check_features(fdx->ioBase, FW_CFG_VERSION_DMA);
+    if (status != STATUS_SUCCESS) {
+        PRINTK(("%s %s: failed features check 0x%x\n",
+                VDEV_DRIVER_NAME, __func__, status));
+        return status;
+    }
+    status = fwcfg_check_dma(fdx->ioBase);
+    if (status != STATUS_SUCCESS) {
+        PRINTK(("%s %s: failed dma check 0x%x\n",
                 VDEV_DRIVER_NAME, __func__, status));
         return status;
     }
@@ -250,7 +258,8 @@ fwcfg_stop_device(FDO_DEVICE_EXTENSION *fdx)
                 FALSE);
             fdx->common_buf = NULL;
         }
-        fdx->dma_adapter_obj->DmaOperations->PutDmaAdapter(fdx->dma_adapter_obj);
+        fdx->dma_adapter_obj->DmaOperations->PutDmaAdapter(
+            fdx->dma_adapter_obj);
         fdx->dma_adapter_obj = NULL;
     }
 }
@@ -298,7 +307,7 @@ fwcfg_send_irp_synchronous(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
 
 NTSTATUS
-fwcfg_fdo_pnp( IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
+fwcfg_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
     ULONG length, prevcount, numNew, i;
@@ -393,7 +402,8 @@ fwcfg_fdo_pnp( IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         /* Seems we crash if we try to print from here down. */
         IoDetachDevice(fdx->LowerDevice);
 
-        /* The DeviceObject, aka gfdo, should be able to be set to NULL
+        /*
+         * The DeviceObject, aka gfdo, should be able to be set to NULL
          * eventhough there is an interaction between xnebus and xenblk.
          */
         IoDeleteDevice(DeviceObject);

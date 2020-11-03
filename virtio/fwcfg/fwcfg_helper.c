@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2018 Virtuozzo International GmbH
@@ -185,8 +185,7 @@ fwcfg_dma_send(PVOID ioBase, LONGLONG data_pa, USHORT index,
     ctrl = RtlUlongByteSwap(pDmaAccess->control) & MAXUINT16;
     if (!ctrl) {
         status = STATUS_SUCCESS;
-    }
-    else {
+    } else {
         status = STATUS_IO_DEVICE_ERROR;
     }
 
@@ -254,8 +253,9 @@ fwcfg_vm_core_info_fill(FDO_DEVICE_EXTENSION *fdx)
         return status;
     }
 
-    /* Original KDBG pointer was saved in header by system.
-     * BugcheckParameter1 field is unused in live system and will be filled by    .
+    /*
+     * Original KDBG pointer was saved in header by system.
+     * BugcheckParameter1 field is unused in live system and will be filled by
      * QEMU. So the pointer to decoded KDBG can be stored in this field.
      */
     *(PULONG64)(hdr_buf + DUMP_HDR_OFFSET_BUGCHECK_PARAM1) = (ULONG64)fdx->kdbg;
@@ -302,8 +302,7 @@ fwcfg_evt_device_d0_entry(FDO_DEVICE_EXTENSION *fdx)
     pVmci->size = sizeof(VMCI_ELF64_NOTE);
 
     status = fwcfg_vm_core_info_fill(fdx);
-    if (!NT_SUCCESS(status))
-    {
+    if (!NT_SUCCESS(status)) {
         RPRINTK(DPRTL_INIT, ("<-- %s %s: fail VMCoreInfoFill\n",
                              VDEV_DRIVER_NAME, __func__));
         return status;

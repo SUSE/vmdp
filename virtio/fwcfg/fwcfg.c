@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2018-2020 SUSE LLC
@@ -217,7 +217,7 @@ fwcfg_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 
 
 static VOID
-fwcfg_unload (IN PDRIVER_OBJECT DriverObject)
+fwcfg_unload(IN PDRIVER_OBJECT DriverObject)
 {
     PRINTK(("%s\n", __func__));
     PAGED_CODE();
