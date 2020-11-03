@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2017-2020 SUSE LLC
@@ -41,12 +41,12 @@ ULONG g_int_to_send;
 #endif
 
 #ifdef VBIF_DBG_TRACK_SRBS
-uint32_t srbs_seen = 0;
-uint32_t srbs_returned = 0;
-uint32_t io_srbs_seen = 0;
-uint32_t io_srbs_returned = 0;
-uint32_t sio_srbs_seen = 0;
-uint32_t sio_srbs_returned = 0;
+uint32_t srbs_seen;
+uint32_t srbs_returned;
+uint32_t io_srbs_seen;
+uint32_t io_srbs_returned;
+uint32_t sio_srbs_seen;
+uint32_t sio_srbs_returned;
 #endif
 
 static void virtio_sp_dump_config_info(virtio_sp_dev_ext_t *dev_ext,
@@ -420,13 +420,11 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
         param.Size = sizeof(STARTIO_PERFORMANCE_PARAMETERS);
         status = StorPortGetStartIoPerfParams(dev_ext, srb, &param);
         if (status == STOR_STATUS_SUCCESS && param.MessageNumber != 0) {
-           qidx = param.MessageNumber - 1;
+            qidx = param.MessageNumber - 1;
+        } else {
+            qidx = VIRTIO_SCSI_QUEUE_REQUEST;
         }
-        else {
-           qidx = VIRTIO_SCSI_QUEUE_REQUEST;
-        }
-    }
-    else {
+    } else {
         qidx = VIRTIO_SCSI_QUEUE_REQUEST;
     }
 
@@ -631,42 +629,40 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
     }
 
 #ifdef CAN_USE_MSI
-    if ( (pPciComHeader->Status & PCI_STATUS_CAPABILITIES_LIST) == 0) {
-       RPRINTK(DPRTL_ON, ("%s: No PCI CAPABILITIES_LIST\n",
-                          VIRTIO_SP_DRIVER_NAME));
+    if ((pPciComHeader->Status & PCI_STATUS_CAPABILITIES_LIST) == 0) {
+        RPRINTK(DPRTL_ON, ("%s: No PCI CAPABILITIES_LIST\n",
+                           VIRTIO_SP_DRIVER_NAME));
     } else {
-       if ((pPciComHeader->HeaderType & (~PCI_MULTIFUNCTION))
-                == PCI_DEVICE_TYPE ) {
-          CapOffset = pPciComHeader->u.type0.CapabilitiesPtr;
-          while (CapOffset != 0) {
-             pMsixCapOffset =
-                 (PPCI_MSIX_CAPABILITY)(pci_cfg_buf + CapOffset);
-             if (pMsixCapOffset->Header.CapabilityID
-                        == PCI_CAPABILITY_ID_MSIX ) {
-                RPRINTK(DPRTL_ON, ("\tMessageControl.TableSize = %d\n",
+        if ((pPciComHeader->HeaderType & (~PCI_MULTIFUNCTION))
+                == PCI_DEVICE_TYPE) {
+            CapOffset = pPciComHeader->u.type0.CapabilitiesPtr;
+            while (CapOffset != 0) {
+                pMsixCapOffset =
+                    (PPCI_MSIX_CAPABILITY)(pci_cfg_buf + CapOffset);
+                if (pMsixCapOffset->Header.CapabilityID
+                        == PCI_CAPABILITY_ID_MSIX) {
+                    RPRINTK(DPRTL_ON, ("\tMessageControl.TableSize = %d\n",
                         pMsixCapOffset->MessageControl.TableSize));
-                RPRINTK(DPRTL_ON, ("\tMessageControl.FunctionMask = %d\n",
+                    RPRINTK(DPRTL_ON, ("\tMessageControl.FunctionMask = %d\n",
                         pMsixCapOffset->MessageControl.FunctionMask));
-                RPRINTK(DPRTL_ON, ("\tMessageControl.MSIXEnable = %d\n",
+                    RPRINTK(DPRTL_ON, ("\tMessageControl.MSIXEnable = %d\n",
                         pMsixCapOffset->MessageControl.MSIXEnable));
-                RPRINTK(DPRTL_ON, ("\tMessageTable = %p\n",
+                    RPRINTK(DPRTL_ON, ("\tMessageTable = %p\n",
                         pMsixCapOffset->MessageTable));
-                RPRINTK(DPRTL_ON, ("\tPBATable = %d\n",
+                    RPRINTK(DPRTL_ON, ("\tPBATable = %d\n",
                         pMsixCapOffset->PBATable));
-                dev_ext->msi_enabled =
-                    (pMsixCapOffset->MessageControl.MSIXEnable == 1);
-             }
-             else {
-                RPRINTK(DPRTL_ON,
-                        ("CapabilityID = %x, Next CapOffset = %x\n",
-                         pMsixCapOffset->Header.CapabilityID, CapOffset));
+                    dev_ext->msi_enabled =
+                        (pMsixCapOffset->MessageControl.MSIXEnable == 1);
+                } else {
+                    RPRINTK(DPRTL_ON,
+                            ("CapabilityID = %x, Next CapOffset = %x\n",
+                            pMsixCapOffset->Header.CapabilityID, CapOffset));
              }
              CapOffset = pMsixCapOffset->Header.Next;
           }
-       }
-       else {
-          PRINTK(("%s: Not a PCI_DEVICE_TYPE\n", VIRTIO_SP_DRIVER_NAME));
-       }
+        } else {
+            PRINTK(("%s: Not a PCI_DEVICE_TYPE\n", VIRTIO_SP_DRIVER_NAME));
+        }
     }
 #endif
 
@@ -802,7 +798,8 @@ virtio_sp_dump_config_info(virtio_sp_dev_ext_t *dev_ext,
             config_info->Dma32BitAddresses));
     RPRINTK(DPRTL_ON, ("\tDma64BitAddresses: %d\n",
             config_info->Dma64BitAddresses));
-    RPRINTK(DPRTL_ON, ("\tWmiDataProvider: %d\n", config_info->WmiDataProvider));
+    RPRINTK(DPRTL_ON, ("\tWmiDataProvider: %d\n",
+            config_info->WmiDataProvider));
     RPRINTK(DPRTL_ON, ("\tAlignmentMask: %d\n", config_info->AlignmentMask));
     RPRINTK(DPRTL_ON, ("\tMapBuffers: %d\n", config_info->MapBuffers));
     RPRINTK(DPRTL_ON, ("\tSynchronizationModel: %d\n",
@@ -814,7 +811,7 @@ virtio_sp_dump_config_info(virtio_sp_dev_ext_t *dev_ext,
             config_info->MaximumNumberOfLogicalUnits));
     RPRINTK(DPRTL_ON, ("\tNeedPhysicalAddresses: %d\n",
             config_info->NeedPhysicalAddresses));
-    RPRINTK(DPRTL_ON, ("\tTaggedQueuing: %d\n",config_info->TaggedQueuing));
+    RPRINTK(DPRTL_ON, ("\tTaggedQueuing: %d\n", config_info->TaggedQueuing));
     RPRINTK(DPRTL_ON, ("\tCachesData: %d\n", config_info->CachesData));
 }
 
@@ -1089,7 +1086,8 @@ virtio_sp_shutdown(virtio_sp_dev_ext_t *dev_ext)
 {
     ULONG i;
 
-    /* Skip doing a vbif_do_flush(dev_ext, &srb);  A flush will cause a hang
+    /*
+     * Skip doing a vbif_do_flush(dev_ext, &srb);  A flush will cause a hang
      * waiting for the flush that will never complete.
      */
 
@@ -1102,7 +1100,8 @@ virtio_sp_shutdown(virtio_sp_dev_ext_t *dev_ext)
 
     for (i = 0; i < dev_ext->num_queues + VIRTIO_SCSI_QUEUE_REQUEST; i++) {
         if (dev_ext->vq[i]) {
-            /* Memory for the disk's queue comes from the uncached extension and
+            /*
+             * Memory for the disk's queue comes from the uncached extension and
              * isn't aloocated noramlly.  Therefore, don't set dev_ext->vq to
              * NULL.  dev_ext->vq needs to be valid so coming up from a
              * hibernate does not cause a pagefault.
@@ -1170,7 +1169,7 @@ virtio_sp_verify_sgl(virtio_sp_dev_ext_t *dev_ext,
             CDPRINTK(DPRTL_COND, 0, 0, 1, ("\tlen %d, %x, %x.\n",
                 sgl->List[i].Length,
                 sgl->List[i].PhysicalAddress.u.LowPart,
-                sgl->List[i].PhysicalAddress.u.LowPart>>PAGE_SHIFT));
+                sgl->List[i].PhysicalAddress.u.LowPart >> PAGE_SHIFT));
         }
     }
 }
