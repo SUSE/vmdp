@@ -1,8 +1,9 @@
 #ifndef _LINUX_VIRTIO_NET_H
 #define _LINUX_VIRTIO_NET_H
-/* This header is BSD licensed so anyone can use the definitions to implement
- * compatible drivers/servers. 
- *-
+/*
+ * This header is BSD licensed so anyone can use the definitions to implement
+ * compatible drivers/servers.
+ *
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Redistribution and use in source and binary forms, with or without

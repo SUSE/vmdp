@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2018-2020 SUSE LLC
@@ -93,7 +93,7 @@ cmp_strtoul(const char *ptr, char **endptr, int radix)
             break;
         }
         if (valid) {
-            res = res*radix + i;
+            res = res * radix + i;
         }
     }
     if (endptr) {
@@ -165,7 +165,7 @@ cmp_strtou64(const char *ptr, char **endptr, int radix)
             break;
         }
         if (valid) {
-            res = res*radix + i;
+            res = res * radix + i;
         }
     }
     if (endptr) {

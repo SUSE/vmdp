@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2015 Novell, Inc.
@@ -30,7 +30,7 @@
 
 #define virt_to_machine(v)  (phys_to_machine((paddr_t)(__pa((PVOID)v))))
 #define virt_to_mfn(v)      (pfn_to_mfn(                                    \
-                                 (unsigned long)(__pa((PVOID)(v)) >> PAGE_SHIFT)))
+                               (unsigned long)(__pa((PVOID)(v)) >> PAGE_SHIFT)))
 #define phys_to_mfn(p)      ((unsigned long)((p) >> PAGE_SHIFT))
 
 #endif

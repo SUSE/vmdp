@@ -3,13 +3,14 @@
 
 #include <virtio_utils.h>
 
-/* An interface for efficient virtio implementation, currently for use by KVM
+/*
+ * An interface for efficient virtio implementation, currently for use by KVM
  * and lguest, but hopefully others soon.  Do NOT change this since it will
  * break existing servers and clients.
  *
  * This header is BSD licensed so anyone can use the definitions to implement
  * compatible drivers/servers.
- *-
+ *
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright Rusty Russell IBM Corporation 2007.
@@ -34,7 +35,7 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  */
 
 /* This marks a buffer as continuing via the next field. */
@@ -44,22 +45,28 @@
 /* This means the buffer contains a list of buffer descriptors. */
 #define VRING_DESC_F_INDIRECT   4
 
-/* The Host uses this in used->flags to advise the Guest: don't kick me when
+/*
+ * The Host uses this in used->flags to advise the Guest: don't kick me when
  * you add a buffer.  It's unreliable, so it's simply an optimization.  Guest
- * will still kick if it's out of buffers. */
+ * will still kick if it's out of buffers.
+ */
 #define VRING_USED_F_NO_NOTIFY  1
-/* The Guest uses this in avail->flags to advise the Host: don't interrupt me
+/*
+ * The Guest uses this in avail->flags to advise the Host: don't interrupt me
  * when you consume a buffer.  It's unreliable, so it's simply an
- * optimization.  */
+ * optimization.
+ */
 #define VRING_AVAIL_F_NO_INTERRUPT  1
 
 /* We support indirect buffer descriptors */
 #define VIRTIO_RING_F_INDIRECT_DESC 28
 
-/* The Guest publishes the used index for which it expects an interrupt
-* at the end of the avail ring. Host should ignore the avail->flags field. */
-/* The Host publishes the avail index for which it expects a kick
-* at the end of the used ring. Guest should ignore the used->flags field. */
+/*
+ * The Guest publishes the used index for which it expects an interrupt
+ * at the end of the avail ring. Host should ignore the avail->flags field.
+ * The Host publishes the avail index for which it expects a kick
+ * at the end of the used ring. Guest should ignore the used->flags field.
+ */
 #define VIRTIO_RING_F_EVENT_IDX     29
 
 #define SIZE_OF_SINGLE_INDIRECT_DESC 16
@@ -124,7 +131,8 @@ typedef struct virtio_queue_s {
 } virtio_queue_t;
 
 
-/* The standard layout for the ring is a continuous chunk of memory which looks
+/*
+ * The standard layout for the ring is a continuous chunk of memory which looks
  * like this.  We assume num is a power of 2.
  *
  * struct vring
@@ -147,7 +155,8 @@ typedef struct virtio_queue_s {
  * };
  */
 
-/* We publish the used event index at the end of the available ring, and vice
+/*
+ * We publish the used event index at the end of the available ring, and vice
  * versa. They are at the end for backwards compatibility.
  */
 #define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
@@ -158,8 +167,8 @@ static __inline void vring_init(struct vring *vr, unsigned int num, void *p,
 {
     vr->num = num;
     vr->desc = p;
-    vr->avail = (void *)((uint8_t *)p + num*sizeof(struct vring_desc));
-    vr->used = (void *)(((ULONG_PTR)&vr->avail->ring[num] + align-1)
+    vr->avail = (void *)((uint8_t *)p + num * sizeof(struct vring_desc));
+    vr->used = (void *)(((ULONG_PTR)&vr->avail->ring[num] + align - 1)
                 & ~((ULONG_PTR)align - 1));
 }
 

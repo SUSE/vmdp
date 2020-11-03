@@ -1,8 +1,9 @@
 #ifndef _LINUX_VIRTIO_CONFIG_H
 #define _LINUX_VIRTIO_CONFIG_H
-/* This header, excluding the #ifdef __KERNEL__ part, is BSD licensed so
+/*
+ * This header, excluding the #ifdef __KERNEL__ part, is BSD licensed so
  * anyone can use the definitions to implement compatible drivers/servers.
- *-
+ *
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,9 +27,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Virtio devices use a standardized configuration space to define their
+/*
+ * Virtio devices use a standardized configuration space to define their
  * features and pass configuration information, but each implementation can
- * store and access that space differently. */
+ * store and access that space differently.
+ */
 
 /* Status byte for guest to report progress, and synchronize features. */
 /* We have seen device and processed generic fields (VIRTIO_CONFIG_F_VIRTIO) */
@@ -42,14 +45,18 @@
 /* We've given up on this device. */
 #define VIRTIO_CONFIG_S_FAILED      0x80
 
-/* Some virtio feature bits (currently bits 28 through 31) are reserved for the
+/*
+ *Some virtio feature bits (currently bits 28 through 31) are reserved for the
  * transport being used (eg. virtio_ring), the rest are per-device feature
- * bits. */
+ * bits.
+ */
 #define VIRTIO_TRANSPORT_F_START    28
 #define VIRTIO_TRANSPORT_F_END      32
 
-/* Do we get callbacks when the ring is completely used, even if we've
- * suppressed them? */
+/*
+ * Do we get callbacks when the ring is completely used, even if we've
+ * suppressed them?
+ */
 #define VIRTIO_F_NOTIFY_ON_EMPTY    24
 
 /* Can the device handle any descriptor layout? */

@@ -40,9 +40,11 @@
 /* An 8-bit device status register.  */
 #define VIRTIO_PCI_STATUS       18
 
-/* An 8-bit r/o interrupt status register.  Reading the value will return the
+/*
+ * An 8-bit r/o interrupt status register.  Reading the value will return the
  * current contents of the ISR and will also clear it.  This is effectively
- * a read-and-acknowledge. */
+ * a read-and-acknowledge.
+ */
 #define VIRTIO_PCI_ISR          19
 
 /* The bit of the ISR which indicates a device configuration change. */
@@ -56,20 +58,20 @@
 /* Vector value used to disable MSI for queue */
 #define VIRTIO_MSI_NO_VECTOR            0xffff
 
-/* The remaining space is defined by each driver as the per-driver
- * configuration space */
+/* The remaining space is defined by each driver as the per-driver */
+/* configuration space */
 #define VIRTIO_PCI_CONFIG 20
 #define VIRTIO_PCI_CONFIG_MSI_OFFSET 4
 
 /* Virtio ABI version, this must match exactly */
 #define VIRTIO_PCI_ABI_VERSION      0
 
-/* How many bits to shift physical queue address written to QUEUE_PFN.
- * 12 is historical, and due to x86 page size. */
+/* How many bits to shift physical queue address written to QUEUE_PFN. */
+/* 12 is historical, and due to x86 page size. */
 #define VIRTIO_PCI_QUEUE_ADDR_SHIFT 12
 
-/* The alignment to use between consumer and producer parts of vring.
- * x86 pagesize again. */
+/* The alignment to use between consumer and producer parts of vring. */
+/* x86 pagesize again. */
 #define VIRTIO_PCI_VRING_ALIGN      PAGE_SIZE
 
 #define LEGACY_VRING_ALIGN PAGE_SIZE
@@ -174,10 +176,11 @@ typedef struct virtio_device_s {
     ULONG_PTR addr;
     ULONG msix_used_offset;
 
-    // the ISR status field, reading causes the device to de-assert an interrupt
+    /* the ISR status field, reading causes the device to de-assert an */
+    /* interrupt */
     volatile uint8_t *isr;
 
-    // modern virtio device capabilities and related state
+    /* modern virtio device capabilities and related state */
     volatile virtio_pci_common_cfg_t *common;
     volatile unsigned char *config;
     volatile unsigned char *notify_base;
@@ -190,41 +193,40 @@ typedef struct virtio_device_s {
 
     ULONG maxQueues;
     char *drv_name;
-    //virtio_per_queue_info_t info[MAX_QUEUES_PER_DEVICE_DEFAULT];
+    /* virtio_per_queue_info_t info[MAX_QUEUES_PER_DEVICE_DEFAULT]; */
     /* do not add any members after info struct, it is extensible */
 } virtio_device_t;
 
-typedef struct virtio_device_ops_s
-{
-    // read/write device config and read config generation counter
+typedef struct virtio_device_ops_s {
+    /* read/write device config and read config generation counter */
     void (*get_config)(virtio_device_t *vdev,
                        unsigned offset, void *buf, unsigned len);
     void (*set_config)(virtio_device_t *vdev,
                        unsigned offset, const void *buf, unsigned len);
     uint32_t (*get_config_generation)(virtio_device_t *vdev);
 
-    // read/write device status byte and reset the device
+    /* read/write device status byte and reset the device */
     uint8_t (*get_status)(virtio_device_t *vdev);
     void (*set_status)(virtio_device_t *vdev, uint8_t status);
     void (*reset)(virtio_device_t *vdev);
 
-    // get/set device feature bits
+    /* get/set device feature bits */
     uint64_t (*get_features)(virtio_device_t *vdev);
     NTSTATUS (*set_features)(virtio_device_t *vdev, uint64_t features);
 
-    // set config/queue MSI interrupt vector, returns the new vector
+    /* set config/queue MSI interrupt vector, returns the new vector */
     uint16_t (*set_config_vector)(virtio_device_t *vdev, uint16_t vector);
     uint16_t (*set_queue_vector)(virtio_device_t *vdev,
         uint16_t qidx,
         uint16_t vector);
 
-    // query virtual queue size and memory requirements
+    /* query virtual queue size and memory requirements */
     NTSTATUS (*query_queue_alloc)(virtio_device_t *vdev,
         unsigned qidx, uint16_t *pnum_entries,
         unsigned long *pring_size,
         unsigned long *pheapS_sze);
 
-    // allocate and initialize a queue
+    /* allocate and initialize a queue */
     virtio_queue_t *(*setup_queue)(virtio_device_t *vdev,
                                    uint16_t qidx,
                                    virtio_queue_t *vq,
@@ -233,7 +235,7 @@ typedef struct virtio_device_ops_s
                                    uint16_t msi_vector,
                                    BOOLEAN use_event_idx);
 
-    // tear down and deallocate a queue
+    /* tear down and deallocate a queue */
     void (*delete_queue)(virtio_queue_t *vq, uint32_t free_mem);
 
     NTSTATUS (*activate_queue)(virtio_device_t *vdev,
@@ -300,17 +302,17 @@ typedef struct virtio_device_ops_s
 #define PCI_READ_CONFIG_DWORD(_pci_config_buf, _offset, _dval)          \
     (_dval) = *(uint32_t *)&(_pci_config_buf)[(_offset)];
 
-/***************************************************
-shall be used only if virtio_device_t device storage is allocated
-dynamically to provide support for more than 8 (MAX_QUEUES_PER_DEVICE_DEFAULT) queues.
-return size in bytes to allocate for virtio_device_t structure.
-***************************************************/
+/*
+ * shall be used only if virtio_device_t device storage is allocated
+ * dynamically to provide support for more than 8
+ * (MAX_QUEUES_PER_DEVICE_DEFAULT) queues.
+ * return size in bytes to allocate for virtio_device_t structure.
+ */
 ULONG __inline virtio_dev_size_required(USHORT max_number_of_queues)
 {
     ULONG size = sizeof(virtio_device_t);
 
-    if (max_number_of_queues > MAX_QUEUES_PER_DEVICE_DEFAULT)
-    {
+    if (max_number_of_queues > MAX_QUEUES_PER_DEVICE_DEFAULT) {
         size += sizeof(virtio_per_queue_info_t)
             * (max_number_of_queues - MAX_QUEUES_PER_DEVICE_DEFAULT);
     }
