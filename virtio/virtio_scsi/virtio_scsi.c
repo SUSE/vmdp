@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2012-2020 SUSE LLC
@@ -151,7 +151,8 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         break;
 
     case SRB_FUNCTION_WMI: {
-        /* With config_info->WmiDataProvider defaulting to TRUE, we need to
+        /*
+         * With config_info->WmiDataProvider defaulting to TRUE, we need to
          * fail these requests or the system will crash in strange places.
          */
         SCSI_WMI_REQUEST_BLOCK *wmi = (SCSI_WMI_REQUEST_BLOCK *)Srb;
@@ -362,61 +363,6 @@ sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
         dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->last_used_idx,
         dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->vring.used->idx));
     return TRUE;
-#if 0
-    /* Enable this code to send down the reset. Currently this seems cause
-     * more problems that it solves.
-     */
-    PSCSI_REQUEST_BLOCK srb;
-    vscsi_srb_ext_t *srb_ext;
-    virtio_scsi_cmd_t *cmd;
-    ULONG len;
-    ULONG el;
-
-    if (!(dev_ext->op_mode & OP_MODE_NORMAL)) {
-        PRINTK(("%s: not normal out TURE\n", __func__));
-        return TRUE;
-    }
-    if (dev_ext->tmf_infly == TRUE) {
-        PRINTK(("%s: infly out TURE\n", __func__));
-        return TRUE;
-    }
-
-    srb = &dev_ext->tmf_cmd_srb;
-    srb_ext = (vscsi_srb_ext_t *)dev_ext->tmf_cmd_srb.SrbExtension;
-    cmd = &srb_ext->cmd;
-
-    memset((void *)cmd, 0, sizeof(virtio_scsi_cmd_t));
-    cmd->sc = srb;
-    cmd->req.tmf.lun[0] = 1;
-    cmd->req.tmf.lun[1] = 0;
-    cmd->req.tmf.lun[2] = 0;
-    cmd->req.tmf.lun[3] = 0;
-    cmd->req.tmf.type = VIRTIO_SCSI_T_TMF;
-    cmd->req.tmf.subtype = VIRTIO_SCSI_T_TMF_LOGICAL_UNIT_RESET;
-
-    el = 0;
-    srb_ext->sg[el].phys_addr = vscsi_get_physical_address(
-       dev_ext, NULL, &cmd->req.tmf, &len).QuadPart;
-    srb_ext->sg[el].len   = sizeof(cmd->req.tmf);
-    el++;
-    srb_ext->out = el;
-    srb_ext->sg[el].phys_addr = vscsi_get_physical_address(
-       dev_ext, NULL, &cmd->resp.tmf, &len).QuadPart;
-    srb_ext->sg[el].len   = sizeof(cmd->resp.tmf);
-    el++;
-    srb_ext->in = el - srb_ext->out;
-    srb_ext->q_idx = VIRTIO_SCSI_QUEUE_CONTROL;
-    vscsi_pause(dev_ext, 60);
-    dev_ext->tmf_infly = TRUE;
-    if (!vscsi_do_cmd(dev_ext, srb)) {
-        vscsi_resume(dev_ext);
-        PRINTK(("%s: out FALSE\n", __func__));
-        dev_ext->tmf_infly = FALSE;
-        return FALSE;
-    }
-    PRINTK(("%s: out TRUE\n", __func__));
-    return TRUE;
-#endif
 }
 
 BOOLEAN
@@ -553,22 +499,22 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
     if (reason == 1 || msg_id == VIRTIO_SCSI_QUEUE_EVENT) {
 
         while ((event_node = vring_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT],
-                &len)) != NULL) {
-           evt = &event_node->event;
-           RPRINTK(DPRTL_ON, ("VioScsiInterruptevent event %x\n",evt->event));
-           switch (evt->event) {
-           case VIRTIO_SCSI_T_NO_EVENT:
-              break;
-           case VIRTIO_SCSI_T_TRANSPORT_RESET:
-              virtio_scsi_transport_reset(dev_ext, evt);
-              break;
-           case VIRTIO_SCSI_T_PARAM_CHANGE:
-              virtio_scsi_param_change(dev_ext, evt);
-              break;
-           default:
-              PRINTK(("%s: Unsupport virtio scsi event %x\n",
-                      VIRTIO_SP_DRIVER_NAME, evt->event));
-              break;
+                                           &len)) != NULL) {
+            evt = &event_node->event;
+            RPRINTK(DPRTL_ON, ("VioScsiInterruptevent event %x\n", evt->event));
+            switch (evt->event) {
+            case VIRTIO_SCSI_T_NO_EVENT:
+               break;
+            case VIRTIO_SCSI_T_TRANSPORT_RESET:
+               virtio_scsi_transport_reset(dev_ext, evt);
+               break;
+            case VIRTIO_SCSI_T_PARAM_CHANGE:
+               virtio_scsi_param_change(dev_ext, evt);
+               break;
+            default:
+               PRINTK(("%s: Unsupport virtio scsi event %x\n",
+                       VIRTIO_SP_DRIVER_NAME, evt->event));
+               break;
            }
            virtio_scsi_add_event(dev_ext, event_node);
         }
@@ -577,8 +523,9 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
         PRINTK(("%s: ** int reason 3\n", VIRTIO_SP_DRIVER_NAME));
         SP_NOTIFICATION(BusChangeDetected, dev_ext, 0);
     } else if (reason == 2 || reason > 3) {
-        RPRINTK(DPRTL_UNEXPD,("%s %s: int serviced set to FALSE, reason = %d\n",
-            VIRTIO_SP_DRIVER_NAME, __func__, reason));
+        RPRINTK(DPRTL_UNEXPD,
+                ("%s %s: int serviced set to FALSE, reason = %d\n",
+                VIRTIO_SP_DRIVER_NAME, __func__, reason));
         int_serviced = FALSE;
     }
     DPRINTK(DPRTL_INT, ("%s %s: out %d\n",

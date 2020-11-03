@@ -1,4 +1,4 @@
-/*-
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2012-2020 SUSE LLC
@@ -154,8 +154,8 @@ virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
         for (i = 0; i < VIRTIO_SCSI_T_EVENTS_IN_QUEUE; i++) {
             if (!virtio_scsi_prime_event_queue(dev_ext,
                                                &dev_ext->event_node[i])) {
-               PRINTK(("%s: Can't add to event queue: event %d\n",
-                       VIRTIO_SP_DRIVER_NAME, i));
+                PRINTK(("%s: Can't add to event queue: event %d\n",
+                        VIRTIO_SP_DRIVER_NAME, i));
            }
         }
     }
@@ -203,7 +203,8 @@ virtio_scsi_prime_event_queue(virtio_sp_dev_ext_t *dev_ext,
 }
 
 void
-virtio_scsi_transport_reset(virtio_sp_dev_ext_t *dev_ext, virtio_scsi_event_t *evt)
+virtio_scsi_transport_reset(virtio_sp_dev_ext_t *dev_ext,
+                            virtio_scsi_event_t *evt)
 {
     switch (evt->reason) {
     case VIRTIO_SCSI_EVT_RESET_RESCAN:
