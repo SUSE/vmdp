@@ -37,6 +37,10 @@ extern void(*printk)(char *_fmt, ...);
 #define PRINTK(_X_) printk _X_
 #endif
 
+#ifndef __func__
+#define __func__ __FUNCTION__
+#endif
+
 extern unsigned int dbg_print_mask;
 #ifdef DBG
 extern unsigned int conditional_times_printed;

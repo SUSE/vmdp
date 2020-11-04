@@ -47,9 +47,6 @@
 
 #define __attribute__(x)
 
-#ifndef __func__
-#define __func__ __FUNCTION__
-#endif
 #ifndef inline
 #define inline __inline
 #endif

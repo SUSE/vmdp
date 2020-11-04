@@ -29,10 +29,6 @@
 
 #include <win_vxprintk.h>
 
-#ifndef __func__
-#define __func__ __FUNCTION__
-#endif
-
 extern KSPIN_LOCK virtio_print_lock;
 void virtio_dbg_printk(char *_fmt, ...);
 
