@@ -213,8 +213,8 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     NTSTATUS status;
 
     fdx = (vbln_dev_extn_t *)DeviceObject->DeviceExtension;
-    RPRINTK(DPRTL_PNP, ("virtio_bln_dispatch_pnp irql %d, fdo %d\n",
-            KeGetCurrentIrql(), fdx->IsFdo));
+    RPRINTK(DPRTL_PNP, ("%s irql %d, fdo %d\n",
+            __func__, KeGetCurrentIrql(), fdx->IsFdo));
 
     if (fdx->pnpstate == Deleted) {
         Irp->IoStatus.Status = STATUS_NO_SUCH_DEVICE;
@@ -225,7 +225,7 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     stack = IoGetCurrentIrpStackLocation(Irp);
     switch (stack->MinorFunction) {
     case IRP_MN_START_DEVICE:
-        RPRINTK(DPRTL_PNP, ("virtio_bln_pnp: IRP_MN_START_DEVICE.\n"));
+        RPRINTK(DPRTL_PNP, ("%s: IRP_MN_START_DEVICE.\n", __func__));
 
         status = send_irp_synchronous(fdx->LowerDevice, Irp);
         if (NT_SUCCESS(status)) {
@@ -244,6 +244,9 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
                         vwork_item->work_item = NULL;
                         virtio_bln_worker(DeviceObject, vwork_item);
                     }
+                } else {
+                    PRINTK(("%s: failed wdm_start_device %x\n",
+                            __func__, status));
                 }
             } else {
                 RPRINTK(DPRTL_ON, (" Starting after a %d\n", fdx->pnpstate));
@@ -256,14 +259,14 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         return status;
 
     case IRP_MN_QUERY_STOP_DEVICE:
-        RPRINTK(DPRTL_PNP, ("virtio_bln_pnp:IRP_MN_QUERY_STOP_DEVICE.\n"));
+        RPRINTK(DPRTL_PNP, ("%s:IRP_MN_QUERY_STOP_DEVICE.\n", __func__));
         fdx->pnpstate = StopPending;
         Irp->IoStatus.Status = STATUS_SUCCESS;
         break;
 
     case IRP_MN_CANCEL_STOP_DEVICE:
         RPRINTK(DPRTL_PNP,
-                ("virtio_bln_pnp: IRP_MN_CANCEL_STOP_DEVICE.\n"));
+                ("%s: IRP_MN_CANCEL_STOP_DEVICE.\n", __func__));
         if (fdx->pnpstate == StopPending) {
             fdx->pnpstate = Started;
         }
@@ -271,7 +274,7 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         break;
 
     case IRP_MN_STOP_DEVICE:
-        RPRINTK(DPRTL_PNP, ("virtio_bln_pnp: IRP_MN_STOP_DEVICE.\n"));
+        RPRINTK(DPRTL_PNP, ("%s: IRP_MN_STOP_DEVICE.\n", __func__));
         /* TODO: Irps and resources */
 
         fdx->pnpstate = Stopped;
@@ -279,14 +282,14 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         break;
 
     case IRP_MN_QUERY_REMOVE_DEVICE:
-        RPRINTK(DPRTL_PNP, ("virtio_bln_pnp: IRP_MN_QUERY_REMOVE_DEVICE\n"));
+        RPRINTK(DPRTL_PNP, ("%s: IRP_MN_QUERY_REMOVE_DEVICE\n", __func__));
         fdx->pnpstate = RemovePending;
         Irp->IoStatus.Status = STATUS_SUCCESS;
         break;
 
     case IRP_MN_CANCEL_REMOVE_DEVICE:
         RPRINTK(DPRTL_PNP,
-                ("virtio_bln_pnp: IRP_MN_CANCEL_REMOVE_DEVICE\n"));
+                ("%s: IRP_MN_CANCEL_REMOVE_DEVICE\n", __func__));
         if (fdx->pnpstate == RemovePending) {
             fdx->pnpstate = Started;
         }
@@ -294,14 +297,14 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         break;
 
     case IRP_MN_SURPRISE_REMOVAL:
-        RPRINTK(DPRTL_PNP, ("virtio_bln_pnp: IRP_MN_SURPRISE_REMOVAL.\n"));
+        RPRINTK(DPRTL_PNP, ("%s: IRP_MN_SURPRISE_REMOVAL.\n", __func__));
         fdx->pnpstate = SurpriseRemovePending;
         virtio_bln_remove_device(DeviceObject);
         Irp->IoStatus.Status = STATUS_SUCCESS;
         break;
 
     case IRP_MN_REMOVE_DEVICE:
-        RPRINTK(DPRTL_PNP, ("virtio_bln_pnp: IRP_MN_REMOVE_DEVICE.\n"));
+        RPRINTK(DPRTL_PNP, ("%s: IRP_MN_REMOVE_DEVICE.\n", __func__));
 
         if (fdx->pnpstate != SurpriseRemovePending) {
             virtio_bln_remove_device(DeviceObject);
@@ -319,7 +322,7 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
     default:
         RPRINTK(DPRTL_PNP,
-                ("virtio_bln_pnp: default irp %x.\n", stack->MinorFunction));
+                ("%s: default irp %x.\n", stack->MinorFunction, __func__));
         break;
     }
 

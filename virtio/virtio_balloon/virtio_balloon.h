@@ -44,7 +44,7 @@
 #include <virtio_pci_wdm.h>
 #include <virtio_utils.h>
 #include <virtio_config.h>
-#include "virtio_blnx.h"
+#include <virtio_blnx.h>
 #include "virtio_balloon_pub.h"
 
 #define VIRTIO_BLN_POOL_TAG         (ULONG) 'nlbV'

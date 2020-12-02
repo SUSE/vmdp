@@ -25,6 +25,7 @@
  */
 
 #include "virtio_blk.h"
+#include "virtio_blk_ver.h"
 
 #if (NTDDI_VERSION > NTDDI_WIN7)
 sp_DRIVER_INITIALIZE DriverEntry;

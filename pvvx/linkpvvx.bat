@@ -60,8 +60,6 @@ if exist pvvxbn\xenbus.c del pvvxbn\xenbus.c
 mklink pvvxbn\xenbus.c %root_dir%\xen\xenbus\xenbus.c
 if exist pvvxbn\xenbus_client.c del pvvxbn\xenbus_client.c
 mklink pvvxbn\xenbus_client.c %root_dir%\xen\xenbus\xenbus_client.c
-if exist pvvxbn\xenbus_comms.c del pvvxbn\xenbus_comms.c
-mklink pvvxbn\xenbus_comms.c %root_dir%\xen\xenbus\xenbus_comms.c
 if exist pvvxbn\xenbus_probe.c del pvvxbn\xenbus_probe.c
 mklink pvvxbn\xenbus_probe.c %root_dir%\xen\xenbus\xenbus_probe.c
 if exist pvvxbn\xenbus_xs.c del pvvxbn\xenbus_xs.c

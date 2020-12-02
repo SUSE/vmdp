@@ -48,7 +48,6 @@
 #include <virtio_pci.h>
 #include <storport_reg.h>
 #include <sp_defs.h>
-#include "virtio_blkx.h"
 
 #define VBIF_DESIGNATOR_STR "Virtio Block Device"
 #define VIRTIO_SP_DRIVER_NAME "VBLK"
