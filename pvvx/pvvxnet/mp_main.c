@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2013-2020 SUSE LLC
+ * Copyright 2013-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -89,8 +89,8 @@ UINT (*VNIF_DATA_VALID_CHECKSUM_VALID)(RCB *rcb);
 UINT (*VNIF_CHECKSUM_SUCCEEDED)(RCB *rcb);
 UINT (*VNIF_IS_PACKET_DATA_VALID)(RCB *rcb);
 UINT (*VNIF_PACKET_NEEDS_CHECKSUM)(RCB *rcb);
-UINT (*MP_RING_FULL)(void *r);
-UINT (*MP_RING_EMPTY)(void *r);
+UINT (*MP_RING_FULL)(void *vq);
+UINT (*MP_RING_EMPTY)(void *vq);
 UINT (*VNIF_RING_HAS_UNCONSUMED_RESPONSES)(void *vq);
 void (*VNIF_RING_FINAL_CHECK_FOR_RESPONSES)(void *vq, int *more_to_do);
 void (*vnif_ndis_queue_dpc)(VNIF_ADAPTER *adapter,

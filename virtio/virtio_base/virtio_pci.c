@@ -8,7 +8,7 @@
  *  Michael S. Tsirkin <mst@redhat.com>
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -117,6 +117,11 @@ virtio_device_set_guest_feature_list(virtio_device_t *vdev, uint64_t list)
 
     RPRINTK(DPRTL_PCI, ("%s %s: features %llx\n",
                         vdev->drv_name, __func__, list));
+
+    vdev->event_suppression_enabled = virtio_is_feature_enabled(
+        list, VIRTIO_RING_F_EVENT_IDX);
+
+    vdev->packed_ring = virtio_is_feature_enabled(list, VIRTIO_F_RING_PACKED);
 
     status = VIRTIO_DEVICE_SET_FEATURES(vdev, list);
 

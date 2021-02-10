@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 #include "pvcrash.h"
 
 static KBUGCHECK_CALLBACK_RECORD bugcheck_cbr;
+static KBUGCHECK_REASON_CALLBACK_RECORD dump_cbr;
 
 static NTSTATUS
 pvcrash_io_completion(
@@ -86,6 +87,7 @@ pvcrash_prepare_hardware(
     ULONG nres, i;
     ULONG len;
     NTSTATUS status;
+    UCHAR features;
     BOOLEAN port_space;
 
     status = STATUS_SUCCESS;
@@ -123,9 +125,17 @@ pvcrash_prepare_hardware(
             fdx->IoBaseAddress = va;
             fdx->IoRange = len;
             fdx->mapped_port = !port_space;
+            g_pvcrash_port_addr = fdx->IoBaseAddress;
 
-            RPRINTK(DPRTL_INIT, ("    i %d: port pa %llx va %p len %d\n",
-                    i, pa.QuadPart, va, len));
+            features = READ_PORT_UCHAR((PUCHAR)(fdx->IoBaseAddress));
+            if ((features & (PVPANIC_PANICKED | PVPANIC_CRASHLOADED))
+                    == (PVPANIC_PANICKED | PVPANIC_CRASHLOADED)) {
+                fdx->support_crash_loaded = TRUE;
+            }
+
+            RPRINTK(DPRTL_INIT,
+                    ("    i %d: port pa %llx va %p len %d features 0x%x\n",
+                    i, pa.QuadPart, va, len, features));
             break;
 
         default:
@@ -152,6 +162,7 @@ pvcrash_start_device(
     DECLARE_UNICODE_STRING_SIZE(symbolic_link_name, 128);
     DECLARE_UNICODE_STRING_SIZE(device_name, 128);
     BOOLEAN res;
+    BOOLEAN res_bchk;
 
     fdx = (PFDO_DEVICE_EXTENSION)fdo->DeviceExtension;
     RPRINTK(DPRTL_ON, ("--> %s %s: (irql %d) fdo = %p\n",
@@ -187,6 +198,19 @@ pvcrash_start_device(
                                          (PUCHAR)("pvcrash_nodify"));
         if (res == FALSE) {
             PRINTK(("%s: KeRegisterBugCheckCallback failed\n",
+                    VDEV_DRIVER_NAME));
+        }
+
+        KeInitializeCallbackRecord(&dump_cbr);
+        if (fdx->support_crash_loaded) {
+            res_bchk = KeRegisterBugCheckReasonCallback(
+                &dump_cbr,
+                pvcrash_on_dump_bugCheck,
+                KbCallbackDumpIo,
+                (PUCHAR)("pvcrash_nodify"));
+        }
+        if (res_bchk == FALSE) {
+            PRINTK(("%s: KeRegisterBugCheckReasonCallback failed\n",
                     VDEV_DRIVER_NAME));
         }
 
@@ -305,6 +329,12 @@ pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         RPRINTK(DPRTL_ON, ("    KeDeregisterBugCheckCallback irql %d dev %p\n",
             KeGetCurrentIrql(), DeviceObject));
         KeDeregisterBugCheckCallback(&bugcheck_cbr);
+
+        if (fdx->support_crash_loaded) {
+            RPRINTK(DPRTL_ON, ("    KeDeregisterBugCheckReasonCallback\n"));
+            KeDeregisterBugCheckReasonCallback(&dump_cbr);
+        }
+
         if (fdx->mapped_port && fdx->IoBaseAddress != NULL) {
             RPRINTK(DPRTL_ON, ("    MmUnmapIoSpace %p\n", fdx->IoBaseAddress));
             MmUnmapIoSpace(fdx->IoBaseAddress, fdx->IoRange);

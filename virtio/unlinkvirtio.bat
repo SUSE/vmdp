@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2021 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -31,12 +31,14 @@ set root_dir=%cd%
 cd %start_dir%
 
 if exist virtio_net\virtio_ring.c del virtio_net\virtio_ring.c
+if exist virtio_net\virtio_ring_packed.c del virtio_net\virtio_ring_packed.c
 if exist virtio_net\virtio_pci.c del virtio_net\virtio_pci.c
 if exist virtio_net\virtio_pci_legacy.c del virtio_net\virtio_pci_legacy.c
 if exist virtio_net\virtio_pci_modern.c del virtio_net\virtio_pci_modern.c
 if exist virtio_net\virtio_utils.c del virtio_net\virtio_utils.c
 
 if exist virtio_scsi\virtio_ring.c del virtio_scsi\virtio_ring.c
+if exist virtio_scsi\virtio_ring_packed.c del virtio_scsi\virtio_ring_packed.c
 if exist virtio_scsi\virtio_pci.c del virtio_scsi\virtio_pci.c
 if exist virtio_scsi\virtio_pci_legacy.c del virtio_scsi\virtio_pci_legacy.c
 if exist virtio_scsi\virtio_pci_modern.c del virtio_scsi\virtio_pci_modern.c
@@ -45,6 +47,7 @@ if exist virtio_scsi\storport_reg.c del virtio_scsi\storport_reg.c
 if exist virtio_scsi\virtio_sp_common.c del virtio_scsi\virtio_sp_common.c
 
 if exist virtio_blk\virtio_ring.c del virtio_blk\virtio_ring.c
+if exist virtio_blk\virtio_ring_packed.c del virtio_blk\virtio_ring_packed.c
 if exist virtio_blk\virtio_pci.c del virtio_blk\virtio_pci.c
 if exist virtio_blk\virtio_pci_legacy.c del virtio_blk\virtio_pci_legacy.c
 if exist virtio_blk\virtio_pci_modern.c del virtio_blk\virtio_pci_modern.c
@@ -52,6 +55,7 @@ if exist virtio_blk\virtio_utils.c del virtio_blk\virtio_utils.c
 if exist virtio_blk\virtio_sp_common.c del virtio_blk\virtio_sp_common.c
 
 if exist virtio_balloon\virtio_ring.c del virtio_balloon\virtio_ring.c
+if exist virtio_balloon\virtio_ring_packed.c del virtio_balloon\virtio_ring_packed.c
 if exist virtio_balloon\virtio_pci.c del virtio_balloon\virtio_pci.c
 if exist virtio_balloon\virtio_pci_legacy.c del virtio_balloon\virtio_pci_legacy.c
 if exist virtio_balloon\virtio_pci_modern.c del virtio_balloon\virtio_pci_modern.c
@@ -59,6 +63,7 @@ if exist virtio_balloon\virtio_pci_wdm.c del virtio_balloon\virtio_pci_wdm.c
 if exist virtio_balloon\virtio_utils.c del virtio_balloon\virtio_utils.c
 
 if exist virtio_serial\virtio_ring.c del virtio_serial\virtio_ring.c
+if exist virtio_serial\virtio_ring_packed.c del virtio_serial\virtio_ring_packed.c
 if exist virtio_serial\virtio_pci.c del virtio_serial\virtio_pci.c
 if exist virtio_serial\virtio_pci_legacy.c del virtio_serial\virtio_pci_legacy.c
 if exist virtio_serial\virtio_pci_modern.c del virtio_serial\virtio_pci_modern.c
@@ -66,6 +71,7 @@ if exist virtio_serial\virtio_pci_wdm.c del virtio_serial\virtio_pci_wdm.c
 if exist virtio_serial\virtio_utils.c del virtio_serial\virtio_utils.c
 
 if exist virtio_rng\virtio_ring.c del virtio_rng\virtio_ring.c
+if exist virtio_rng\virtio_ring_packed.c del virtio_rng\virtio_ring_packed.c
 if exist virtio_rng\virtio_pci.c del virtio_rng\virtio_pci.c
 if exist virtio_rng\virtio_pci_legacy.c del virtio_rng\virtio_pci_legacy.c
 if exist virtio_rng\virtio_pci_modern.c del virtio_rng\virtio_pci_modern.c

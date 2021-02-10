@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 
 #include <ndis.h>
 #include "miniport.h"
+#include <virtio_queue_ops.h>
 
 MINIPORT_INTERRUPT_DPC MPInterruptDPC;
 MINIPORT_ISR  MPInterrupt;
@@ -41,10 +42,10 @@ vnif_disable_interrupt_from_status(PVNIF_ADAPTER adapter,
                                    LONG int_status)
 {
     if (int_status & VNIF_RX_INT) {
-        vring_disable_interrupt(adapter->path[path_id].u.vq.rx);
+        vq_disable_interrupt(adapter->path[path_id].u.vq.rx);
     }
     if (int_status & VNIF_TX_INT) {
-        vring_disable_interrupt(adapter->path[path_id].u.vq.tx);
+        vq_disable_interrupt(adapter->path[path_id].u.vq.tx);
     }
 }
 
@@ -54,10 +55,10 @@ vnif_enable_interrupt_from_status(PVNIF_ADAPTER adapter,
                                    LONG int_status)
 {
     if (int_status & VNIF_RX_INT) {
-        vring_enable_interrupt(adapter->path[path_id].u.vq.rx);
+        vq_enable_interrupt(adapter->path[path_id].u.vq.rx);
     }
     if (int_status & VNIF_TX_INT) {
-        vring_enable_interrupt(adapter->path[path_id].u.vq.tx);
+        vq_enable_interrupt(adapter->path[path_id].u.vq.tx);
     }
 }
 
@@ -76,9 +77,9 @@ MPDisableMSIInterrupt(
                        __func__, MessageId, path_id));
     if (path_id < adapter->num_paths) {
         if (MessageId & 1) {
-            vring_disable_interrupt(adapter->path[path_id].u.vq.tx);
+            vq_disable_interrupt(adapter->path[path_id].u.vq.tx);
         } else {
-            vring_disable_interrupt(adapter->path[path_id].u.vq.rx);
+            vq_disable_interrupt(adapter->path[path_id].u.vq.rx);
         }
     }
 }
@@ -98,9 +99,9 @@ MPEnableMSIInterrupt(
                        __func__, MessageId, path_id));
     if (path_id < adapter->num_paths) {
         if (MessageId & 1) {
-            vring_enable_interrupt(adapter->path[path_id].u.vq.tx);
+            vq_enable_interrupt(adapter->path[path_id].u.vq.tx);
         } else {
-            vring_enable_interrupt(adapter->path[path_id].u.vq.rx);
+            vq_enable_interrupt(adapter->path[path_id].u.vq.rx);
         }
     }
 }
@@ -205,9 +206,19 @@ vnif_miniport_interrupt_dpc(
         NdisMSynchronizeWithInterruptEx(adapter->u.v.interrupt_handle,
                                         msg_id, sync_q_enable, &sync);
 
-        if ((int_status & VNIF_RX_INT)
-                && VNIF_RING_HAS_UNCONSUMED_RESPONSES(
-                        adapter->path[path_id].u.vq.rx)) {
+        /*
+         * If we are servicing an interrupt and there is still more work to do
+         * after enabling interrupts, schedule a dpc.  This prevents having
+         * work to do and not getting an interrupt.
+         */
+        if ((int_status & (VNIF_RX_INT | VNIF_TX_INT))
+            && (VNIF_RING_HAS_UNCONSUMED_RESPONSES(
+                    adapter->path[path_id].u.vq.rx)
+                || VNIF_RING_HAS_UNCONSUMED_RESPONSES(
+                    adapter->path[path_id].u.vq.tx))) {
+
+            InterlockedOr(&adapter->path[path_id].u.vq.interrupt_status,
+                          int_status);
 
 #if NDIS_SUPPORT_NDIS620
             KeGetCurrentProcessorNumberEx(&processor_number);

@@ -5,6 +5,6 @@
     <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">DRIVER</TARGETTYPE>
     <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ntstrsafe.lib      $(DDK_LIB_PATH)\storport.lib</TARGETLIBS>
     <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">..\include;..\include\virtio;..\virtio_sp_common;..\virtio_blk</INCLUDES>
-    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">virtio_blk.c      virtio_blkentry.c      virtio_blkfront.c      ..\virtio_sp_common\virtio_sp_common.c      ..\virtio_base\virtio_ring.c      ..\virtio_base\virtio_pci.c        ..\virtio_base\virtio_pci_legacy.c      ..\virtio_base\virtio_pci_modern.c   ..\virtio_base\virtio_utils.c      storport_reg.c   virtio_blk.rc</SOURCES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">virtio_blk.c      virtio_blkentry.c      virtio_blkfront.c      ..\virtio_sp_common\virtio_sp_common.c      ..\virtio_base\virtio_ring.c      ..\virtio_base\virtio_ring_packed.c      ..\virtio_base\virtio_pci.c        ..\virtio_base\virtio_pci_legacy.c      ..\virtio_base\virtio_pci_modern.c   ..\virtio_base\virtio_utils.c      storport_reg.c   virtio_blk.rc</SOURCES>
   </PropertyGroup>
 </Project>

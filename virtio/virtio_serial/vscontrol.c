@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -135,7 +135,7 @@ vserial_ctrl_msg_get(IN PFDO_DEVICE_EXTENSION fdx)
 
     vq = fdx->c_ivq;
     if (vq) {
-        while ((buf = vring_get_buf(vq, &len))) {
+        while ((buf = vq_get_buf(vq, &len))) {
             KeReleaseInStackQueuedSpinLock(&lh);
             buf->len = len;
             buf->offset = 0;
@@ -181,9 +181,9 @@ vserial_ctrl_msg_send(
     sg.len = sizeof(cpkt);
 
     KeAcquireInStackQueuedSpinLock(&fdx->cvq_lock, &lh);
-    if (vring_add_buf(fdx->c_ovq, &sg, 1, 0, &cpkt) >= 0) {
-        vring_kick(fdx->c_ovq);
-        while (vring_get_buf(fdx->c_ovq, &len) == NULL) {
+    if (vq_add_buf(fdx->c_ovq, &sg, 1, 0, &cpkt) >= 0) {
+        vq_kick(fdx->c_ovq);
+        while (vq_get_buf(fdx->c_ovq, &len) == NULL) {
             KeStallExecutionProcessor(50);
             if (++cnt > RETRY_THRESHOLD) {
                 DPRINTK(DPRTL_ON, ("%s: failed to get buf after retries %d\n",

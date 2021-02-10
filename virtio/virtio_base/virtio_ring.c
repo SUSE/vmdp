@@ -5,7 +5,7 @@
  *  Ladi Prosek <lprosek@redhat.com>
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,19 +37,21 @@
 #include <win_mem_barrier.h>
 #include <virtio_dbg_print.h>
 #include <virtio_config.h>
+#include <virtio_ring.h>
 #include <virtio_pci.h>
+#include <virtio_queue_ops.h>
 
-static void vring_queue_notify(virtio_queue_t *vq);
-
-int
-vring_add_buf(virtio_queue_t *vq,
+static int
+vring_add_buf(virtio_queue_t *vq_common,
     virtio_buffer_descriptor_t *sg,
     unsigned int out,
     unsigned int in,
     void *data)
 {
     unsigned int i, avail, head, prev;
+    virtio_queue_split_t *vq;
 
+    vq = (virtio_queue_split_t *)vq_common;
     DPRINTK(DPRTL_RING, ("%s: vq %p, data %p\n", __func__, vq, data));
     if (data == NULL) {
         PRINTK(("%s: data is NULL!\n",  __func__));
@@ -75,7 +77,7 @@ vring_add_buf(virtio_queue_t *vq,
          * descriptors in tx ring
          */
         if (out) {
-            vring_queue_notify(vq);
+            vq_notify(vq_common);
         }
         return -1;
     }
@@ -115,7 +117,7 @@ vring_add_buf(virtio_queue_t *vq,
      * Put entry in available array (but don't update avail->idx until they
      * do sync).  FIXME: avoid modulus here?
      */
-    avail = vq->vring.avail->idx % vq->vring.num;
+    avail = vq->vring.avail->idx & (vq->vring.num - 1);
     vq->vring.avail->ring[avail] = (uint16_t)head;
 
     DPRINTK(DPRTL_RING, ("%s >>> avail %d vq->vring.avail->idx = %d,\n",
@@ -123,7 +125,8 @@ vring_add_buf(virtio_queue_t *vq,
     DPRINTK(DPRTL_RING, ("\tvq->num_added = %d vq->vring.num = %d\n",
         vq->num_added, vq->vring.num));
     DPRINTK(DPRTL_RING, ("%s>>> ring %d, head %d, last_used %d, used %d\n",
-        __func__, vq->qidx, head, vq->last_used_idx, vq->vring.used->idx));
+                         __func__, vq_common->qidx, head, vq->last_used_idx,
+                         vq->vring.used->idx));
 
     mb();
     vq->vring.avail->idx++;
@@ -131,8 +134,8 @@ vring_add_buf(virtio_queue_t *vq,
     return vq->num_free;
 }
 
-int
-vring_add_buf_indirect(virtio_queue_t *vq,
+static int
+vring_add_buf_indirect(virtio_queue_t *vq_common,
     virtio_buffer_descriptor_t *sg,
     unsigned int out,
     unsigned int in,
@@ -143,6 +146,9 @@ vring_add_buf_indirect(virtio_queue_t *vq,
     unsigned head;
     unsigned int i;
     unsigned int avail;
+    virtio_queue_split_t *vq;
+
+    vq = (virtio_queue_split_t *)vq_common;
 
     if (!pa) {
         return -1;
@@ -187,7 +193,7 @@ vring_add_buf_indirect(virtio_queue_t *vq,
      * Put entry in available array (but don't update avail->idx until they
      * do sync).  FIXME: avoid modulus here?
      */
-    avail = vq->vring.avail->idx % vq->vring.num;
+    avail = vq->vring.avail->idx & (vq->vring.num - 1);
     vq->vring.avail->ring[avail] = (uint16_t)head;
 
     DPRINTK(DPRTL_RING, ("%s >>> avail %d vq->vring.avail->idx = %d,\n",
@@ -195,7 +201,8 @@ vring_add_buf_indirect(virtio_queue_t *vq,
     DPRINTK(DPRTL_RING, ("\tvq->num_added = %d vq->vring.num = %d\n",
         vq->num_added, vq->vring.num));
     DPRINTK(DPRTL_RING, ("%s>>> ring %d, head %d, last_used %d, used %d\n",
-        __func__, vq->qidx, head, vq->last_used_idx, vq->vring.used->idx));
+                         __func__, vq_common->qidx, head, vq->last_used_idx,
+                         vq->vring.used->idx));
 
     mb();
     vq->vring.avail->idx++;
@@ -204,9 +211,12 @@ vring_add_buf_indirect(virtio_queue_t *vq,
 }
 
 static void
-detach_buf(virtio_queue_t *vq, unsigned int head)
+detach_buf(virtio_queue_t *vq_common, unsigned int head)
 {
     unsigned int i;
+    virtio_queue_split_t *vq;
+
+    vq = (virtio_queue_split_t *)vq_common;
 
     /* Clear data ptr. */
     vq->data[head] = NULL;
@@ -224,11 +234,15 @@ detach_buf(virtio_queue_t *vq, unsigned int head)
     vq->num_free++;
 }
 
-void *
-vring_get_buf(virtio_queue_t *vq, unsigned int *len)
+static void *
+vring_get_buf(virtio_queue_t *vq_common, unsigned int *len)
 {
+    virtio_queue_split_t *vq;
     void *buf;
     unsigned int i;
+    unsigned int avail;
+
+    vq = (virtio_queue_split_t *)vq_common;
 
     if (!VRING_HAS_UNCONSUMED_RESPONSES(vq)) {
         return NULL;
@@ -237,13 +251,14 @@ vring_get_buf(virtio_queue_t *vq, unsigned int *len)
     /* Only get used array entries after they have been exposed by host. */
     rmb();
 
-    i = vq->vring.used->ring[vq->last_used_idx % vq->vring.num].id;
-    *len = vq->vring.used->ring[vq->last_used_idx % vq->vring.num].len;
+    avail = vq->last_used_idx & (vq->vring.num - 1);
+    i = vq->vring.used->ring[avail].id;
+    *len = vq->vring.used->ring[avail].len;
 
     DPRINTK(DPRTL_RING,
             ("%s>>> ring %d, id %d, len %d, last_used %d, used %d\n",
-             __func__, vq->qidx, i, *len, vq->last_used_idx,
-        vq->vring.used->idx));
+             __func__, vq_common->qidx, i, *len, vq->last_used_idx,
+             vq->vring.used->idx));
 
     if (i >= vq->vring.num) {
         PRINTK(("id %u out of range\n", i));
@@ -256,7 +271,7 @@ vring_get_buf(virtio_queue_t *vq, unsigned int *len)
 
     /* detach_buf clears data, so grab it now. */
     buf = vq->data[i];
-    detach_buf(vq, i);
+    detach_buf(vq_common, i);
     vq->last_used_idx++;
 
     /*
@@ -264,7 +279,8 @@ vring_get_buf(virtio_queue_t *vq, unsigned int *len)
      * by writing event index and flush out the write before
      * the read in the next get_buf call.
      */
-    if (!(vq->vring.avail->flags & VRING_AVAIL_F_NO_INTERRUPT)) {
+    if (vq_common->use_event_idx
+            && !(vq->flags & VRING_AVAIL_F_NO_INTERRUPT)) {
         vring_used_event(&vq->vring) = vq->last_used_idx;
         mb();
     }
@@ -272,29 +288,41 @@ vring_get_buf(virtio_queue_t *vq, unsigned int *len)
     return buf;
 }
 
-void *
-vring_detach_unused_buf(virtio_queue_t *vq)
+static void *
+vring_detach_unused_buf(virtio_queue_t *vq_common)
 {
     unsigned int i;
     void *buf;
+    virtio_queue_split_t *vq;
+
+    vq = (virtio_queue_split_t *)vq_common;
 
     for (i = 0; i < vq->vring.num; i++) {
         if (!vq->data[i]) {
             continue;
         }
         buf = vq->data[i];
-        detach_buf(vq, i);
+        detach_buf(vq_common, i);
         vq->vring.avail->idx--;
         return buf;
     }
     return NULL;
 }
 
+static __inline BOOLEAN
+vring_need_event(u16 event_idx, u16 new_idx, u16 old)
+{
+    return (u16)(new_idx - event_idx - 1) < (u16)(new_idx - old);
+}
+
 static BOOLEAN
-vring_kick_prepare(virtio_queue_t *vq)
+vring_kick_prepare(virtio_queue_t *vq_common)
 {
     uint16_t new, old;
     BOOLEAN needs_kick;
+    virtio_queue_split_t *vq;
+
+    vq = (virtio_queue_split_t *)vq_common;
 
     /*We need to expose available array entries before checking avail event. */
     mb();
@@ -303,7 +331,7 @@ vring_kick_prepare(virtio_queue_t *vq)
     new = vq->vring.avail->idx;
     vq->num_added = 0;
 
-    if (vq->use_event_idx) {
+    if (vq_common->use_event_idx) {
         needs_kick = vring_need_event(vring_avail_event(&vq->vring), new, old);
     } else {
         needs_kick = !(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY);
@@ -312,20 +340,11 @@ vring_kick_prepare(virtio_queue_t *vq)
 }
 
 static void
-vring_queue_notify(virtio_queue_t *vq)
+vring_kick_always(virtio_queue_t *vq_common)
 {
-    /*
-     * we write the queue's selector into the notification register to
-     * signal the other end
-     */
-    RPRINTK(DPRTL_RING, ("[%s] write port %x, idx %x\n", __func__,
-        vq->notification_addr, vq->qidx));
-    virtio_iowrite16((ULONG_PTR)(vq->notification_addr), vq->qidx);
-}
+    virtio_queue_split_t *vq;
 
-void
-vring_kick_always(virtio_queue_t *vq)
-{
+    vq = (virtio_queue_split_t *)vq_common;
 
     /*
      * Descriptors and available array need to be set before we expose the
@@ -340,52 +359,95 @@ vring_kick_always(virtio_queue_t *vq)
     /* Need to update avail index before checking if we should notify */
     mb();
 
-    vring_queue_notify(vq);
+    vq_notify(vq_common);
 }
 
 void
-vring_kick(virtio_queue_t *vq)
+static vring_kick(virtio_queue_t *vq_common)
 {
-    if (vring_kick_prepare(vq)) {
-        vring_queue_notify(vq);
+    if (vring_kick_prepare(vq_common)) {
+        vq_notify(vq_common);
     }
 }
 
-void
-vring_disable_interrupt(virtio_queue_t *vq)
+static void
+vring_disable_interrupt(virtio_queue_t *vq_common)
 {
-    vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
-    mb();
+    virtio_queue_split_t *vq;
+
+    vq = (virtio_queue_split_t *)vq_common;
+
+    if (!(vq->flags & VRING_AVAIL_F_NO_INTERRUPT)) {
+        vq->flags |= VRING_AVAIL_F_NO_INTERRUPT;
+        if (vq_common->use_event_idx == FALSE) {
+            vq->vring.avail->flags |= VRING_AVAIL_F_NO_INTERRUPT;
+            mb();
+        }
+    }
 }
 
-BOOLEAN
-vring_enable_interrupt(virtio_queue_t *vq)
+static BOOLEAN
+vring_enable_interrupt(virtio_queue_t *vq_common)
 {
+    virtio_queue_split_t *vq;
+
+    vq = (virtio_queue_split_t *)vq_common;
+
     /*
      * We optimistically turn back on interrupts, then check if there was
      * more to do.
      */
-    vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+    if (vq->flags & VRING_AVAIL_F_NO_INTERRUPT) {
+        vq->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+        if (vq_common->use_event_idx == FALSE) {
+            vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+        }
+    }
+
+    vring_used_event(&vq->vring) = vq->last_used_idx;
     mb();
+
     return TRUE;
 }
 
-void
-vring_start_interrupts(virtio_queue_t *vq)
+static void
+vring_start_interrupts(virtio_queue_t *vq_common)
 {
-    if (vq)  {
-        vring_enable_interrupt(vq);
-        vring_kick(vq);
+    if (vq_common)  {
+        vring_enable_interrupt(vq_common);
+        vring_kick(vq_common);
     }
 }
 
-void
-vring_stop_interrupts(virtio_queue_t *vq)
+static void
+vring_stop_interrupts(virtio_queue_t *vq_common)
 {
-    if (vq)  {
-        vring_disable_interrupt(vq);
+    if (vq_common)  {
+        vring_disable_interrupt(vq_common);
     }
 }
+
+static void
+vring_get_ring_mem_desc(virtio_queue_t *vq_common,
+                        void **ring,
+                        void **avail,
+                        void **used)
+{
+    virtio_queue_split_t *vq;
+
+    vq = (virtio_queue_split_t *)vq_common;
+    if (ring != NULL) {
+        *ring = vq->vring.desc;
+    }
+    if (avail != NULL) {
+        *avail = (void *)vq->vring.avail;
+    }
+    if (used != NULL) {
+        *used = (void *)vq->vring.used;
+    }
+}
+
+/* ********************** Non vring common vq functions ******************* */
 
 /* Negotiates virtio transport features */
 void
@@ -400,4 +462,65 @@ vring_transport_features(uint64_t *features)
             virtio_feature_disable(*features, i);
         }
     }
+}
+
+static __inline
+void vring_init_split(struct vring *vr, unsigned int num, void *p,
+                  unsigned long align)
+{
+    vr->num = num;
+    vr->desc = p;
+    vr->avail = (void *)((uint8_t *)p + num * sizeof(struct vring_desc));
+    vr->used = (void *)(((ULONG_PTR)&vr->avail->ring[num] + align - 1)
+                & ~((ULONG_PTR)align - 1));
+}
+
+void
+vring_vq_setup_split(virtio_device_t *vdev,
+                     virtio_queue_t *vq_common,
+                     void *vring_mem,
+                     unsigned long align,
+                     uint16_t num,
+                     uint16_t qidx,
+                     BOOLEAN use_event_idx)
+{
+    virtio_queue_split_t *vq;
+    uint16_t i;
+
+    vq = (virtio_queue_split_t *)vq_common;
+
+    vq->num_free = num;
+    vq->free_head = 0;
+
+    if ((num & (num - 1)) != 0) {
+        PRINTK(("%s: virtio queue length %u is not a power of 2\n", num));
+    }
+
+    RPRINTK(DPRTL_PCI, ("%s: vring_init num %d\n",  __func__, num));
+    vring_init_split(&vq->vring, num, vring_mem, align);
+
+    RPRINTK(DPRTL_PCI, ("%s: init descriptors\n", __func__));
+    for (i = 0; i < num - 1; i++) {
+        vq->vring.desc[i].next = i + 1;
+    }
+
+    vq_common->vdev = vdev;
+    vq_common->vq_type = split_vq;
+    vq_common->num = num;
+    vq_common->qidx = qidx;
+    vq_common->use_event_idx = use_event_idx;
+    RPRINTK(DPRTL_PCI, ("%s: use_event_idx %d\n",
+                        __func__, vq_common->use_event_idx));
+
+    vq_common->vring_add_buf = vring_add_buf;
+    vq_common->vring_add_buf_indirect = vring_add_buf_indirect;
+    vq_common->vring_get_buf = vring_get_buf;
+    vq_common->vring_detach_unused_buf = vring_detach_unused_buf;
+    vq_common->vring_kick_always = vring_kick_always;
+    vq_common->vring_kick = vring_kick;
+    vq_common->vring_disable_interrupt = vring_disable_interrupt;
+    vq_common->vring_enable_interrupt = vring_enable_interrupt;
+    vq_common->vring_start_interrupts = vring_start_interrupts;
+    vq_common->vring_stop_interrupts = vring_stop_interrupts;
+    vq_common->vring_get_ring_mem_desc = vring_get_ring_mem_desc;
 }

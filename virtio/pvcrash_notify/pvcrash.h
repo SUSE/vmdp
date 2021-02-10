@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,8 +45,14 @@
 
 #define IOCTL_GET_CRASH_DUMP_HEADER CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 
-#define PVPANIC_F_PANICKED 0 /* The bit of supported PV event. */
-#define PVPANIC_PANICKED   (1 << PVPANIC_F_PANICKED) /* The PV event value. */
+/* The bit of supported PV event. */
+#define PVPANIC_F_PANICKED      0
+#define PVPANIC_F_CRASHLOADED   1
+
+/* The PV event value. */
+#define PVPANIC_PANICKED        (1 << PVPANIC_F_PANICKED)
+#define PVPANIC_CRASHLOADED     (1 << PVPANIC_F_CRASHLOADED)
+
 #define DUMP_TYPE_FULL 1
 
 typedef enum _PNP_STATE {
@@ -84,6 +90,7 @@ typedef struct _FDO_DEVICE_EXTENSION {
     SYSTEM_POWER_STATE power_state;
     DEVICE_POWER_STATE dpower_state;
     BOOLEAN mapped_port;
+    BOOLEAN support_crash_loaded;
 } FDO_DEVICE_EXTENSION, *PFDO_DEVICE_EXTENSION;
 
 
@@ -101,6 +108,10 @@ typedef struct _FDO_DEVICE_EXTENSION {
 NTSTATUS pvcrash_fdo_power(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 NTSTATUS pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp);
 VOID pvcrash_notify_bugcheck(IN PVOID buffer, IN ULONG len);
+VOID pvcrash_on_dump_bugCheck(KBUGCHECK_CALLBACK_REASON reason,
+                              PKBUGCHECK_REASON_CALLBACK_RECORD record,
+                              PVOID data,
+                              ULONG length);
 
 #ifdef USES_DDK_BUILD
 #define PVCRASH_MDL_PAGE_PRIORITY NormalPagePriority
@@ -114,5 +125,8 @@ KeInitializeCrashDumpHeader(
 #else
 #define PVCRASH_MDL_PAGE_PRIORITY (NormalPagePriority  | MdlMappingNoExecute)
 #endif
+
+extern PVOID g_pvcrash_port_addr;
+extern BOOLEAN g_emit_crash_loaded_event;
 
 #endif

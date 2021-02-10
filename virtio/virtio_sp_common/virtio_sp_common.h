@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,6 +112,7 @@ BOOLEAN sp_msinterrupt_routine(virtio_sp_dev_ext_t *dev_ext, ULONG  msg_id);
 void virtio_sp_get_device_config(virtio_sp_dev_ext_t *dev_ext);
 void virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
     PPORT_CONFIGURATION_INFORMATION config_info);
+void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext);
 void virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext);
 NTSTATUS virtio_sp_find_vq(virtio_sp_dev_ext_t *dev_ext);
 BOOLEAN virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,

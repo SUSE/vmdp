@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -121,7 +121,7 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
         request->IoStatus.Information = len;
         request->IoStatus.Status = STATUS_PENDING;
         PushEntryList(&fdx->read_buffers_list, &entry->list_entry);
-        ret = vring_add_buf(fdx->vq, &sg, 0, 1, entry);
+        ret = vq_add_buf(fdx->vq, &sg, 0, 1, entry);
         if (ret < 0) {
             RPRINTK(DPRTL_UNEXPD,
                     ("%s: Failed to add buffer to virt queue 0x%x\n",
@@ -137,7 +137,7 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
         } else {
             IoMarkIrpPending(request);
             status = STATUS_PENDING;
-            vring_kick(fdx->vq);
+            vq_kick(fdx->vq);
         }
     }
 

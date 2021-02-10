@@ -3,7 +3,7 @@
  *
  * Written By: Gal Hammer <ghammer@redhat.com>
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -54,7 +54,7 @@ vrng_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
     for (;;) {
         KeAcquireInStackQueuedSpinLock(&fdx->vq_lock, &lh);
 
-        entry =  (read_buffer_entry_t *)vring_get_buf(fdx->vq, &len);
+        entry =  (read_buffer_entry_t *)vq_get_buf(fdx->vq, &len);
         if (entry == NULL) {
             KeReleaseInStackQueuedSpinLock(&lh);
             break;

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2020 SUSE LLC
+ * Copyright 2019-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -191,8 +191,8 @@ UINT VNIFV_DATA_VALID_CHECKSUM_VALID(struct _RCB *rcb);
 UINT VNIFV_CHECKSUM_SUCCEEDED(struct _RCB *rcb);
 UINT VNIFV_IS_PACKET_DATA_VALID(struct _RCB *rcb);
 UINT VNIFV_PACKET_NEEDS_CHECKSUM(struct _RCB *rcb);
-UINT MPV_RING_FULL(void *r);
-UINT MPV_RING_EMPTY(void *r);
+UINT MPV_RING_FULL(void *vq);
+UINT MPV_RING_EMPTY(void *vq);
 UINT VNIFV_RING_HAS_UNCONSUMED_RESPONSES(void *vq);
 void VNIFV_RING_FINAL_CHECK_FOR_RESPONSES(void *vq, int *more_to_do);
 #endif

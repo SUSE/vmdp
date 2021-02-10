@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,6 +45,7 @@
 #include <virtio_utils.h>
 #include <virtio_config.h>
 #include <virtio_blnx.h>
+#include <virtio_queue_ops.h>
 #include "virtio_balloon_pub.h"
 
 #define VIRTIO_BLN_POOL_TAG         (ULONG) 'nlbV'

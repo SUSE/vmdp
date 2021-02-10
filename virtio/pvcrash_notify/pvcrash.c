@@ -3,7 +3,7 @@
  *
  * Written By: Gal Hammer <ghammer@redhat.com>
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -69,6 +69,9 @@ uint32_t dbg_print_mask =
 #else
 uint32_t dbg_print_mask = DPRTL_OFF;
 #endif
+
+PVOID g_pvcrash_port_addr;
+BOOLEAN g_emit_crash_loaded_event;
 
 static NTSTATUS pvcrash_get_startup_params(void);
 
@@ -215,6 +218,9 @@ pvcrash_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
     fdo->Flags |=  DO_POWER_PAGABLE;
     fdo->Flags |= DO_BUFFERED_IO;
     fdo->Flags &= ~DO_DEVICE_INITIALIZING;
+
+    g_pvcrash_port_addr = NULL;
+    g_emit_crash_loaded_event = FALSE;
 
     RPRINTK(DPRTL_ON, ("<-- %s\n", __func__));
     return STATUS_SUCCESS;
@@ -405,8 +411,44 @@ pvcrash_notify_bugcheck(IN PVOID buffer, IN ULONG len)
     port_addr = (PUCHAR)buffer;
     PRINTK(("--> %s: Write %x to port %p length %d\n",
             __func__, PVPANIC_PANICKED, port_addr, len));
-    if ((buffer != NULL) && (len == sizeof(PVOID))) {
+    if ((buffer != NULL)
+            && (len == sizeof(PVOID))
+            && g_emit_crash_loaded_event == FALSE) {
         WRITE_PORT_UCHAR(port_addr, (UCHAR)(PVPANIC_PANICKED));
     }
     PRINTK(("<-- %s\n", __func__));
 }
+
+VOID
+pvcrash_on_dump_bugCheck(KBUGCHECK_CALLBACK_REASON reason,
+                         PKBUGCHECK_REASON_CALLBACK_RECORD record,
+                         PVOID data,
+                         ULONG length)
+{
+    UNREFERENCED_PARAMETER(data);
+    UNREFERENCED_PARAMETER(length);
+
+    PRINTK(("--> %s: Write %x to port %p crash_loaded_event %d\n",
+            __func__,
+            PVPANIC_CRASHLOADED,
+            g_pvcrash_port_addr,
+            g_emit_crash_loaded_event));
+
+    /* Trigger the PVPANIC_CRASHLOADED event before the crash dump. */
+    if ((g_pvcrash_port_addr != NULL)
+            && (reason == KbCallbackDumpIo)
+            && g_emit_crash_loaded_event == FALSE)
+    {
+        WRITE_PORT_UCHAR((PUCHAR)g_pvcrash_port_addr,
+                         (UCHAR)(PVPANIC_CRASHLOADED));
+        g_emit_crash_loaded_event = TRUE;
+    }
+
+    /* Deregister BugCheckReasonCallback after PVPANIC_CRASHLOADED trigger. */
+    if (g_emit_crash_loaded_event == TRUE) {
+        KeDeregisterBugCheckReasonCallback(record);
+    }
+
+    PRINTK(("<-- %s\n", __func__));
+}
+

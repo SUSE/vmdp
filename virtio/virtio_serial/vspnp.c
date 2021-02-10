@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -170,9 +170,9 @@ wdm_device_powerdown(FDO_DEVICE_EXTENSION *fdx)
 
     KeAcquireInStackQueuedSpinLock(&fdx->cvq_lock, &lh);
     if (fdx->c_ivq) {
-        vring_stop_interrupts(fdx->c_ivq);
+        vq_stop_interrupts(fdx->c_ivq);
 
-        while (buf = (port_buffer_t *)vring_detach_unused_buf(fdx->c_ivq)) {
+        while (buf = (port_buffer_t *)vq_detach_unused_buf(fdx->c_ivq)) {
             vserial_free_buffer(buf);
         }
     }
@@ -300,13 +300,13 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
                                                        NULL,
                                                        NULL,
                                                        0,
-                                                       control_vector,
-                                                       FALSE);
+                                                       control_vector);
                 RPRINTK(DPRTL_ON, ("  c_ivq %p\n", fdx->c_ivq));
             } else {
                 VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev,
                                              fdx->c_ivq,
-                                             control_vector);
+                                             control_vector,
+                                             FALSE);
             }
 
             if (!fdx->c_ovq) {
@@ -315,13 +315,13 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
                                                        NULL,
                                                        NULL,
                                                        0,
-                                                       control_vector,
-                                                       FALSE);
+                                                       control_vector);
                 RPRINTK(DPRTL_ON, ("  c_ovq %p\n", fdx->c_ovq));
             } else {
                 VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev,
                                              fdx->c_ovq,
-                                             control_vector);
+                                             control_vector,
+                                             FALSE);
             }
         } else {
             if (!fdx->in_vqs[j]) {
@@ -330,12 +330,12 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
                                                            NULL,
                                                            NULL,
                                                            0,
-                                                           queues_vector,
-                                                           FALSE);
+                                                           queues_vector);
             } else {
                 VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev,
                                              fdx->in_vqs[j],
-                                             queues_vector);
+                                             queues_vector,
+                                             FALSE);
             }
 
             if (!fdx->out_vqs[j]) {
@@ -344,12 +344,12 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
                                                             NULL,
                                                             NULL,
                                                             0,
-                                                            queues_vector,
-                                                            FALSE);
+                                                            queues_vector);
             } else {
                 VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev,
                                              fdx->out_vqs[j],
-                                             queues_vector);
+                                             queues_vector,
+                                             FALSE);
             }
             ++j;
         }
@@ -382,7 +382,7 @@ wdm_device_powerup(IN FDO_DEVICE_EXTENSION *fdx)
         return status;
     }
     vserial_fill_queue(fdx->c_ivq, &fdx->cvq_lock);
-    vring_start_interrupts(fdx->c_ivq);
+    vq_start_interrupts(fdx->c_ivq);
 
     virtio_device_add_status(&fdx->vdev, VIRTIO_CONFIG_S_DRIVER_OK);
 
@@ -477,7 +477,7 @@ FDO_Pnp(
 #ifdef DBG
             if  (NT_SUCCESS(status)) {
                 /* Check if we missed the ctrl message from powerup. */
-                if (VRING_HAS_UNCONSUMED_RESPONSES(fdx->c_ivq)) {
+                if (vq_has_unconsumed_responses(fdx->c_ivq)) {
                     PRINTK(("%s %s: there's a message buffer to be processed\n",
                             VDEV_DRIVER_NAME, __func__));
                     if (virtio_device_read_isr_status(&fdx->vdev) > 0) {

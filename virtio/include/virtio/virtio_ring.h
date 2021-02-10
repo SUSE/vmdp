@@ -1,8 +1,6 @@
 #ifndef _LINUX_VIRTIO_RING_H
 #define _LINUX_VIRTIO_RING_H
 
-#include <virtio_utils.h>
-
 /*
  * An interface for efficient virtio implementation, currently for use by KVM
  * and lguest, but hopefully others soon.  Do NOT change this since it will
@@ -14,7 +12,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright Rusty Russell IBM Corporation 2007.
- * Copyright 2020 SUSE LLC
+ * Copyright 2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,6 +35,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+#include <virtio_queue.h>
 
 /* This marks a buffer as continuing via the next field. */
 #define VRING_DESC_F_NEXT   1
@@ -114,22 +114,16 @@ typedef struct vring {
 } vring_t;
 #pragma pack(pop)
 
-
-typedef struct virtio_queue_s {
+typedef struct virtio_queue_split_s {
+    virtio_queue_t vq_common;
     vring_t vring;
-    uint32_t port;
-    struct virtio_device_s *vdev;
-    void *notification_addr;
     uint32_t num_free;          /* Number of free buffers */
     uint32_t free_head;         /* Head of free buffer list. */
     uint32_t num_added;         /* Number we've added since last sync. */
-    uint16_t qidx;
     uint16_t last_used_idx;     /* Last used index we've seen. */
-    uint16_t broken;
-    BOOLEAN use_event_idx;
+    uint16_t flags;
     void *data[];
-} virtio_queue_t;
-
+} virtio_queue_split_t;
 
 /*
  * The standard layout for the ring is a continuous chunk of memory which looks
@@ -162,17 +156,7 @@ typedef struct virtio_queue_s {
 #define vring_used_event(vr) ((vr)->avail->ring[(vr)->num])
 #define vring_avail_event(vr) (*(uint16_t *)&(vr)->used->ring[(vr)->num])
 
-static __inline void vring_init(struct vring *vr, unsigned int num, void *p,
-                  unsigned long align)
-{
-    vr->num = num;
-    vr->desc = p;
-    vr->avail = (void *)((uint8_t *)p + num * sizeof(struct vring_desc));
-    vr->used = (void *)(((ULONG_PTR)&vr->avail->ring[num] + align - 1)
-                & ~((ULONG_PTR)align - 1));
-}
-
-static __inline unsigned vring_size(unsigned int num, unsigned long align)
+static __inline unsigned vring_size_split(unsigned int num, unsigned long align)
 {
     return (((unsigned)sizeof(struct vring_desc) * num
                     + (unsigned)sizeof(uint16_t) * (3 + num)
@@ -182,37 +166,19 @@ static __inline unsigned vring_size(unsigned int num, unsigned long align)
                 + (unsigned)sizeof(struct vring_used_elem) * num;
 }
 
-static __inline BOOLEAN vring_need_event(u16 event_idx, u16 new_idx, u16 old)
-{
-    return (u16)(new_idx - event_idx - 1) < (u16)(new_idx - old);
-}
-
 #define VRING_HAS_UNCONSUMED_RESPONSES(_vq)                             \
     ((_vq)->last_used_idx != (_vq)->vring.used->idx)
 
 #define VRING_FINAL_CHECK_FOR_RESPONSES(_vq, _more_to_do)               \
-    (_more_to_do) = ((_vq)->last_used_idx != (_vq)->vring.used->idx)
+    (*_more_to_do) = ((_vq)->last_used_idx != (_vq)->vring.used->idx)
 
-int vring_add_buf(virtio_queue_t *vq,
-    virtio_buffer_descriptor_t *sg,
-    unsigned int out,
-    unsigned int in,
-    void *data);
-int vring_add_buf_indirect(virtio_queue_t *vq,
-    virtio_buffer_descriptor_t *sg,
-    unsigned int out,
-    unsigned int in,
-    void *data,
-    struct vring_desc *vr_desc,
-    uint64_t pa);
-void *vring_get_buf(virtio_queue_t *vq, unsigned int *len);
-void *vring_detach_unused_buf(virtio_queue_t *vq);
-void vring_kick_always(virtio_queue_t *vq);
-void vring_kick(virtio_queue_t *vq);
-void vring_disable_interrupt(virtio_queue_t *vq);
-BOOLEAN vring_enable_interrupt(virtio_queue_t *vq);
-void vring_start_interrupts(virtio_queue_t *vq);
-void vring_stop_interrupts(virtio_queue_t *vq);
 void vring_transport_features(uint64_t *features);
+void vring_vq_setup_split(struct virtio_device_s *vdev,
+                          virtio_queue_t *vq_common,
+                          void *vring_mem,
+                          unsigned long align,
+                          uint16_t num,
+                          uint16_t qidx,
+                          BOOLEAN use_event_idx);
 
 #endif /* _LINUX_VIRTIO_RING_H */

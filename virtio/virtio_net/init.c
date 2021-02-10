@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -101,6 +101,9 @@ static NDIS_STRING reg_rss_tcp_ipv6_ext_hdrs_name =
 static NDIS_STRING reg_split_evtchn = NDIS_STRING_CONST("SplitEvtchn");
 
 static NDIS_STRING reg_indirect_desc = NDIS_STRING_CONST("IndirectDescriptors");
+
+static NDIS_STRING reg_packed_rings_desc =
+    NDIS_STRING_CONST("PackedRings");
 
 static NDIS_STRING reg_tx_sg_cnt = NDIS_STRING_CONST("TxSgCnt");
 
@@ -1318,6 +1321,26 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             status = NDIS_STATUS_SUCCESS;
         }
     }
+    if (adapter->b_use_packed_rings == TRUE) {
+        NdisReadConfiguration(
+            &status,
+            &returned_value,
+            config_handle,
+            &reg_packed_rings_desc,
+            NdisParameterInteger);
+        if (status == NDIS_STATUS_SUCCESS) {
+            if (returned_value->ParameterData.IntegerData == 0) {
+                adapter->b_use_packed_rings = FALSE;
+                RPRINTK(DPRTL_INIT,
+                   ("VNIF: NdisReadConfiguration disabe packed rings\n"));
+            }
+        } else {
+            RPRINTK(DPRTL_INIT,
+               ("VNIF: NdisReadConfiguration packed rings status %x\n",
+                status));
+            status = NDIS_STATUS_SUCCESS;
+        }
+    }
 
     if (g_running_hypervisor == HYPERVISOR_XEN) {
         adapter->max_sg_el = VNIF_XEN_MAX_TX_SG_ELEMENTS;
@@ -1382,6 +1405,7 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
     }
     PRINTK(("\tdbg_print_mask = 0x%x\n", dbg_print_mask));
     PRINTK(("\tindirect descriptors = %d\n", adapter->b_indirect));
+    PRINTK(("\tuse packed rings = %d\n", adapter->b_use_packed_rings));
     PRINTK(("\tTx sgl elements = %d\n", adapter->max_sg_el));
 #if defined XENNET || defined PVVXNET
     if (g_running_hypervisor == HYPERVISOR_XEN) {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2017 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,6 +30,7 @@
 #include <virtio_config.h>
 #include <virtio_utils.h>
 #include <virtio_pci.h>
+#include <virtio_queue_ops.h>
 #include <virtio_net.h>
 
 void
@@ -39,8 +40,8 @@ MPDisableInterrupt(IN PVOID MiniportInterruptContext)
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER)MiniportInterruptContext;
 
     for (i = 0; i < adapter->num_paths; i++) {
-        vring_disable_interrupt(adapter->path[i].rx);
-        vring_disable_interrupt(adapter->path[i].tx);
+        vq_disable_interrupt(adapter->path[i].rx);
+        vq_disable_interrupt(adapter->path[i].tx);
     }
 }
 
@@ -51,8 +52,8 @@ MPEnableInterrupt(IN PVOID MiniportInterruptContext)
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER)MiniportInterruptContext;
 
     for (i = 0; i < adapter->num_paths; i++) {
-        vring_enable_interrupt(adapter->path[i].rx);
-        vring_enable_interrupt(adapter->path[i].tx);
+        vq_enable_interrupt(adapter->path[i].rx);
+        vq_enable_interrupt(adapter->path[i].tx);
     }
 }
 
@@ -263,7 +264,7 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
 #endif
 
     if (adapter->b_indirect) {
-        vring_add_buf_indirect(adapter->path[path_id].tx,
+        vq_add_buf_indirect(adapter->path[path_id].tx,
                                sg,
                                sg_cnt,
                                0,
@@ -271,14 +272,14 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
                                (struct vring_desc *)tcb->vr_desc,
                                tcb->vr_desc_pa.QuadPart);
     } else {
-        vring_add_buf(adapter->path[path_id].tx, sg, sg_cnt, 0, tcb);
+        vq_add_buf(adapter->path[path_id].tx, sg, sg_cnt, 0, tcb);
     }
 }
 
 void
 vnifv_notify_always_tx(PVNIF_ADAPTER adapter, UINT path_id)
 {
-    vring_kick_always(adapter->path[path_id].tx);
+    vq_kick_always(adapter->path[path_id].tx);
 }
 
 void *
@@ -286,7 +287,7 @@ vnifv_get_tx(PVNIF_ADAPTER adapter, UINT path_id, UINT *cons, UINT prod,
     UINT cnt, UINT *len, UINT *status)
 {
     *status = NETIF_RSP_OKAY;
-    return vring_get_buf(adapter->path[path_id].tx, len);
+    return vq_get_buf(adapter->path[path_id].tx, len);
 }
 
 RCB *
@@ -294,7 +295,7 @@ vnifv_get_rx(PVNIF_ADAPTER adapter, UINT path_id, UINT rp, UINT *i, INT *len)
 {
     RCB *rcb;
 
-    rcb = vring_get_buf(adapter->path[path_id].u.vq.rx, len);
+    rcb = vq_get_buf(adapter->path[path_id].u.vq.rx, len);
     if (rcb) {
         rcb->len = *len - adapter->buffer_offset;
         rcb->total_len = rcb->len;
@@ -363,14 +364,14 @@ VNIFV_ADD_RCB_TO_RING(VNIF_ADAPTER *adapter, RCB *rcb)
 
     sg.phys_addr = rcb->page_pa.QuadPart;
     sg.len = adapter->rx_alloc_buffer_size;
-    vring_add_buf(adapter->path[rcb->path_id].u.vq.rx, &sg, 0, 1, rcb);
+    vq_add_buf(adapter->path[rcb->path_id].u.vq.rx, &sg, 0, 1, rcb);
 }
 
 ULONG
 VNIFV_RX_RING_SIZE(VNIF_ADAPTER *adapter)
 {
     if (adapter->path != NULL) {
-        return adapter->path[0].u.vq.rx->vring.num;
+        return adapter->path[0].u.vq.rx->num;
     }
     return 0;
 }
@@ -379,7 +380,7 @@ ULONG
 VNIFV_TX_RING_SIZE(VNIF_ADAPTER *adapter)
 {
     if (adapter->path != NULL) {
-        return adapter->path[0].u.vq.tx->vring.num;
+        return adapter->path[0].u.vq.tx->num;
     }
     return 0;
 }
@@ -443,7 +444,7 @@ VNIFV_SET_RX_EVENT(VNIF_ADAPTER *adapter, UINT path_id, UINT prod)
 void
 VNIFV_RX_RING_KICK_ALWAYS(void *path)
 {
-    vring_kick_always(((vnif_path_t *)path)->rx);
+    vq_kick_always(((vnif_path_t *)path)->rx);
 }
 
 void
@@ -451,27 +452,26 @@ VNIFV_RX_NOTIFY(VNIF_ADAPTER *adapter, UINT path_id,
                 UINT rcb_added_to_ring, UINT old)
 {
     if (rcb_added_to_ring) {
-        vring_kick_always(adapter->path[path_id].rx);
+        vq_kick_always(adapter->path[path_id].rx);
     }
 }
 
 UINT
 VRINGV_CAN_ADD_TX(VNIF_ADAPTER *adapter, UINT path_id, UINT num)
 {
-    return adapter->path[path_id].u.vq.tx->num_free >= num;
+    return vq_free_requests(adapter->path[path_id].u.vq.tx) >= num;
 }
 
 UINT
 VNIFV_RING_FREE_REQUESTS(VNIF_ADAPTER *adapter, UINT path_id)
 {
-    return adapter->path[path_id].u.vq.tx->num_free;
+    return vq_free_requests(adapter->path[path_id].u.vq.tx);
 }
 
 UINT
 VNIFV_HAS_UNCONSUMED_RESPONSES(void *vq, UINT cons, UINT prod)
 {
-    return ((virtio_queue_t *)vq)->last_used_idx !=
-        ((virtio_queue_t *)vq)->vring.used->idx;
+    return vq_has_unconsumed_responses((virtio_queue_t *)vq);
 }
 
 UINT
@@ -510,30 +510,27 @@ VNIFV_PACKET_NEEDS_CHECKSUM(RCB *rcb)
 }
 
 UINT
-MPV_RING_FULL(void *r)
+MPV_RING_FULL(void *vq)
 {
-    return ((virtio_queue_t *)r)->num_free == 0;
+    return vq_full((virtio_queue_t *)vq);
 }
 
 UINT
-MPV_RING_EMPTY(void *r)
+MPV_RING_EMPTY(void *vq)
 {
-    return ((virtio_queue_t *)r)->num_free == ((virtio_queue_t *)r)->vring.num;
+    return vq_empty((virtio_queue_t *)vq);
 }
 
 UINT
 VNIFV_RING_HAS_UNCONSUMED_RESPONSES(void *vq)
 {
-    return VRING_HAS_UNCONSUMED_RESPONSES((virtio_queue_t *)vq);
+    return vq_has_unconsumed_responses((virtio_queue_t *)vq);
 }
 
 void
 VNIFV_RING_FINAL_CHECK_FOR_RESPONSES(void *vq, int *more_to_do)
 {
-    int mtd;
-
-    VRING_FINAL_CHECK_FOR_RESPONSES((virtio_queue_t *)vq, mtd);
-    *more_to_do = mtd;
+    vq_final_check_for_responses((virtio_queue_t *)vq, more_to_do);
 }
 
 #ifdef DBG

@@ -37,6 +37,7 @@ SOURCES= \
     vscontrol.c \
     vsport.c \
     virtio_ring.c \
+    virtio_ring_packed.c \
     virtio_pci.c \
     virtio_pci_legacy.c \
     virtio_pci_modern.c \

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -113,8 +113,8 @@ vserial_send_buffers(PPDO_DEVICE_EXTENSION port,
         out++;
     }
 
-    ret = vring_add_buf(vq, sg_buf, out, 0, buffer);
-    vring_kick(vq);
+    ret = vq_add_buf(vq, sg_buf, out, 0, buffer);
+    vq_kick(vq);
 
     if (ret >= 0) {
         port->OutVqFull = (ret == 0);
@@ -147,11 +147,11 @@ vserial_add_in_buf(IN virtio_queue_t *vq, IN port_buffer_t *buf)
     sg.phys_addr = buf->pa_buf.QuadPart;
     sg.len = buf->size;
 
-    if (vring_add_buf(vq, &sg, 0, 1, buf) < 0) {
+    if (vq_add_buf(vq, &sg, 0, 1, buf) < 0) {
         status = STATUS_INSUFFICIENT_RESOURCES;
     }
 
-    vring_kick(vq);
+    vq_kick(vq);
     DPRINTK(DPRTL_TRC, ("<-- %s\n", __func__));
     return status;
 }
@@ -167,7 +167,7 @@ vserial_get_inf_buf(PPDO_DEVICE_EXTENSION port)
     vq = PDX_TO_FDX(port)->in_vqs[port->port_id];
 
     if (vq) {
-        buf = (port_buffer_t *)vring_get_buf(vq, &len);
+        buf = (port_buffer_t *)vq_get_buf(vq, &len);
         if (buf) {
             buf->len = len;
             buf->offset = 0;
@@ -219,7 +219,7 @@ vserial_reclaim_consumed_buffers(PPDO_DEVICE_EXTENSION port)
 
     vq = PDX_TO_FDX(port)->out_vqs[port->port_id];
     if (vq) {
-        while ((buffer = vring_get_buf(vq, &len)) != NULL) {
+        while ((buffer = vq_get_buf(vq, &len)) != NULL) {
             DPRINTK(DPRTL_TRC, ("--> %s\n", __func__));
             if (port->PendingWriteRequest != NULL) {
                 request = port->PendingWriteRequest;

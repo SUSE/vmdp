@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -469,7 +469,7 @@ vserial_port_discard_data_locked(PPDO_DEVICE_EXTENSION port)
     if (port->InBuf) {
         buf = port->InBuf;
     } else if (vq) {
-        buf = (port_buffer_t *)vring_get_buf(vq, &len);
+        buf = (port_buffer_t *)vq_get_buf(vq, &len);
     }
 
     while (buf) {
@@ -478,7 +478,7 @@ vserial_port_discard_data_locked(PPDO_DEVICE_EXTENSION port)
             ++ret;
             vserial_free_buffer(buf);
         }
-        buf = (port_buffer_t *)vring_get_buf(vq, &len);
+        buf = (port_buffer_t *)vq_get_buf(vq, &len);
     }
     port->InBuf = NULL;
     if (ret > 0) {
@@ -906,7 +906,7 @@ vserial_port_power_on(PPDO_DEVICE_EXTENSION port)
         return status;
     }
 
-    vring_start_interrupts(fdx->in_vqs[port->port_id]);
+    vq_start_interrupts(fdx->in_vqs[port->port_id]);
 
     vserial_ctrl_msg_send(fdx, port->port_id, VIRTIO_CONSOLE_PORT_READY, 1);
 
@@ -943,7 +943,7 @@ vserial_port_power_off(PPDO_DEVICE_EXTENSION port)
     fdx = PDX_TO_FDX(port);
     KeAcquireInStackQueuedSpinLock(&fdx->cvq_lock, &fdxlh);
     in_vq = fdx->in_vqs[port->port_id];
-    vring_stop_interrupts(in_vq);
+    vq_stop_interrupts(in_vq);
 
     KeAcquireInStackQueuedSpinLock(&port->inbuf_lock, &lh);
     vserial_port_discard_data_locked(port);
@@ -955,7 +955,7 @@ vserial_port_power_off(PPDO_DEVICE_EXTENSION port)
     KeReleaseInStackQueuedSpinLock(&lh);
 
     if (in_vq) {
-        while (buf = (port_buffer_t *)vring_detach_unused_buf(in_vq)) {
+        while (buf = (port_buffer_t *)vq_detach_unused_buf(in_vq)) {
             vserial_free_buffer(buf);
         }
     }

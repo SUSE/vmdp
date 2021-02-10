@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2021 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -88,6 +88,8 @@ if exist pvvxbn\virtio_pci_legacy.c del pvvxbn\virtio_pci_legacy.c
 mklink pvvxbn\virtio_pci_legacy.c %root_dir%\virtio\virtio_base\virtio_pci_legacy.c
 if exist pvvxbn\virtio_ring.c del pvvxbn\virtio_ring.c
 mklink pvvxbn\virtio_ring.c %root_dir%\virtio\virtio_base\virtio_ring.c
+if exist pvvxbn\virtio_ring_packed.c del pvvxbn\virtio_ring_packed.c
+mklink pvvxbn\virtio_ring_packed.c %root_dir%\virtio\virtio_base\virtio_ring_packed.c
 if exist pvvxbn\virtio_utils.c del pvvxbn\virtio_utils.c
 mklink pvvxbn\virtio_utils.c %root_dir%\virtio\virtio_base\virtio_utils.c
 if exist pvvxbn\pvvxbn_x86.def del pvvxbn\pvvxbn_x86.def
@@ -111,6 +113,8 @@ if exist pvvxblk\virtio_pci_legacy.c del pvvxblk\virtio_pci_legacy.c
 mklink pvvxblk\virtio_pci_legacy.c %root_dir%\virtio\virtio_base\virtio_pci_legacy.c
 if exist pvvxblk\virtio_ring.c del pvvxblk\virtio_ring.c
 mklink pvvxblk\virtio_ring.c %root_dir%\virtio\virtio_base\virtio_ring.c
+if exist pvvxblk\virtio_ring_packed.c del pvvxblk\virtio_ring_packed.c
+mklink pvvxblk\virtio_ring_packed.c %root_dir%\virtio\virtio_base\virtio_ring_packed.c
 if exist pvvxblk\hypervsr_is.c del pvvxblk\hypervsr_is.c
 mklink pvvxblk\hypervsr_is.c %start_dir%\pvvxbn\hypervsr_is.c
 if exist pvvxblk\xenbus_apis.c del pvvxblk\xenbus_apis.c
@@ -138,6 +142,8 @@ if exist pvvxscsi\virtio_pci_legacy.c del pvvxscsi\virtio_pci_legacy.c
 mklink pvvxscsi\virtio_pci_legacy.c %root_dir%\virtio\virtio_base\virtio_pci_legacy.c
 if exist pvvxscsi\virtio_ring.c del pvvxscsi\virtio_ring.c
 mklink pvvxscsi\virtio_ring.c %root_dir%\virtio\virtio_base\virtio_ring.c
+if exist pvvxscsi\virtio_ring_packed.c del pvvxscsi\virtio_ring_packed.c
+mklink pvvxscsi\virtio_ring_packed.c %root_dir%\virtio\virtio_base\virtio_ring_packed.c
 if exist pvvxscsi\hypervsr_is.c del pvvxscsi\hypervsr_is.c
 mklink pvvxscsi\hypervsr_is.c %start_dir%\pvvxbn\hypervsr_is.c
 if exist pvvxscsi\xenbus_apis.c del pvvxscsi\xenbus_apis.c
@@ -183,6 +189,8 @@ if exist pvvxnet\mp_vinterface.c del pvvxnet\mp_vinterface.c
 mklink pvvxnet\mp_vinterface.c %root_dir%\virtio\virtio_net\mp_vinterface.c
 if exist pvvxnet\virtio_ring.c del pvvxnet\virtio_ring.c
 mklink pvvxnet\virtio_ring.c %root_dir%\virtio\virtio_base\virtio_ring.c
+if exist pvvxnet\virtio_ring_packed.c del pvvxnet\virtio_ring_packed.c
+mklink pvvxnet\virtio_ring_packed.c %root_dir%\virtio\virtio_base\virtio_ring_packed.c
 if exist pvvxnet\virtio_pci.c del pvvxnet\virtio_pci.c
 mklink pvvxnet\virtio_pci.c %root_dir%\virtio\virtio_base\virtio_pci.c
 if exist pvvxnet\virtio_pci_modern.c del pvvxnet\virtio_pci_modern.c

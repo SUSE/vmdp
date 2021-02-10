@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -72,11 +72,13 @@ vrng_q_init(IN FDO_DEVICE_EXTENSION *fdx)
                                             NULL,
                                             NULL,
                                             0,
-                                            VIRTIO_MSI_NO_VECTOR,
-                                            FALSE);
+                                            VIRTIO_MSI_NO_VECTOR);
         RPRINTK(DPRTL_INIT, ("  vq %p\n", fdx->vq));
     } else {
-        VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev, fdx->vq, VIRTIO_MSI_NO_VECTOR);
+        VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev,
+                                     fdx->vq,
+                                     VIRTIO_MSI_NO_VECTOR,
+                                     FALSE);
     }
 
     if (fdx->vq != NULL) {
@@ -107,7 +109,7 @@ wdm_device_powerup(IN FDO_DEVICE_EXTENSION *fdx)
             VDEV_DRIVER_NAME, __func__, status));
         return status;
     }
-    vring_start_interrupts(fdx->vq);
+    vq_start_interrupts(fdx->vq);
 
     virtio_device_add_status(&fdx->vdev, VIRTIO_CONFIG_S_DRIVER_OK);
 
@@ -128,7 +130,7 @@ vrng_return_vq_entries(FDO_DEVICE_EXTENSION *fdx)
 
     DPRINTK(DPRTL_TRC, ("--> %s\n", __func__));
     fdx->read_buffers_list.Next = NULL;
-    while (entry = (read_buffer_entry_t *)vring_detach_unused_buf(fdx->vq)) {
+    while (entry = (read_buffer_entry_t *)vq_detach_unused_buf(fdx->vq)) {
         if (entry->request != NULL) {
             DPRINTK(DPRTL_TRC, ("    Canceling request %p\n",
                     __func__, entry->request));
@@ -187,7 +189,7 @@ wdm_device_powerdown(FDO_DEVICE_EXTENSION *fdx)
 
     KeAcquireInStackQueuedSpinLock(&fdx->vq_lock, &lh);
     if (fdx->vq) {
-        vring_stop_interrupts(fdx->vq);
+        vq_stop_interrupts(fdx->vq);
         vrng_return_vq_entries(fdx);
 
     }

@@ -7,7 +7,7 @@
  *  Rusty Russell <rusty@rustcorp.com.au>
  *  Michael S. Tsirkin <mst@redhat.com>
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,8 +36,8 @@
 #include <ntddk.h>
 #include <virtio_dbg_print.h>
 #include <virtio_utils.h>
-#include <virtio_ring.h>
 #include <virtio_pci.h>
+#include <virtio_queue_ops.h>
 
 static struct virtio_device_ops_s virtio_pci_device_ops;
 
@@ -295,12 +295,34 @@ virtio_dev_modern_set_queue_vector(virtio_device_t *vdev,
     return virtio_ioread16((ULONG_PTR)&cfg->queue_msix_vector);
 }
 
+static void
+virtio_dev_modern_query_vq_size(unsigned int num,
+                                unsigned int packed_ring,
+                                unsigned long *pring_size,
+                                unsigned long *pqueue_size)
+{
+    if (pring_size != NULL) {
+        if (packed_ring) {
+            *pring_size = vring_size_packed(num, SMP_CACHE_BYTES);
+        } else {
+            *pring_size = vring_size_split(num, SMP_CACHE_BYTES);
+        }
+    }
+    if (pqueue_size != NULL) {
+        if (packed_ring) {
+            *pqueue_size = vring_control_block_size_packed(num);
+        } else {
+            *pqueue_size = sizeof(void *) * num + sizeof(virtio_queue_split_t);
+        }
+    }
+}
+
 static NTSTATUS
 virtio_dev_modern_query_vq_alloc(virtio_device_t *vdev,
                                  unsigned qidx,
                                  uint16_t *pnum,
                                  unsigned long *pring_size,
-                                 unsigned long *pheap_size)
+                                 unsigned long *pqueue_size)
 {
     volatile virtio_pci_common_cfg_t *cfg = vdev->common;
     uint16_t num;
@@ -328,12 +350,11 @@ virtio_dev_modern_query_vq_alloc(virtio_device_t *vdev,
     }
 
     *pnum = num;
-    if (pring_size != NULL) {
-        *pring_size = vring_size(num, SMP_CACHE_BYTES);
-    }
-    if (pheap_size != NULL) {
-        *pheap_size = sizeof(void *) * num + sizeof(virtio_queue_t);
-    }
+
+    virtio_dev_modern_query_vq_size(num,
+                                    vdev->packed_ring,
+                                    pring_size,
+                                    pqueue_size);
 
     return STATUS_SUCCESS;
 }
@@ -341,116 +362,23 @@ virtio_dev_modern_query_vq_alloc(virtio_device_t *vdev,
 static NTSTATUS
 virtio_dev_modern_vq_activate(virtio_device_t *vdev,
                               virtio_queue_t *vq,
-                              uint16_t msi_vector)
+                              uint16_t msi_vector,
+                              BOOLEAN queue_notify_off)
 {
     PHYSICAL_ADDRESS pa;
     volatile virtio_pci_common_cfg_t *cfg;
+    void *ring;
+    void *avail;
+    void *used;
     uint16_t num;
+    uint16_t off;
 
     cfg = vdev->common;
-    num = (uint16_t)vq->num_free;
+    num = (uint16_t)vq->num;
 
     RPRINTK(DPRTL_PCI, ("%s %s:\n", vdev->drv_name, __func__));
-    RPRINTK(DPRTL_PCI, ("\twrite cfg->queue_size %p num %d\n",
-                        cfg->queue_size, num));
-    virtio_iowrite16((ULONG_PTR)&cfg->queue_size, num);
 
-    RPRINTK(DPRTL_PCI, ("\twrite vring_mem\n"));
-    pa = MmGetPhysicalAddress(vq->vring.desc);
-    VIRTIO_IOWRITE64_LOHI(pa.QuadPart,
-                          &cfg->queue_desc_lo,
-                          &cfg->queue_desc_hi);
-    RPRINTK(DPRTL_PCI, ("\twrite avail\n"));
-    pa = MmGetPhysicalAddress(vq->vring.avail);
-    VIRTIO_IOWRITE64_LOHI(pa.QuadPart,
-                          &cfg->queue_avail_lo,
-                          &cfg->queue_avail_hi);
-    RPRINTK(DPRTL_PCI, ("\twrite used\n"));
-    pa = MmGetPhysicalAddress(vq->vring.used);
-    VIRTIO_IOWRITE64_LOHI(pa.QuadPart,
-                          &cfg->queue_used_lo,
-                          &cfg->queue_used_hi);
-
-    if (msi_vector != VIRTIO_MSI_NO_VECTOR) {
-        RPRINTK(DPRTL_PCI, ("\tvirtio_dev_modern_set_queue_vector %d\n",
-                             msi_vector));
-        msi_vector = virtio_dev_modern_set_queue_vector(vdev,
-                                                        vq->qidx,
-                                                        msi_vector);
-        if (msi_vector == VIRTIO_MSI_NO_VECTOR) {
-            PRINTK(("%s %s: Could not get the msi vector.\n",
-                    vdev->drv_name, __func__));
-            return STATUS_UNSUCCESSFUL;
-        }
-    }
-
-    /* enable the queue */
-    RPRINTK(DPRTL_PCI, ("\tvdev->common->queue_enable\n"));
-    virtio_iowrite16((ULONG_PTR)&vdev->common->queue_enable, 1);
-    return STATUS_SUCCESS;
-}
-
-static virtio_queue_t *
-virtio_dev_modern_vq_setup(virtio_device_t *vdev,
-                           uint16_t qidx,
-                           virtio_queue_t *vq,
-                           void *vring_mem,
-                           uint16_t num,
-                           uint16_t msi_vector,
-                           BOOLEAN use_event_idx)
-{
-    PHYSICAL_ADDRESS pa;
-    volatile virtio_pci_common_cfg_t *cfg = vdev->common;
-    void *vq_addr;
-    NTSTATUS status;
-    uint16_t off;
-    uint16_t i;
-    BOOLEAN alloced_mem;
-
-    RPRINTK(DPRTL_PCI,
-            ("%s %s: qidx %d vq %p vr %p\n\tnum %d msi_vec %d use_evt %d\n",
-             vdev->drv_name, __func__, qidx, vq, vring_mem,
-             num, msi_vector, use_event_idx));
-    alloced_mem = FALSE;
-    if (vq == NULL) {
-        RPRINTK(DPRTL_PCI, ("\tneed to alloc\n"));
-        status = virtio_dev_modern_query_vq_alloc(vdev, qidx, &num, NULL, NULL);
-        if (!NT_SUCCESS(status)) {
-            return NULL;
-        }
-        vq = VIRTIO_ALLOC(sizeof(virtio_queue_t) + (sizeof(void *) * num));
-        if (vq == NULL) {
-            return NULL;
-        }
-
-        VIRTIO_ALLOC_CONTIGUOUS(vring_mem,
-            vring_size(num, VIRTIO_PCI_VRING_ALIGN));
-        if (vring_mem == NULL) {
-            VIRTIO_FREE(vq);
-            return NULL;
-        }
-        alloced_mem = TRUE;
-    }
-
-    RPRINTK(DPRTL_PCI, ("\tzero out vq for bytes %d\n",
-            sizeof(virtio_queue_t) + (sizeof(void *) * num)));
-    memset(vq, 0, sizeof(virtio_queue_t) + (sizeof(void *) * num));
-    memset(vring_mem, 0, vring_size(num, SMP_CACHE_BYTES));
-
-    RPRINTK(DPRTL_PCI, ("\tvring_init\n"));
-    vring_init(&vq->vring, num, vring_mem, SMP_CACHE_BYTES);
-
-    vq->vdev = vdev;
-    vq->qidx = qidx;
-    vq->port = (uint32_t)vdev->addr;
-    vq->num_free = num;
-    vq->free_head = 0;
-    vq->use_event_idx = use_event_idx;
-
-    RPRINTK(DPRTL_PCI, ("\tinit descriptors\n"));
-    for (i = 0; i < num - 1; i++) {
-        vq->vring.desc[i].next = i + 1;
-    }
+    vq_get_ring_mem_desc(vq, &ring, &avail, &used);
 
     /* activate the queue */
     RPRINTK(DPRTL_PCI, ("\twrite cfg->queue_size %p num %d\n",
@@ -458,50 +386,55 @@ virtio_dev_modern_vq_setup(virtio_device_t *vdev,
     virtio_iowrite16((ULONG_PTR)&cfg->queue_size, num);
 
     RPRINTK(DPRTL_PCI, ("\twrite vring_mem\n"));
-    pa = MmGetPhysicalAddress(vring_mem);
+    pa = MmGetPhysicalAddress(ring);
     VIRTIO_IOWRITE64_LOHI(pa.QuadPart,
                           &cfg->queue_desc_lo,
                           &cfg->queue_desc_hi);
     RPRINTK(DPRTL_PCI, ("\twrite avail\n"));
-    pa = MmGetPhysicalAddress(vq->vring.avail);
+    pa = MmGetPhysicalAddress(avail);
     VIRTIO_IOWRITE64_LOHI(pa.QuadPart,
                           &cfg->queue_avail_lo,
                           &cfg->queue_avail_hi);
     RPRINTK(DPRTL_PCI, ("\twrite used\n"));
-    pa = MmGetPhysicalAddress(vq->vring.used);
+    pa = MmGetPhysicalAddress(used);
     VIRTIO_IOWRITE64_LOHI(pa.QuadPart,
                           &cfg->queue_used_lo,
                           &cfg->queue_used_hi);
 
     do {
-        RPRINTK(DPRTL_PCI, ("\tread notify offset\n"));
-        off = virtio_ioread16((ULONG_PTR)&cfg->queue_notify_off);
-        if (vdev->notify_base) {
-            /* get offset of notification word for this vq */
-            /* offset should not wrap */
-            RPRINTK(DPRTL_PCI, ("\tnotify offset %d, multi %d len %d\n",
-                    off, vdev->notify_offset_multiplier + 2,
-                    vdev->notify_len));
-            if ((uint64_t)off * vdev->notify_offset_multiplier + 2
-                > vdev->notify_len) {
-                PRINTK((
-                    "%p: bad notification offset %u (x %u) "
-                    "for queue %u > %zd",
-                    vdev,
-                    off, vdev->notify_offset_multiplier,
-                    qidx, vdev->notify_len));
+        if (queue_notify_off) {
+            RPRINTK(DPRTL_PCI, ("\tread notify offset\n"));
+            off = virtio_ioread16((ULONG_PTR)&cfg->queue_notify_off);
+            if (vdev->notify_base) {
+                /* get offset of notification word for this vq */
+                /* offset should not wrap */
+                RPRINTK(DPRTL_PCI, ("\tnotify offset %d, multi %d len %d\n",
+                        off, vdev->notify_offset_multiplier + 2,
+                        vdev->notify_len));
+                if ((uint64_t)off * vdev->notify_offset_multiplier + 2
+                        > vdev->notify_len) {
+                    PRINTK((
+                        "%p: bad notification offset %u (x %u) "
+                        "for queue %u > %zd",
+                        vdev,
+                        off, vdev->notify_offset_multiplier,
+                        vq->qidx, vdev->notify_len));
+                    break;
+                }
+                vq->notification_addr = (void *)(vdev->notify_base +
+                    ((uintptr_t)off *
+                        (uintptr_t)vdev->notify_offset_multiplier));
+                RPRINTK(DPRTL_PCI, ("\tnotification_addr %p\n",
+                                    vq->notification_addr));
+            } else {
+                vq->notification_addr = vdev->notification_addr;
+            }
+
+            if (!vq->notification_addr) {
+                PRINTK(("%s %s: Could not get the notification address.\n",
+                        vdev->drv_name, __func__));
                 break;
             }
-            vq->notification_addr = (void *)(vdev->notify_base +
-                ((uintptr_t)off * (uintptr_t)vdev->notify_offset_multiplier));
-            RPRINTK(DPRTL_PCI, ("\tnotification_addr %p\n",
-                                vq->notification_addr));
-        }
-
-        if (!vq->notification_addr) {
-            PRINTK(("%s %s: Could not get the notification address.\n",
-                    vdev->drv_name, __func__));
-            break;
         }
 
         if (msi_vector != VIRTIO_MSI_NO_VECTOR) {
@@ -521,8 +454,91 @@ virtio_dev_modern_vq_setup(virtio_device_t *vdev,
         RPRINTK(DPRTL_PCI, ("\tvdev->common->queue_enable\n"));
         virtio_iowrite16((ULONG_PTR)&vdev->common->queue_enable, 1);
 
-        return vq;
+        return STATUS_SUCCESS;
     } while (FALSE);
+
+    return STATUS_UNSUCCESSFUL;
+}
+
+static virtio_queue_t *
+virtio_dev_modern_vq_setup(virtio_device_t *vdev,
+                           uint16_t qidx,
+                           virtio_queue_t *vq,
+                           void *vring_mem,
+                           uint16_t num,
+                           uint16_t msi_vector)
+{
+    PHYSICAL_ADDRESS pa;
+    void *vq_addr;
+    NTSTATUS status;
+    unsigned long ring_size;
+    unsigned long queue_size;
+    uint16_t off;
+    uint16_t i;
+    BOOLEAN alloced_mem;
+
+    RPRINTK(DPRTL_PCI,
+            ("%s %s: qidx %d vq %p vr %p\n\tnum %d msi_vec %d use_evt %d\n",
+             vdev->drv_name, __func__, qidx, vq, vring_mem,
+             num, msi_vector, vdev->event_suppression_enabled));
+    alloced_mem = FALSE;
+    if (vq == NULL) {
+        RPRINTK(DPRTL_PCI, ("\tneed to alloc\n"));
+        status = virtio_dev_modern_query_vq_alloc(vdev,
+                                                  qidx,
+                                                  &num,
+                                                  &ring_size,
+                                                  &queue_size);
+        if (!NT_SUCCESS(status)) {
+            return NULL;
+        }
+        vq = VIRTIO_ALLOC(queue_size);
+        if (vq == NULL) {
+            return NULL;
+        }
+
+        VIRTIO_ALLOC_CONTIGUOUS(vring_mem, ring_size);
+        if (vring_mem == NULL) {
+            VIRTIO_FREE(vq);
+            return NULL;
+        }
+        alloced_mem = TRUE;
+    } else {
+        virtio_dev_modern_query_vq_size(num,
+                                        vdev->packed_ring,
+                                        &ring_size,
+                                        &queue_size);
+    }
+
+    RPRINTK(DPRTL_PCI, ("\tzero out vq (%d) ring (%d)\n",
+                        queue_size, ring_size));
+    memset(vq, 0, queue_size);
+    memset(vring_mem, 0, ring_size);
+
+    RPRINTK(DPRTL_PCI, ("\tvring_init\n"));
+    if (vdev->packed_ring) {
+        vring_vq_setup_packed(vdev,
+                              vq,
+                              vring_mem,
+                              SMP_CACHE_BYTES,
+                              num,
+                              qidx,
+                              vdev->event_suppression_enabled);
+    } else {
+        vring_vq_setup_split(vdev,
+                             vq,
+                             vring_mem,
+                             SMP_CACHE_BYTES,
+                             num,
+                             qidx,
+                             vdev->event_suppression_enabled);
+    }
+
+    status = virtio_dev_modern_vq_activate(vdev, vq, msi_vector, TRUE);
+    if (status == STATUS_SUCCESS) {
+        RPRINTK(DPRTL_PCI, ("%s %s: OUT\n", vdev->drv_name, __func__));
+        return vq;
+    }
 
     /* Error case, clean up. */
     PRINTK(("%s %s: Error\n", vdev->drv_name, __func__));
@@ -539,6 +555,7 @@ virtio_dev_modern_vq_setup(virtio_device_t *vdev,
 
 static void virtio_dev_modern_vq_delete(virtio_queue_t *vq, uint32_t free_mem)
 {
+    void *ring;
     virtio_device_t *vdev = vq->vdev;
 
     virtio_iowrite16((ULONG_PTR)&vdev->common->queue_select, vq->qidx);
@@ -551,8 +568,9 @@ static void virtio_dev_modern_vq_delete(virtio_queue_t *vq, uint32_t free_mem)
     }
 
     if (free_mem && vq) {
-        if (vq->vring.desc) {
-            VIRTIO_FREE_CONTIGUOUS(vq->vring.desc);
+        vq_get_ring_mem_desc(vq, &ring, NULL, NULL);
+        if (ring != NULL) {
+            VIRTIO_FREE_CONTIGUOUS(ring);
         }
         VIRTIO_FREE(vq);
     }
@@ -732,7 +750,8 @@ virtio_dev_modern_init(virtio_device_t *vdev,
             0, notify_length,
             &vdev->notify_len);
         if (!vdev->notify_base) {
-            PRINTK(("%s %s: isr not found\n", vdev->drv_name, __func__));
+            PRINTK(("%s %s: notify_base not found\n",
+                    vdev->drv_name, __func__));
             return STATUS_INVALID_PARAMETER;
         }
         RPRINTK(DPRTL_PCI, ("%s %s: vdev->notify_base 0x%p\n",

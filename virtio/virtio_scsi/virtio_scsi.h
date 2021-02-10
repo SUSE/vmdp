@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2017 Red Hat, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,6 +44,7 @@
 #include <win_stdint.h>
 #include <virtio_dbg_print.h>
 #include <virtio_pci.h>
+#include <virtio_queue_ops.h>
 #include <storport_reg.h>
 #include <sp_defs.h>
 #include "virtio_scsix.h"

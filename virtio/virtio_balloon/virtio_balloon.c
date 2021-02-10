@@ -5,7 +5,7 @@
  *  Vadim Rozenfeld <vrozenfe@redhat.com>
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -123,8 +123,8 @@ virtio_bln_tell_host(vbln_dev_extn_t *fdx,
     sg.phys_addr = phys_addr.QuadPart;
     sg.len =  sizeof(fdx->pfn_list[0]) * fdx->num_pfns;
 
-    vring_add_buf(q, &sg, 1, 0, fdx);
-    vring_kick(q);
+    vq_add_buf(q, &sg, 1, 0, fdx);
+    vq_kick(q);
 
     timeout.QuadPart = Int32x32To64(1000, -10000);
     RPRINTK(DPRTL_INT, ("%s: waiting for event %p\n",
@@ -307,8 +307,8 @@ virtio_bln_update_stats(vbln_dev_extn_t *fdx)
     phys_addr = MmGetPhysicalAddress(fdx->stats);
     sg.phys_addr = phys_addr.QuadPart;
     sg.len =  sizeof(virtio_bln_stat_t) * VIRTIO_BALLOON_S_NR;
-    vring_add_buf(fdx->stat_q, &sg, 1, 0, fdx);
-    vring_kick(fdx->stat_q);
+    vq_add_buf(fdx->stat_q, &sg, 1, 0, fdx);
+    vq_kick(fdx->stat_q);
     fdx->has_new_mem_stats = FALSE;
     fdx->backend_wants_mem_stats = FALSE;
 }
@@ -360,7 +360,7 @@ virtio_bln_dpc(PKDPC dpc, void *context, void *s1, void *s2)
     KeAcquireInStackQueuedSpinLock(&fdx->balloon_lock, &lh);
     if (fdx->inflate_q && fdx->pnpstate == Started) {
         RPRINTK(DPRTL_DPC, ("virtio_bln_dpc: inflate_q.\n"));
-        if (vring_get_buf(fdx->inflate_q, &len) != NULL) {
+        if (vq_get_buf(fdx->inflate_q, &len) != NULL) {
             RPRINTK(DPRTL_ON, ("virtio_bln_dpc: set event inflate_q.\n"));
             KeSetEvent (&fdx->inflate_event, IO_NO_INCREMENT, FALSE);
             schedule_worker = FALSE;
@@ -368,7 +368,7 @@ virtio_bln_dpc(PKDPC dpc, void *context, void *s1, void *s2)
     }
     if (fdx->deflate_q && fdx->pnpstate == Started) {
         RPRINTK(DPRTL_DPC, ("virtio_bln_dpc: deflate_q.\n"));
-        if (vring_get_buf(fdx->deflate_q, &len) != NULL) {
+        if (vq_get_buf(fdx->deflate_q, &len) != NULL) {
             RPRINTK(DPRTL_ON, ("virtio_bln_dpc: set event deflate_q.\n"));
             KeSetEvent (&fdx->deflate_event, IO_NO_INCREMENT, FALSE);
             schedule_worker = FALSE;
@@ -377,7 +377,7 @@ virtio_bln_dpc(PKDPC dpc, void *context, void *s1, void *s2)
     if (!(vbnctrl_flags & PVCTRL_DISABLE_MEM_STATS) && fdx->stat_q
             && fdx->pnpstate == Started) {
         RPRINTK(DPRTL_DPC, ("virtio_bln_dpc: stat_q.\n"));
-        if (vring_get_buf(fdx->stat_q, &len) != NULL) {
+        if (vq_get_buf(fdx->stat_q, &len) != NULL) {
             RPRINTK(DPRTL_ON, ("virtio_bln_dpc: backend wants mem stats.\n"));
             fdx->backend_wants_mem_stats = TRUE;
             if (fdx->has_new_mem_stats) {
@@ -482,17 +482,17 @@ virtio_bln_dev_reset(vbln_dev_extn_t *fdx)
 static void
 virtio_bln_disable_interrupts(vbln_dev_extn_t *fdx)
 {
-    vring_stop_interrupts(fdx->deflate_q);
-    vring_stop_interrupts(fdx->inflate_q);
-    vring_stop_interrupts(fdx->stat_q);
+    vq_stop_interrupts(fdx->deflate_q);
+    vq_stop_interrupts(fdx->inflate_q);
+    vq_stop_interrupts(fdx->stat_q);
 }
 
 static void
 virtio_bln_enable_interrupts(vbln_dev_extn_t *fdx)
 {
-    vring_start_interrupts(fdx->deflate_q);
-    vring_start_interrupts(fdx->inflate_q);
-    vring_start_interrupts(fdx->stat_q);
+    vq_start_interrupts(fdx->deflate_q);
+    vq_start_interrupts(fdx->inflate_q);
+    vq_start_interrupts(fdx->stat_q);
 }
 
 static void
@@ -551,8 +551,7 @@ wdm_device_virtio_init(PFDO_DEVICE_EXTENSION fdx)
                                        NULL,
                                        NULL,
                                        0,
-                                       VIRTIO_MSI_NO_VECTOR,
-                                       FALSE);
+                                       VIRTIO_MSI_NO_VECTOR);
         if (fdx->inflate_q == NULL) {
             PRINTK(("%s %s: balloon failed to setup inflate q.\n",
                     VDEV_DRIVER_NAME, __func__));
@@ -565,8 +564,7 @@ wdm_device_virtio_init(PFDO_DEVICE_EXTENSION fdx)
                                        NULL,
                                        NULL,
                                        0,
-                                       VIRTIO_MSI_NO_VECTOR,
-                                       FALSE);
+                                       VIRTIO_MSI_NO_VECTOR);
         if (fdx->deflate_q == NULL) {
             PRINTK(("%s %s: balloon failed to setup deflate q.\n",
                     VDEV_DRIVER_NAME, __func__));
@@ -583,8 +581,7 @@ wdm_device_virtio_init(PFDO_DEVICE_EXTENSION fdx)
                                            NULL,
                                            NULL,
                                            0,
-                                           VIRTIO_MSI_NO_VECTOR,
-                                           FALSE);
+                                           VIRTIO_MSI_NO_VECTOR);
             if (fdx->stat_q == NULL) {
                 PRINTK(("%s %s: balloon failed to setup stat q.\n",
                         VDEV_DRIVER_NAME, __func__));

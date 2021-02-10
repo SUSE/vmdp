@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2015 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -129,8 +129,8 @@ MPHandleInterrupt(IN NDIS_HANDLE MiniportAdapterContext)
                             VNF_ADAPTER_RX_DPC_IN_PROGRESS,
                             0,
                             NDIS_INDICATE_ALL_NBLS);
-    vring_enable_interrupt(adapter->path[0].rx);
-    vring_enable_interrupt(adapter->path[0].tx);
+    vq_enable_interrupt(adapter->path[0].rx);
+    vq_enable_interrupt(adapter->path[0].tx);
 }
 
 VOID
@@ -150,8 +150,8 @@ MPIsr(
         InterlockedOr(&adapter->path[0].u.vq.interrupt_status, (LONG)status);
         *InterruptRecognized = TRUE;
         *QueueMiniportHandleInterrupt = TRUE;
-        vring_disable_interrupt(adapter->path[0].rx);
-        vring_disable_interrupt(adapter->path[0].tx);
+        vq_disable_interrupt(adapter->path[0].rx);
+        vq_disable_interrupt(adapter->path[0].tx);
     } else {
         DPRINTK(DPRTL_INT, ("%s: interrupt not ours %x", __func__, status));
         *InterruptRecognized = FALSE;

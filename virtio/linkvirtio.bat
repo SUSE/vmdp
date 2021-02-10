@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2021 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -33,6 +33,8 @@ cd %start_dir%
 
 if exist virtio_net\virtio_ring.c del virtio_net\virtio_ring.c
 mklink virtio_net\virtio_ring.c %start_dir%\virtio_base\virtio_ring.c
+if exist virtio_net\virtio_ring_packed.c del virtio_net\virtio_ring_packed.c
+mklink virtio_net\virtio_ring_packed.c %start_dir%\virtio_base\virtio_ring_packed.c
 if exist virtio_net\virtio_pci.c del virtio_net\virtio_pci.c
 mklink virtio_net\virtio_pci.c %start_dir%\virtio_base\virtio_pci.c
 if exist virtio_net\virtio_pci_legacy.c del virtio_net\virtio_pci_legacy.c
@@ -44,6 +46,8 @@ mklink virtio_net\virtio_utils.c %start_dir%\virtio_base\virtio_utils.c
 
 if exist virtio_scsi\virtio_ring.c del virtio_scsi\virtio_ring.c
 mklink virtio_scsi\virtio_ring.c %start_dir%\virtio_base\virtio_ring.c
+if exist virtio_scsi\virtio_ring_packed.c del virtio_scsi\virtio_ring_packed.c
+mklink virtio_scsi\virtio_ring_packed.c %start_dir%\virtio_base\virtio_ring_packed.c
 if exist virtio_scsi\virtio_pci.c del virtio_scsi\virtio_pci.c
 mklink virtio_scsi\virtio_pci.c %start_dir%\virtio_base\virtio_pci.c
 if exist virtio_scsi\virtio_pci_legacy.c del virtio_scsi\virtio_pci_legacy.c
@@ -59,6 +63,8 @@ mklink virtio_scsi\virtio_sp_common.c %root_dir%\virtio\virtio_sp_common\virtio_
 
 if exist virtio_blk\virtio_ring.c del virtio_blk\virtio_ring.c
 mklink virtio_blk\virtio_ring.c %start_dir%\virtio_base\virtio_ring.c
+if exist virtio_blk\virtio_ring_packed.c del virtio_blk\virtio_ring_packed.c
+mklink virtio_blk\virtio_ring_packed.c %start_dir%\virtio_base\virtio_ring_packed.c
 if exist virtio_blk\virtio_pci.c del virtio_blk\virtio_pci.c
 mklink virtio_blk\virtio_pci.c %start_dir%\virtio_base\virtio_pci.c
 if exist virtio_blk\virtio_pci_legacy.c del virtio_blk\virtio_pci_legacy.c
@@ -72,6 +78,8 @@ mklink virtio_blk\virtio_sp_common.c %root_dir%\virtio\virtio_sp_common\virtio_s
 
 if exist virtio_balloon\virtio_ring.c del virtio_balloon\virtio_ring.c
 mklink virtio_balloon\virtio_ring.c %start_dir%\virtio_base\virtio_ring.c
+if exist virtio_balloon\virtio_ring_packed.c del virtio_balloon\virtio_ring_packed.c
+mklink virtio_balloon\virtio_ring_packed.c %start_dir%\virtio_base\virtio_ring_packed.c
 if exist virtio_balloon\virtio_pci.c del virtio_balloon\virtio_pci.c
 mklink virtio_balloon\virtio_pci.c %start_dir%\virtio_base\virtio_pci.c
 if exist virtio_balloon\virtio_pci_legacy.c del virtio_balloon\virtio_pci_legacy.c
@@ -85,6 +93,8 @@ mklink virtio_balloon\virtio_utils.c %start_dir%\virtio_base\virtio_utils.c
 
 if exist virtio_serial\virtio_ring.c del virtio_serial\virtio_ring.c
 mklink virtio_serial\virtio_ring.c %start_dir%\virtio_base\virtio_ring.c
+if exist virtio_serial\virtio_ring_packed.c del virtio_serial\virtio_ring_packed.c
+mklink virtio_serial\virtio_ring_packed.c %start_dir%\virtio_base\virtio_ring_packed.c
 if exist virtio_serial\virtio_pci.c del virtio_serial\virtio_pci.c
 mklink virtio_serial\virtio_pci.c %start_dir%\virtio_base\virtio_pci.c
 if exist virtio_serial\virtio_pci_legacy.c del virtio_serial\virtio_pci_legacy.c
@@ -98,6 +108,8 @@ mklink virtio_serial\virtio_utils.c %start_dir%\virtio_base\virtio_utils.c
 
 if exist virtio_rng\virtio_ring.c del virtio_rng\virtio_ring.c
 mklink virtio_rng\virtio_ring.c %start_dir%\virtio_base\virtio_ring.c
+if exist virtio_rng\virtio_ring_packed.c del virtio_rng\virtio_ring_packed.c
+mklink virtio_rng\virtio_ring_packed.c %start_dir%\virtio_base\virtio_ring_packed.c
 if exist virtio_rng\virtio_pci.c del virtio_rng\virtio_pci.c
 mklink virtio_rng\virtio_pci.c %start_dir%\virtio_base\virtio_pci.c
 if exist virtio_rng\virtio_pci_legacy.c del virtio_rng\virtio_pci_legacy.c

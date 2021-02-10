@@ -65,4 +65,9 @@
 /* v1.0 compliant. */
 #define VIRTIO_F_VERSION_1          32
 
+#define VIRTIO_F_ACCESS_PLATFORM    33
+
+/* This feature indicates support for the packed virtqueue layout. */
+#define VIRTIO_F_RING_PACKED        34
+
 #endif /* _LINUX_VIRTIO_CONFIG_H */

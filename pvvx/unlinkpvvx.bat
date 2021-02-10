@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2021 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -58,6 +58,7 @@ if exist pvvxbn\virtio_pci_modern.c del pvvxbn\virtio_pci_modern.c
 if exist pvvxbn\virtio_pci_wdm.c del pvvxbn\virtio_pci_wdm.c
 if exist pvvxbn\virtio_pci_legacy.c del pvvxbn\virtio_pci_legacy.c
 if exist pvvxbn\virtio_ring.c del pvvxbn\virtio_ring.c
+if exist pvvxbn\virtio_ring_packed.c del pvvxbn\virtio_ring_packed.c
 if exist pvvxbn\virtio_utils.c del pvvxbn\virtio_utils.c
 if exist pvvxbn\pvvxbn_x86.def del pvvxbn\pvvxbn_x86.def
 if exist pvvxbn\pvvxbn_x64.def del pvvxbn\pvvxbn_x64.def
@@ -70,6 +71,7 @@ if exist pvvxblk\virtio_pci.c del pvvxblk\virtio_pci.c
 if exist pvvxblk\virtio_pci_modern.c del pvvxblk\virtio_pci_modern.c
 if exist pvvxblk\virtio_pci_legacy.c del pvvxblk\virtio_pci_legacy.c
 if exist pvvxblk\virtio_ring.c del pvvxblk\virtio_ring.c
+if exist pvvxblk\virtio_ring_packed.c del pvvxblk\virtio_ring_packed.c
 if exist pvvxblk\hypervsr_is.c del pvvxblk\hypervsr_is.c
 if exist pvvxblk\xenbus_apis.c del pvvxblk\xenbus_apis.c
 if exist pvvxblk\storport_reg.c del pvvxblk\storport_reg.c
@@ -84,6 +86,7 @@ if exist pvvxscsi\virtio_pci.c del pvvxscsi\virtio_pci.c
 if exist pvvxscsi\virtio_pci_modern.c del pvvxscsi\virtio_pci_modern.c
 if exist pvvxscsi\virtio_pci_legacy.c del pvvxscsi\virtio_pci_legacy.c
 if exist pvvxscsi\virtio_ring.c del pvvxscsi\virtio_ring.c
+if exist pvvxscsi\virtio_ring_packed.c del pvvxscsi\virtio_ring_packed.c
 if exist pvvxscsi\hypervsr_is.c del pvvxscsi\hypervsr_is.c
 if exist pvvxscsi\xenbus_apis.c del pvvxscsi\xenbus_apis.c
 if exist pvvxscsi\storport_reg.c del pvvxscsi\storport_reg.c
@@ -107,6 +110,7 @@ if exist pvvxnet\mp_vnic6.c del pvvxnet\mp_vnic6.c
 if exist pvvxnet\mp_vutils.c del pvvxnet\mp_vutils.c
 if exist pvvxnet\mp_vinterface.c del pvvxnet\mp_vinterface.c
 if exist pvvxnet\virtio_ring.c del pvvxnet\virtio_ring.c
+if exist pvvxnet\virtio_ring_packed.c del pvvxnet\virtio_ring_packed.c
 if exist pvvxnet\virtio_pci.c del pvvxnet\virtio_pci.c
 if exist pvvxnet\virtio_pci_modern.c del pvvxnet\virtio_pci_modern.c
 if exist pvvxnet\virtio_pci_legacy.c del pvvxnet\virtio_pci_legacy.c

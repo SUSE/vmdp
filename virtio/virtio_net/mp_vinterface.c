@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,9 +27,9 @@
 
 #include <ndis.h>
 #include "miniport.h"
-#include <virtio_ring.h>
 #include <virtio_config.h>
 #include <virtio_utils.h>
+#include <virtio_queue_ops.h>
 #include <virtio_net.h>
 
 /*
@@ -280,9 +280,16 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_RING_F_INDIRECT_DESC)) {
             adapter->b_indirect = TRUE;
-            RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: indirect descriptors %d.\n",
-                                 adapter->b_indirect));
         }
+        RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: indirect descriptors %d.\n",
+                             adapter->b_indirect));
+
+        if (virtio_is_feature_enabled(adapter->u.v.features,
+                                      VIRTIO_F_RING_PACKED)) {
+            adapter->b_use_packed_rings = TRUE;
+        }
+        RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: use packed rings %d.\n",
+                             adapter->b_use_packed_rings));
 
         /* MAC */
         status = VNIFSetupPermanentAddress(adapter);
@@ -316,11 +323,11 @@ vnif_init_rcb_pool(PVNIF_ADAPTER adapter)
         vnif_init_rcb_free_list(adapter, path_id);
 
         sg.len = adapter->rx_alloc_buffer_size;
-        for (i = 0; i < adapter->path[path_id].u.vq.rx->vring.num; i++) {
+        for (i = 0; i < adapter->path[path_id].u.vq.rx->num; i++) {
             rcb = (RCB *)RemoveHeadList(
                 &adapter->path[path_id].rcb_rp.rcb_free_list);
             sg.phys_addr = rcb->page_pa.QuadPart;
-            vring_add_buf(adapter->path[path_id].u.vq.rx, &sg, 0, 1, rcb);
+            vq_add_buf(adapter->path[path_id].u.vq.rx, &sg, 0, 1, rcb);
         }
 
         NdisReleaseSpinLock(&adapter->path[path_id].rx_path_lock);
@@ -374,6 +381,17 @@ vnif_set_guest_features(PVNIF_ADAPTER adapter)
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_F_VERSION_1)) {
         virtio_feature_enable(guest_features, VIRTIO_F_VERSION_1);
+
+        if (adapter->b_use_packed_rings == TRUE
+                && virtio_is_feature_enabled(adapter->u.v.features,
+                                             VIRTIO_F_RING_PACKED)) {
+            virtio_feature_enable(guest_features, VIRTIO_F_RING_PACKED);
+        }
+    }
+
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_RING_F_EVENT_IDX)) {
+        virtio_feature_enable(guest_features, VIRTIO_RING_F_EVENT_IDX);
     }
 
     if (virtio_is_feature_enabled(adapter->u.v.features,
@@ -405,6 +423,10 @@ vnif_set_guest_features(PVNIF_ADAPTER adapter)
     if (adapter->b_multi_queue) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_MQ);
     }
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_CTRL_VQ)) {
+        virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_VQ);
+    }
 
     PRINTK(("Virtio_net: setting guest features 0x%llx\n", guest_features));
     virtio_device_set_guest_feature_list(&adapter->u.v.vdev,
@@ -431,8 +453,7 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
             NULL,
             NULL,
             0,
-            adapter->path[i].u.vq.rx_msg,
-            FALSE);
+            adapter->path[i].u.vq.rx_msg);
         if (adapter->path[i].u.vq.rx == NULL) {
             PRINTK(("Failed to setup rx queue for path %d msg %d\n",
                     i, adapter->path[i].u.vq.rx_msg));
@@ -447,8 +468,7 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
             NULL,
             NULL,
             0,
-            adapter->path[i].u.vq.tx_msg,
-            FALSE);
+            adapter->path[i].u.vq.tx_msg);
         if (adapter->path[i].u.vq.tx == NULL) {
             PRINTK(("Failed to setup tx queue for path %d msg %d\n",
                     i, adapter->path[i].u.vq.tx_msg));
@@ -478,11 +498,10 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
                     NULL,
                     NULL,
                     0,
-                    adapter->u.v.ctrl_msg,
-                    FALSE);
+                    adapter->u.v.ctrl_msg);
                 if (adapter->u.v.ctrl_q == NULL) {
+                    /* We can still function even if the ctrl queue failes. */
                     PRINTK(("Failed to setup ctrl queu\n"));
-                    status = NDIS_ERROR_CODE_OUT_OF_RESOURCES;
                 }
             }
         }
@@ -513,7 +532,7 @@ vnif_send_control_msg(PVNIF_ADAPTER adapter,
     pBase = adapter->u.v.ctrl_buf;
     phBase = adapter->u.v.ctrl_buf_pa;
 
-    if (adapter->u.v.ctrl_buf != NULL
+    if (adapter->u.v.ctrl_q != NULL && adapter->u.v.ctrl_buf != NULL
             && (size1 + size2 + 16) <= VNIF_CTRL_BUF_SIZE) {
 
         ((virtio_net_ctrl_hdr_t *)pBase)->class_of_command = cls;
@@ -545,14 +564,14 @@ vnif_send_control_msg(PVNIF_ADAPTER adapter,
         sg[sg_cnt].len = sizeof(virtio_net_ctrl_ack_t);
         *(virtio_net_ctrl_ack_t *)(pBase + offset) = VNIF_NET_ERR;
 
-        if (vring_add_buf(adapter->u.v.ctrl_q, sg, sg_cnt, 1, (void *)1) >= 0) {
+        if (vq_add_buf(adapter->u.v.ctrl_q, sg, sg_cnt, 1, (void *)1) >= 0) {
 
-            vring_kick(adapter->u.v.ctrl_q);
-            p = vring_get_buf(adapter->u.v.ctrl_q, &len);
+            vq_kick(adapter->u.v.ctrl_q);
+            p = vq_get_buf(adapter->u.v.ctrl_q, &len);
             for (i = 0; i < 1000 && !p; ++i) {
                 UINT interval = 1;
                 NdisStallExecution(interval);
-                p = vring_get_buf(adapter->u.v.ctrl_q, &len);
+                p = vq_get_buf(adapter->u.v.ctrl_q, &len);
             }
 
             if (!p) {
@@ -648,7 +667,7 @@ VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
     VNIFIndicateLinkStatus(adapter, 1);
 
     for (i = 0; i < adapter->num_paths; ++i) {
-        vring_kick(adapter->path[i].rx);
+        vq_kick(adapter->path[i].rx);
     }
 
     RPRINTK(DPRTL_ON, ("VNIFSetupAdapterInterface: out success\n"));
@@ -926,8 +945,8 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
             status = VNIFSetupAdapterInterface(adapter);
             if (status == STATUS_SUCCESS) {
                 for (i = 0; i < adapter->num_paths; i++) {
-                    vring_enable_interrupt(adapter->path[i].rx);
-                    vring_enable_interrupt(adapter->path[i].tx);
+                    vq_enable_interrupt(adapter->path[i].rx);
+                    vq_enable_interrupt(adapter->path[i].tx);
                 }
                 VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_RESUMING);
                 VNIF_SET_FLAG(adapter, VNF_ADAPTER_POLLING);

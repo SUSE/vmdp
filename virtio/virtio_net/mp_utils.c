@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008-2017 Red Hat, Inc.
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1616,13 +1616,43 @@ VNIFPvStatTimerDpc(
             }
 #ifndef XENNET
             if (g_running_hypervisor == HYPERVISOR_KVM) {
-                PRINTK(
-                    ("    [%d] last_used_idx %d used->idx %d free %d head %d\n",
-                    i,
-                    adapter->path[i].u.vq.rx->last_used_idx,
-                    adapter->path[i].u.vq.rx->vring.used->idx,
-                    adapter->path[i].u.vq.rx->num_free,
-                    adapter->path[i].u.vq.rx->free_head));
+                if (adapter->path[i].u.vq.rx->vq_type == split_vq) {
+                    PRINTK(
+                    ("    RX [%d] lst_usd_idx %d usd->idx %d free %d head %d\n",
+                        i,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.rx)->last_used_idx,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.rx)->vring.used->idx,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.rx)->num_free,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.rx)->free_head));
+                    PRINTK(
+                    ("    TX [%d] lst_usd_idx %d usd->idx %d free %d head %d\n",
+                        i,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.tx)->last_used_idx,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.tx)->vring.used->idx,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.tx)->num_free,
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.tx)->free_head));
+
+                    if (((virtio_queue_split_t *)
+                        adapter->path[i].u.vq.tx)->vring.used->idx >
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.tx)->last_used_idx) {
+                        PRINTK(
+                        ("    should call VNIFCheckSendCompletion f %x af %x\n",
+                         ((virtio_queue_split_t *)
+                             adapter->path[i].u.vq.tx)->flags,
+                         ((virtio_queue_split_t *)
+                             adapter->path[i].u.vq.tx)->vring.avail->flags));
+                    }
+                } else {
+                }
             }
 #endif
         }

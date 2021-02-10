@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2013-2020 SUSE LLC
+; Copyright 2013-2021 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -223,6 +223,12 @@ HKR, Ndi\params\IndirectDescriptors,        type,      0, "enum"
 HKR, Ndi\params\IndirectDescriptors\enum,   "0",       0, %Disable%
 HKR, Ndi\params\IndirectDescriptors\enum,   "1",       0, %Enable%
 
+HKR, Ndi\params\PackedRings,        ParamDesc, 0, %UsePackedRings%
+HKR, Ndi\params\PackedRings,        default,   0, "0"
+HKR, Ndi\params\PackedRings,        type,      0, "enum"
+HKR, Ndi\params\PackedRings\enum,   "0",       0, %Disable%
+HKR, Ndi\params\PackedRings\enum,   "1",       0, %Enable%
+
 HKR, Ndi\params\TxSgCnt,        ParamDesc, 0, "%TxSgCnt%"
 HKR, Ndi\params\TxSgCnt,        default,   0, "25"
 HKR, Ndi\params\TxSgCnt,        min,       0, "20"
@@ -405,4 +411,5 @@ RSS_QUEUES = "Maximum Number of RSS Queues"
 NUM_MULTI_QUEUE_PATHS = "Maximum Multi Queue Paths (0 defaults to backend)"
 SPLIT_EVTCHN = "Split Event Channels (Xen)"
 IndirectDesc = "Indirect Descriptors (virtio)"
+UsePackedRings = "Packed Rings (virtio)"
 TxSgCnt = "Maximum TX scatter gather elements (virtio)"

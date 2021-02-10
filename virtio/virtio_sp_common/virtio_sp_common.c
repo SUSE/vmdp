@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -430,7 +430,7 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
 
     if (dev_ext->indirect) {
         pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, srb_ext->vr_desc, &len);
-        num_free = vring_add_buf_indirect(dev_ext->vq[qidx],
+        num_free = vq_add_buf_indirect(dev_ext->vq[qidx],
             &srb_ext->sg[0],
             srb_ext->out,
             srb_ext->in,
@@ -438,14 +438,14 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
             srb_ext->vr_desc,
             pa.QuadPart);
     } else {
-        num_free = vring_add_buf(dev_ext->vq[qidx],
+        num_free = vq_add_buf(dev_ext->vq[qidx],
             &srb_ext->sg[0],
             srb_ext->out,
             srb_ext->in,
             &srb_ext->vbr);
     }
     if (num_free >= 0) {
-        vring_kick(dev_ext->vq[qidx]);
+        vq_kick(dev_ext->vq[qidx]);
         SP_SHOULD_NOTIFY_NEXT(dev_ext, srb, srb_ext, num_free);
         DPRINTK(DPRTL_TRC, ("%s %s: out TRUE, added %d\n",
                             VIRTIO_SP_DRIVER_NAME,  __func__, ++g_addb));
@@ -621,9 +621,9 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
                 accessRange->RangeLength,
                 (BOOLEAN)!accessRange->RangeInMemory);
             RPRINTK(DPRTL_ON,
-                    ("%s %s: AR i %d ibar %d pa %llx va %p len %d inmem %d\n",
-                     VIRTIO_SP_DRIVER_NAME, __func__,
-                     i, iBar, accessRange->RangeStart, bar[iBar].va,
+                    ("%s %s: AR[%d] ibar %d pa %llx\n\tva %p len %d inmem %d\n",
+                     VIRTIO_SP_DRIVER_NAME, __func__, i,
+                     iBar, accessRange->RangeStart, bar[iBar].va,
                      accessRange->RangeLength, accessRange->RangeInMemory));
         }
     }
@@ -699,6 +699,8 @@ virtio_sp_find_device(virtio_sp_dev_ext_t *dev_ext,
         return SP_RETURN_ERROR;
     }
     dev_ext->features = VIRTIO_DEVICE_GET_FEATURES(&dev_ext->vdev);
+
+    virtio_sp_enable_features(dev_ext);
 
     RPRINTK(DPRTL_ON, ("%s %s: - OUT\n", VIRTIO_SP_DRIVER_NAME, __func__));
     return status;
@@ -783,6 +785,7 @@ virtio_sp_dump_config_info(virtio_sp_dev_ext_t *dev_ext,
     PRINTK(("\tMaximumTransferLength: %d\n",
             config_info->MaximumTransferLength));
     PRINTK(("\tqueue depth: %d\n", dev_ext->queue_depth));
+    PRINTK(("\tpacked rings: %d\n", dev_ext->vdev.packed_ring));
     PRINTK(("\tdbg_print_mask: 0x%x\n", dbg_print_mask));
 
     RPRINTK(DPRTL_ON, ("\n\tInterrupt level 0x%x, vector 0x%x, mode 0x%x\n",
@@ -958,7 +961,7 @@ virtio_sp_get_uncached_size_offsets(virtio_sp_dev_ext_t *dev_ext,
         + total_srb_ext_size
         + total_event_node_size
         + sizeof(void *) * max_queues);
-    RPRINTK(DPRTL_ON, ("%s %s: ring_va %p %p, queue_va %p\n\tvr %p vq %p\n",
+    RPRINTK(DPRTL_ON, ("%s %s:\n\tring_va %p %p, queue_va %p\n\tvr %p vq %p\n",
             VIRTIO_SP_DRIVER_NAME, __func__,
             ring_va,
             dev_ext->ring_va,
@@ -1057,6 +1060,9 @@ virtio_sp_find_vq(virtio_sp_dev_ext_t *dev_ext)
         qoffset += qsize;
 
         RPRINTK(DPRTL_ON, ("\tCall VIRTIO_DEVICE_QUEUE_SETUP\n"));
+        RPRINTK(DPRTL_ON, ("\t\tvq %p vq[%d] %p\n\t\tdev->vr %p dev->vq %p\n",
+                           vq, i, dev_ext->vq[i], dev_ext->vr, dev_ext->vq));
+
         vq = VIRTIO_DEVICE_QUEUE_SETUP(&dev_ext->vdev,
                                        (uint16_t)i,
                                        dev_ext->vq[i],
@@ -1065,10 +1071,11 @@ virtio_sp_find_vq(virtio_sp_dev_ext_t *dev_ext)
                                        (uint16_t)(dev_ext->msi_enabled ?
                                                dev_ext->msix_uses_one_vector ?
                                                   0 : i + 1
-                                           : VIRTIO_MSI_NO_VECTOR),
-                                       FALSE);
-        RPRINTK(DPRTL_ON,
-                ("\tBack from call to VIRTIO_DEVICE_QUEUE_SETUP %p\n", vq));
+                                           : VIRTIO_MSI_NO_VECTOR));
+
+        RPRINTK(DPRTL_ON, ("\tBack from Call to VIRTIO_DEVICE_QUEUE_SETUP\n"));
+        RPRINTK(DPRTL_ON, ("\t\tvq %p vq[%d] %p\n\t\tdev->vr %p dev->vq %p\n",
+                           vq, i, dev_ext->vq[i], dev_ext->vr, dev_ext->vq));
     }
     if (!vq) {
         StorPortLogError(

@@ -155,21 +155,6 @@ typedef struct virtio_bar_s {
     BOOLEAN           bPortSpace;
 } virtio_bar_t;
 
-typedef struct virtio_per_queue_info_s {
-    /* the actual virtqueue */
-    struct virtqueue *vq;
-    /* the number of entries in the queue */
-    int num;
-    /* the index of the queue */
-    int queue_index;
-    /* the virtual address of the ring queue */
-    void *queue;
-    /* physical address of the ring queue */
-    PHYSICAL_ADDRESS phys;
-    /* owner per-queue context */
-    void *pOwnerContext;
-} virtio_per_queue_info_t;
-
 typedef struct virtio_device_s {
     const struct virtio_device_ops_s *dev_op;
     virtio_bar_t bar[PCI_TYPE0_ADDRESSES];
@@ -192,6 +177,10 @@ typedef struct virtio_device_s {
     size_t notify_len;
 
     ULONG maxQueues;
+
+    BOOLEAN event_suppression_enabled; /* true if VIRTIO_RING_F_EVENT_IDX */
+    BOOLEAN packed_ring;               /* true if VIRTIO_F_RING_PACKED */
+
     char *drv_name;
     /* virtio_per_queue_info_t info[MAX_QUEUES_PER_DEVICE_DEFAULT]; */
     /* do not add any members after info struct, it is extensible */
@@ -232,15 +221,15 @@ typedef struct virtio_device_ops_s {
                                    virtio_queue_t *vq,
                                    void *vring_mem,
                                    uint16_t num,
-                                   uint16_t msi_vector,
-                                   BOOLEAN use_event_idx);
+                                   uint16_t msi_vector);
 
     /* tear down and deallocate a queue */
     void (*delete_queue)(virtio_queue_t *vq, uint32_t free_mem);
 
     NTSTATUS (*activate_queue)(virtio_device_t *vdev,
-                              virtio_queue_t *vq,
-                              uint16_t msi_vector);
+                               virtio_queue_t *vq,
+                               uint16_t msi_vector,
+                               BOOLEAN query_notify_off);
 } virtio_device_ops_t;
 
 #define VIRTIO_DEVICE_GET_CONFIG(_vdev, _offset, _buf, _len)               \
@@ -278,15 +267,15 @@ typedef struct virtio_device_ops_s {
                                        (_rsize), (_hsize))
 
 #define VIRTIO_DEVICE_QUEUE_SETUP(_vdev, _qidx, _vq, _vring_mem, _num,  \
-                                  _msi_vector, _use_event_idx)          \
+                                  _msi_vector)                          \
     (_vdev)->dev_op->setup_queue((_vdev), (_qidx), (_vq), (_vring_mem), \
-                                 (_num), (_msi_vector), (_use_event_idx))
+                                 (_num), (_msi_vector))
 
 #define VIRTIO_DEVICE_QUEUE_DELETE(_vdev, _vq, _free_mem)               \
     (_vdev)->dev_op->delete_queue((_vq), (_free_mem))
 
-#define VIRTIO_DEVICE_QUEUE_ACTIVATE(_vdev, _vq, _msi_vector)           \
-    (_vdev)->dev_op->activate_queue((_vdev), (_vq), (_msi_vector))
+#define VIRTIO_DEVICE_QUEUE_ACTIVATE(_vdev, _vq, _msi_vector, _query_off) \
+    (_vdev)->dev_op->activate_queue((_vdev), (_vq), (_msi_vector), (_query_off))
 
 #define VIRTIO_IOWRITE64_LOHI(val, lo_addr, hi_addr)                    \
     virtio_iowrite32((ULONG_PTR)(lo_addr), (uint32_t)(val));            \
@@ -301,23 +290,6 @@ typedef struct virtio_device_ops_s {
 
 #define PCI_READ_CONFIG_DWORD(_pci_config_buf, _offset, _dval)          \
     (_dval) = *(uint32_t *)&(_pci_config_buf)[(_offset)];
-
-/*
- * shall be used only if virtio_device_t device storage is allocated
- * dynamically to provide support for more than 8
- * (MAX_QUEUES_PER_DEVICE_DEFAULT) queues.
- * return size in bytes to allocate for virtio_device_t structure.
- */
-ULONG __inline virtio_dev_size_required(USHORT max_number_of_queues)
-{
-    ULONG size = sizeof(virtio_device_t);
-
-    if (max_number_of_queues > MAX_QUEUES_PER_DEVICE_DEFAULT) {
-        size += sizeof(virtio_per_queue_info_t)
-            * (max_number_of_queues - MAX_QUEUES_PER_DEVICE_DEFAULT);
-    }
-    return size;
-}
 
 #define virtio_is_feature_enabled(features_list, feature)   \
     (!!((features_list) & (1ULL << (feature))))

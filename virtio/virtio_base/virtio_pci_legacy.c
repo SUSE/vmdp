@@ -5,7 +5,7 @@
  *  Anthony Liguori  <aliguori@us.ibm.com>
  *  Windows porting - Yan Vugenfirer <yvugenfi@redhat.com>
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,7 +34,7 @@
 #include <ntddk.h>
 #include <virtio_dbg_print.h>
 #include <virtio_pci.h>
-#include <virtio_ring.h>
+#include <virtio_queue_ops.h>
 
 static struct virtio_device_ops_s virtio_pci_device_ops;
 
@@ -116,12 +116,26 @@ virtio_dev_legacy_set_features(virtio_device_t *vdev, uint64_t features) {
     return STATUS_SUCCESS;
 }
 
+static void
+virtio_dev_legacy_query_vq_size(unsigned int num,
+                                unsigned long *pring_size,
+                                unsigned long *pqueue_size)
+{
+    if (pring_size != NULL) {
+        *pring_size = vring_size_split(num, VIRTIO_PCI_VRING_ALIGN);
+    }
+    if (pqueue_size != NULL) {
+        *pqueue_size = sizeof(void *) * num + sizeof(virtio_queue_split_t);
+    }
+}
+
 static NTSTATUS
 virtio_dev_legacy_query_vq_alloc(virtio_device_t *vdev,
                                  unsigned qidx,
                                  uint16_t *pnum,
                                  unsigned long *pring_size,
-                                 unsigned long *pheap_size) {
+                                 unsigned long *pqueue_size)
+{
     uint16_t num;
 
     /* Select the queue we're interested in */
@@ -134,12 +148,8 @@ virtio_dev_legacy_query_vq_alloc(virtio_device_t *vdev,
     }
 
     *pnum = num;
-    if (pring_size != NULL) {
-        *pring_size = vring_size(num, VIRTIO_PCI_VRING_ALIGN);
-    }
-    if (pheap_size != NULL) {
-        *pheap_size = sizeof(void *) * num + sizeof(virtio_queue_t);
-    }
+
+    virtio_dev_legacy_query_vq_size(num, pring_size, pqueue_size);
 
     return STATUS_SUCCESS;
 }
@@ -168,12 +178,15 @@ virtio_dev_legacy_set_queue_vector(virtio_device_t *vdev,
 static NTSTATUS
 virtio_dev_legacy_vq_activate(virtio_device_t *vdev,
                               virtio_queue_t *vq,
-                              uint16_t msi_vector)
+                              uint16_t msi_vector,
+                              BOOLEAN query_notify_off)
 {
     PHYSICAL_ADDRESS pa;
+    void *ring;
     ULONG page_num;
 
-    pa = MmGetPhysicalAddress(vq->vring.desc);
+    vq_get_ring_mem_desc(vq, &ring, NULL, NULL);
+    pa = MmGetPhysicalAddress(ring);
     page_num = (ULONG)(pa.QuadPart >> VIRTIO_PCI_QUEUE_ADDR_SHIFT);
     RPRINTK(DPRTL_PCI, ("%s %s: activate q, pa 0x%x%x, pagenum 0x%x\n",
                         vdev->drv_name, __func__,
@@ -186,6 +199,8 @@ virtio_dev_legacy_vq_activate(virtio_device_t *vdev,
                         vdev->drv_name, __func__,
                         vdev->addr + VIRTIO_PCI_QUEUE_PFN, page_num));
     virtio_iowrite32(vdev->addr + VIRTIO_PCI_QUEUE_PFN, page_num);
+
+    vq->notification_addr = (void *) (vdev->addr + VIRTIO_PCI_QUEUE_NOTIFY);
 
     if (msi_vector != VIRTIO_MSI_NO_VECTOR) {
         msi_vector = virtio_dev_legacy_set_queue_vector(vdev,
@@ -201,60 +216,63 @@ virtio_dev_legacy_vq_activate(virtio_device_t *vdev,
 }
 
 static virtio_queue_t *
-virtio_dev_legacy_vq_setup(virtio_device_t *vdev, uint16_t qidx,
-    virtio_queue_t *vq, void *vring_mem, uint16_t num, uint16_t msi_vector,
-    BOOLEAN use_event_idx)
+virtio_dev_legacy_vq_setup(virtio_device_t *vdev,
+                           uint16_t qidx,
+                           virtio_queue_t *vq,
+                           void *vring_mem,
+                           uint16_t num,
+                           uint16_t msi_vector)
 {
     NTSTATUS status;
+    unsigned long ring_size;
+    unsigned long queue_size;
     uint16_t i;
     BOOLEAN alloced_mem;
 
     alloced_mem = FALSE;
     if (vq == NULL) {
-        status = virtio_dev_legacy_query_vq_alloc(vdev, qidx, &num, NULL, NULL);
+        status = virtio_dev_legacy_query_vq_alloc(vdev,
+                                                  qidx,
+                                                  &num,
+                                                  &ring_size,
+                                                  &queue_size);
         if (!NT_SUCCESS(status)) {
             return NULL;
         }
-        vq = VIRTIO_ALLOC(sizeof(virtio_queue_t) + (sizeof(void *) * num));
+        vq = VIRTIO_ALLOC(queue_size);
         if (vq == NULL) {
             return NULL;
         }
 
-        VIRTIO_ALLOC_CONTIGUOUS(vring_mem,
-            vring_size(num, VIRTIO_PCI_VRING_ALIGN));
+        VIRTIO_ALLOC_CONTIGUOUS(vring_mem, ring_size);
         if (vring_mem == NULL) {
             VIRTIO_FREE(vq);
             return NULL;
         }
         alloced_mem = TRUE;
+    } else {
+        virtio_dev_legacy_query_vq_size(num, &ring_size, &queue_size);
     }
 
-    memset(vq, 0, sizeof(virtio_queue_t) + (sizeof(void *) * num));
-    memset(vring_mem, 0, vring_size(num, VIRTIO_PCI_VRING_ALIGN));
+    memset(vq, 0, queue_size);
+    memset(vring_mem, 0, ring_size);
 
-    RPRINTK(DPRTL_PCI, ("%s %s: vring_init\n", vdev->drv_name, __func__));
-    vring_init(&vq->vring, num, vring_mem, VIRTIO_PCI_VRING_ALIGN);
-
-    vq->vdev = vdev;
-    vq->qidx = qidx;
-    vq->port = (uint32_t)vdev->addr;
-    vq->num_free = num;
-    vq->free_head = 0;
-    vq->use_event_idx = use_event_idx;
-
-    RPRINTK(DPRTL_PCI, ("%s %s: init descriptors\n", vdev->drv_name, __func__));
-    for (i = 0; i < num - 1; i++) {
-        vq->vring.desc[i].next = i + 1;
-    }
-
-    vq->notification_addr = (void *)(vdev->addr + VIRTIO_PCI_QUEUE_NOTIFY);
+    RPRINTK(DPRTL_PCI, ("%s %s: vring_vq_setup_split\n",
+                         __func__, vdev->drv_name));
+    vring_vq_setup_split(vdev,
+                         vq,
+                         vring_mem,
+                         VIRTIO_PCI_VRING_ALIGN,
+                         num,
+                         qidx,
+                         vdev->event_suppression_enabled);
 
     /* activate the queue */
-    status = virtio_dev_legacy_vq_activate(vdev, vq, msi_vector);
+    status = virtio_dev_legacy_vq_activate(vdev, vq, msi_vector, FALSE);
     if (!NT_SUCCESS(status)) {
         if (alloced_mem == TRUE) {
             if (vring_mem != NULL) {
-                VIRTIO_FREE(vring_mem);
+                VIRTIO_FREE_CONTIGUOUS(vring_mem);
             }
             if (vq != NULL) {
                 VIRTIO_FREE(vq);
@@ -270,6 +288,7 @@ virtio_dev_legacy_vq_setup(virtio_device_t *vdev, uint16_t qidx,
 static void
 virtio_dev_legacy_vq_delete(virtio_queue_t *vq, uint32_t free_mem)
 {
+    void *ring;
     virtio_device_t *vdev = vq->vdev;
     virtio_iowrite16(vdev->addr + VIRTIO_PCI_QUEUE_SEL, vq->qidx);
 
@@ -284,8 +303,9 @@ virtio_dev_legacy_vq_delete(virtio_queue_t *vq, uint32_t free_mem)
     virtio_iowrite32(vdev->addr + VIRTIO_PCI_QUEUE_PFN, 0);
 
     if (free_mem && vq) {
-        if (vq->vring.desc) {
-            VIRTIO_FREE_CONTIGUOUS(vq->vring.desc);
+        vq_get_ring_mem_desc(vq, &ring, NULL, NULL);
+        if (ring != NULL) {
+            VIRTIO_FREE_CONTIGUOUS(ring);
         }
         VIRTIO_FREE(vq);
     }

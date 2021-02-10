@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2011-2020 SUSE LLC
+ * Copyright 2011-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -89,11 +89,9 @@ virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
     PRINTK(("\topt_io_size: %d\n", dev_ext->info.opt_io_size));
 }
 
-void
-virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
+void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext)
 {
     uint64_t guest_features;
-    uint32_t qdepth;
 
     guest_features = 0;
     if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_WCACHE)) {
@@ -101,13 +99,31 @@ virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
     }
     if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_F_VERSION_1)) {
         virtio_feature_enable(guest_features, VIRTIO_F_VERSION_1);
+
+        if (virtio_is_feature_enabled(dev_ext->features,
+                                      VIRTIO_F_RING_PACKED)) {
+            virtio_feature_enable(guest_features, VIRTIO_F_RING_PACKED);
+        }
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_RING_F_EVENT_IDX)) {
+        virtio_feature_enable(guest_features, VIRTIO_RING_F_EVENT_IDX);
+    }
+    if (virtio_is_feature_enabled(dev_ext->features,
+                                  VIRTIO_RING_F_INDIRECT_DESC)) {
+        virtio_feature_enable(guest_features, VIRTIO_RING_F_INDIRECT_DESC);
     }
     PRINTK(("%s: setting guest features 0x%llx\n",
             VIRTIO_SP_DRIVER_NAME, guest_features));
     virtio_device_set_guest_feature_list(&dev_ext->vdev, guest_features);
+}
 
-    qdepth = dev_ext->indirect ? dev_ext->vq[0]->num_free :
-                dev_ext->vq[0]->num_free / VIRTIO_SP_MAX_SGL_ELEMENTS;
+void
+virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
+{
+    uint32_t qdepth;
+
+    qdepth = dev_ext->indirect ? dev_ext->vq[0]->num :
+                dev_ext->vq[0]->num / VIRTIO_SP_MAX_SGL_ELEMENTS;
     if (dev_ext->queue_depth > qdepth) {
         dev_ext->queue_depth = qdepth;
     }
@@ -411,7 +427,7 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     dev_ext->op_mode |= OP_MODE_FLUSH;
     if (dev_ext->indirect) {
         pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, srb_ext->vr_desc, &len);
-        num_free = vring_add_buf_indirect(dev_ext->vq[qidx],
+        num_free = vq_add_buf_indirect(dev_ext->vq[qidx],
             &srb_ext->sg[0],
             srb_ext->out,
             srb_ext->in,
@@ -419,14 +435,14 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
             srb_ext->vr_desc,
             pa.QuadPart);
     } else {
-        num_free = vring_add_buf(dev_ext->vq[qidx],
+        num_free = vq_add_buf(dev_ext->vq[qidx],
             &srb_ext->sg[0],
             srb_ext->out,
             srb_ext->in,
             &srb_ext->vbr);
     }
     if (num_free >= 0) {
-        vring_kick(dev_ext->vq[qidx]);
+        vq_kick(dev_ext->vq[qidx]);
 
 #ifndef IS_STORPORT
         for (i = 0; i < wait; i++) {

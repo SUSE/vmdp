@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -127,8 +127,10 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         RPRINTK(DPRTL_ON, ("%s: SRB_FUNC_RESET 0x%x: op = %x, st = %x, %x %x\n",
                 VIRTIO_SP_DRIVER_NAME, Srb->Function,
                 dev_ext->op_mode, dev_ext->state,
-                dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->last_used_idx,
-                dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->vring.used->idx));
+                ((virtio_queue_split_t *)
+                    dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])->last_used_idx,
+                ((virtio_queue_split_t *)
+                    dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])->vring.used->idx));
 
         if ((dev_ext->op_mode & OP_MODE_SHUTTING_DOWN)) {
             RPRINTK(DPRTL_ON, ("  anding in OP_MODE_SHUTTING_DOWN\n"));
@@ -139,8 +141,10 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         dev_ext->op_mode |= OP_MODE_RESET;
         RPRINTK(DPRTL_ON, ("  new op_mode %x\n", dev_ext->op_mode));
 
-        if (dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->last_used_idx
-                != dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->vring.used->idx) {
+        if (((virtio_queue_split_t *)
+                dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]) ->last_used_idx
+            != ((virtio_queue_split_t *)
+                dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])->vring.used->idx) {
             /* Try to clean up any outstanding requests. */
             dev_ext->op_mode |= OP_MODE_POLLING;
             virtio_sp_poll(dev_ext);
@@ -360,8 +364,10 @@ sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
 {
     PRINTK(("%s %s: op = %x, st = %x, %x %x\n",
         VIRTIO_SP_DRIVER_NAME, __func__, dev_ext->op_mode, dev_ext->state,
-        dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->last_used_idx,
-        dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]->vring.used->idx));
+        ((virtio_queue_split_t *)
+            dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])->last_used_idx,
+        ((virtio_queue_split_t *)
+            dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])->vring.used->idx));
     return TRUE;
 }
 
@@ -384,7 +390,7 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
     DPRINTK(DPRTL_INT, ("%s %s: in\n", VIRTIO_SP_DRIVER_NAME, __func__));
     if (reason == 1 || msg_id >= VIRTIO_SCSI_QUEUE_REQUEST) {
         cnt = 0;
-        while ((cmd = vring_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST],
+        while ((cmd = vq_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST],
                 &len)) != NULL) {
             srb = (PSCSI_REQUEST_BLOCK)cmd->sc;
             resp = &cmd->resp.cmd;
@@ -474,7 +480,7 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
     if (reason == 1 || msg_id == VIRTIO_SCSI_QUEUE_CONTROL) {
         if (dev_ext->tmf_infly) {
             PRINTK(("%s: ** int infly\n", VIRTIO_SP_DRIVER_NAME));
-            while ((cmd = vring_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_CONTROL],
+            while ((cmd = vq_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_CONTROL],
                     &len)) != NULL) {
                 virtio_scsi_ctrl_tmf_resp_t *resp;
 
@@ -498,7 +504,7 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
     }
     if (reason == 1 || msg_id == VIRTIO_SCSI_QUEUE_EVENT) {
 
-        while ((event_node = vring_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT],
+        while ((event_node = vq_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT],
                                            &len)) != NULL) {
             evt = &event_node->event;
             RPRINTK(DPRTL_ON, ("VioScsiInterruptevent event %x\n", evt->event));

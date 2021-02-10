@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -258,8 +258,8 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         PRINTK(("%s SRB_FUNC_RESET 0x%x: op = %x, st = %x, %x %x\n",
                 VIRTIO_SP_DRIVER_NAME,
                 Srb->Function, dev_ext->op_mode, dev_ext->state,
-                dev_ext->vq[0]->last_used_idx,
-                dev_ext->vq[0]->vring.used->idx));
+                ((virtio_queue_split_t *)dev_ext->vq[0])->last_used_idx,
+                ((virtio_queue_split_t *)dev_ext->vq[0])->vring.used->idx));
 
         if ((dev_ext->op_mode & OP_MODE_SHUTTING_DOWN)) {
             dev_ext->op_mode &= OP_MODE_SHUTTING_DOWN;
@@ -458,7 +458,7 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
     if (reason == 1 || (LONG)msg_id >= VIRTIO_SCSI_QUEUE_REQUEST) {
         VBIF_INC(g_int_to_send);
         cnt = 0;
-        while ((vbr = vring_get_buf(dev_ext->vq[msg_id], &len)) != NULL) {
+        while ((vbr = vq_get_buf(dev_ext->vq[msg_id], &len)) != NULL) {
             VBIF_INC(did_work);
             srb = (PSCSI_REQUEST_BLOCK)vbr->req;
             switch (vbr->status) {

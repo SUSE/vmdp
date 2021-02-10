@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -121,11 +121,9 @@ virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
     }
 }
 
-void
-virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
+void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext)
 {
     uint64_t guest_features;
-    uint32_t i;
 
     guest_features = 0;
     if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_F_VERSION_1)) {
@@ -147,6 +145,12 @@ virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
     PRINTK(("%s: setting guest features 0x%llx\n",
             VIRTIO_SP_DRIVER_NAME, guest_features));
     virtio_device_set_guest_feature_list(&dev_ext->vdev, guest_features);
+}
+
+void
+virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
+{
+    uint32_t i;
 
     if ((dev_ext->op_mode & OP_MODE_NORMAL)
             && virtio_is_feature_enabled(dev_ext->features,
@@ -174,13 +178,13 @@ virtio_scsi_add_event(virtio_sp_dev_ext_t *dev_ext,
 {
     int num_free;
 
-    num_free = vring_add_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT],
-                             &event_node->sg,
-                             0,
-                             1,
-                             event_node);
+    num_free = vq_add_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT],
+                          &event_node->sg,
+                          0,
+                          1,
+                          event_node);
     if (num_free >= 0) {
-        vring_kick(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT]);
+        vq_kick(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT]);
         DPRINTK(DPRTL_TRC, ("%s %s: out TRUE\n",
                             VIRTIO_SP_DRIVER_NAME, __func__));
         return TRUE;

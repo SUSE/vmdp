@@ -10,6 +10,7 @@ SOURCES = miniport.c \
     mp_nic5.c \
     mp_vnic5.c \
     virtio_ring.c \
+    virtio_ring_packed.c \
     virtio_pci.c \
     virtio_pci_legacy.c \
     virtio_pci_modern.c \

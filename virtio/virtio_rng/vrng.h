@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -40,8 +40,8 @@
 #include <virtio_dbg_print.h>
 #include <virtio_pci.h>
 #include <virtio_pci_wdm.h>
-#include <virtio_utils.h>
 #include <virtio_config.h>
+#include <virtio_queue_ops.h>
 #include "vrng_guid.h"
 #include "vrng_ver.h"
 

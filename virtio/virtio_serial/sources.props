@@ -5,6 +5,6 @@
     <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">DRIVER</TARGETTYPE>
     <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ntstrsafe.lib              $(DDK_LIB_PATH)\wdmsec.lib</TARGETLIBS>
     <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">..\include;..\include\virtio;..\virtio_serial</INCLUDES>
-    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">vserial.c    vspnp.c     vspdo.c     vspower.c   vsint.c     vsbuf.c     vscontrol.c     vsport.c    ..\virtio_base\virtio_ring.c    ..\virtio_base\virtio_pci.c     ..\virtio_base\virtio_pci_legacy.c      ..\virtio_base\virtio_pci_modern.c        ..\virtio_base\virtio_pci_wdm.c    ..\virtio_base\virtio_utils.c  	vserial.rc</SOURCES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">vserial.c    vspnp.c     vspdo.c     vspower.c   vsint.c     vsbuf.c     vscontrol.c     vsport.c    ..\virtio_base\virtio_ring.c      ..\virtio_base\virtio_ring_packed.c    ..\virtio_base\virtio_pci.c     ..\virtio_base\virtio_pci_legacy.c      ..\virtio_base\virtio_pci_modern.c        ..\virtio_base\virtio_pci_wdm.c    ..\virtio_base\virtio_utils.c  	vserial.rc</SOURCES>
   </PropertyGroup>
 </Project>
