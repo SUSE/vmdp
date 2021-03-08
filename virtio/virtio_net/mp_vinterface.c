@@ -426,8 +426,36 @@ vnif_set_guest_features(PVNIF_ADAPTER adapter)
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_CTRL_VQ)) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_VQ);
-    }
 
+        if (virtio_is_feature_enabled(adapter->u.v.features,
+                                      VIRTIO_NET_F_CTRL_RX)) {
+            virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_RX);
+        }
+        if (virtio_is_feature_enabled(adapter->u.v.features,
+                                      VIRTIO_NET_F_CTRL_RX_EXTRA)) {
+            virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_RX_EXTRA);
+        }
+    }
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_MTU)) {
+        virtio_feature_enable(guest_features, VIRTIO_NET_F_MTU);
+    }
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_MAC)) {
+        virtio_feature_enable(guest_features, VIRTIO_NET_F_MAC);
+    }
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_CTRL_MAC_ADDR)) {
+        virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_MAC_ADDR);
+    }
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_STATUS)) {
+        virtio_feature_enable(guest_features, VIRTIO_NET_F_STATUS);
+    }
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_GUEST_ANNOUNCE)) {
+        virtio_feature_enable(guest_features, VIRTIO_NET_F_GUEST_ANNOUNCE);
+    }
     PRINTK(("Virtio_net: setting guest features 0x%llx\n", guest_features));
     virtio_device_set_guest_feature_list(&adapter->u.v.vdev,
                                          guest_features);
@@ -509,7 +537,8 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
 
     return status;
 }
-static BOOLEAN
+
+BOOLEAN
 vnif_send_control_msg(PVNIF_ADAPTER adapter,
                       UCHAR cls,
                       UCHAR cmd,
@@ -614,6 +643,46 @@ vnifv_setup_rxtx(PVNIF_ADAPTER adapter)
     return status;
 }
 
+static void
+vnifv_set_mq_paths(PVNIF_ADAPTER adapter)
+{
+    u16 num;
+
+    if (adapter->num_paths > 1) {
+        num = (uint16_t)adapter->num_paths;
+        vnif_send_control_msg(adapter,
+                              VIRTIO_NET_CTRL_MQ,
+                              VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET,
+                              &num,
+                              sizeof(num),
+                              NULL,
+                              0);
+    }
+}
+static void
+vnifv_update_mac(PVNIF_ADAPTER adapter)
+{
+    if (adapter->CurrentAddress[5] != adapter->PermanentAddress[5]
+        || adapter->CurrentAddress[4] != adapter->PermanentAddress[4]
+        || adapter->CurrentAddress[3] != adapter->PermanentAddress[3]
+        || adapter->CurrentAddress[2] != adapter->PermanentAddress[2]
+        || adapter->CurrentAddress[1] != adapter->PermanentAddress[1]
+        || adapter->CurrentAddress[0] != adapter->PermanentAddress[0]) {
+        if (virtio_is_feature_enabled(adapter->u.v.features,
+                                      VIRTIO_NET_F_CTRL_MAC_ADDR)
+                && virtio_is_feature_enabled(adapter->u.v.features,
+                                             VIRTIO_NET_F_CTRL_VQ)) {
+            vnif_send_control_msg(adapter,
+                                  VIRTIO_NET_CTRL_MAC,
+                                  VIRTIO_NET_CTRL_MAC_ADDR_SET,
+                                  &adapter->CurrentAddress,
+                                  ETH_LENGTH_OF_ADDRESS,
+                                  NULL,
+                                  0);
+        }
+    }
+}
+
 NDIS_STATUS
 VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
 {
@@ -621,7 +690,6 @@ VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
     NDIS_STATUS status;
     UINT i;
     int err;
-    u16 num;
 
     RPRINTK(DPRTL_ON, ("VNIFSetupAdapterInterface: In\n"));
     status = NDIS_STATUS_SUCCESS;
@@ -651,16 +719,9 @@ VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
 
     virtio_device_add_status(&adapter->u.v.vdev, VIRTIO_CONFIG_S_DRIVER_OK);
 
-    if (adapter->num_paths > 1) {
-        num = (uint16_t)adapter->num_paths;
-        vnif_send_control_msg(adapter,
-                              VIRTIO_NET_CTRL_MQ,
-                              VIRTIO_NET_CTRL_MQ_VQ_PAIRS_SET,
-                              &num,
-                              sizeof(num),
-                              NULL,
-                              0);
-    }
+    vnifv_set_mq_paths(adapter);
+
+    vnifv_update_mac(adapter);
 
     RPRINTK(DPRTL_INIT,
         ("VNIFSetupAdapterInterface: VNIFIndicateLinkStatus\n"));
@@ -905,6 +966,82 @@ vnifv_restart_interface(PVNIF_ADAPTER adapter)
     MPResume(adapter, 0);
     vnif_send_arp(adapter);
     RPRINTK(DPRTL_ON, ("vnif_restart_interface: out\n"));
+}
+
+void
+vnifv_send_packet_filter(PVNIF_ADAPTER adapter)
+{
+    ULONG filter;
+    u8 val;
+
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_CTRL_RX)) {
+        filter = adapter->PacketFilter;
+        val = (filter & NDIS_PACKET_TYPE_PROMISCUOUS) ? 1 : 0;
+        vnif_send_control_msg(adapter,
+                              VIRTIO_NET_CTRL_RX,
+                              VIRTIO_NET_CTRL_RX_PROMISC,
+                              &val,
+                              sizeof(val),
+                              NULL,
+                              0);
+        val = (filter & NDIS_PACKET_TYPE_ALL_MULTICAST) ? 1 : 0;
+        vnif_send_control_msg(adapter,
+                              VIRTIO_NET_CTRL_RX,
+                              VIRTIO_NET_CTRL_RX_ALLMULTI,
+                              &val,
+                              sizeof(val),
+                              NULL,
+                              0);
+
+        if (virtio_is_feature_enabled(adapter->u.v.features,
+                                      VIRTIO_NET_F_CTRL_RX_EXTRA)) {
+            val = (filter & (NDIS_PACKET_TYPE_MULTICAST
+                             | NDIS_PACKET_TYPE_ALL_MULTICAST)) ? 0 : 1;
+            vnif_send_control_msg(adapter,
+                                  VIRTIO_NET_CTRL_RX,
+                                  VIRTIO_NET_CTRL_RX_NOMULTI,
+                                  &val,
+                                  sizeof(val),
+                                  NULL,
+                                  0);
+            val = (filter & NDIS_PACKET_TYPE_DIRECTED) ? 0 : 1;
+            vnif_send_control_msg(adapter,
+                                  VIRTIO_NET_CTRL_RX,
+                                  VIRTIO_NET_CTRL_RX_NOUNI,
+                                  &val,
+                                  sizeof(val),
+                                  NULL,
+                                  0);
+            val = (filter & NDIS_PACKET_TYPE_BROADCAST) ? 0 : 1;
+            vnif_send_control_msg(adapter,
+                                  VIRTIO_NET_CTRL_RX,
+                                  VIRTIO_NET_CTRL_RX_NOBCAST,
+                                  &val,
+                                  sizeof(val),
+                                  NULL,
+                                  0);
+        }
+    }
+}
+
+void
+vnifv_send_multicast_list(PVNIF_ADAPTER adapter)
+{
+    ULONG val;
+
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_CTRL_RX)) {
+        val = 0;
+        vnif_send_control_msg(adapter,
+                              VIRTIO_NET_CTRL_MAC,
+                              VIRTIO_NET_CTRL_MAC_TABLE_SET,
+                              &val,
+                              sizeof(val),
+                              &adapter->ulMCListSize,
+                              adapter->ulMCListSize * ETH_LENGTH_OF_ADDRESS
+                                + sizeof(adapter->ulMCListSize));
+    }
 }
 
 static void

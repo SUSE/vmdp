@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1329,6 +1329,8 @@ VNIFSetPacketFilter(PVNIF_ADAPTER adapter, ULONG PacketFilter)
         RPRINTK(DPRTL_CONFIG, ("VNIFSetPacketFilter: %s new filter %x.\n",
             adapter->node_name, PacketFilter));
         adapter->PacketFilter = PacketFilter;
+
+        vnif_send_packet_filter(adapter);
     }
 
     return status;
@@ -1366,6 +1368,8 @@ VNIFSetMulticastList(
                    InformationBufferLength);
 
     adapter->ulMCListSize = InformationBufferLength / ETH_LENGTH_OF_ADDRESS;
+
+    vnif_send_multicast_list(adapter);
 
     return NDIS_STATUS_SUCCESS;
 }

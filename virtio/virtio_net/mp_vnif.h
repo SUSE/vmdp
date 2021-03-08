@@ -118,12 +118,21 @@ void vnifv_restart_interface(struct _VNIF_ADAPTER *adapter);
 void VNIFV_FreeAdapterInterface(struct _VNIF_ADAPTER *adapter);
 void VNIFV_CleanupInterface(struct _VNIF_ADAPTER *adapter, NDIS_STATUS status);
 NDIS_STATUS VNIFV_FindAdapter(struct _VNIF_ADAPTER *adapter);
+BOOLEAN vnif_send_control_msg(struct _VNIF_ADAPTER *adapter,
+                              UCHAR cls,
+                              UCHAR cmd,
+                              PVOID buffer1,
+                              ULONG size1,
+                              PVOID buffer2,
+                              ULONG size2);
 NDIS_STATUS VNIFV_SetupAdapterInterface(struct _VNIF_ADAPTER *adapter);
 NDIS_STATUS VNIFV_QueryHWResources(struct _VNIF_ADAPTER *adapter,
     PNDIS_RESOURCE_LIST res_list);
 uint32_t VNIFV_Quiesce(struct _VNIF_ADAPTER *adapter);
 void VNIFV_CleanupRings(struct _VNIF_ADAPTER *adapter);
 uint32_t VNIFV_DisconnectBackend(struct _VNIF_ADAPTER *adapter);
+void vnifv_send_packet_filter(struct _VNIF_ADAPTER *adapter);
+void vnifv_send_multicast_list(struct _VNIF_ADAPTER *adapter);
 
 /* *************** mp_vutils.c ************ */
 #ifdef NDIS60_MINIPORT

@@ -48,11 +48,14 @@
 #define VIRTIO_NET_F_CTRL_RX    18  /* Control channel RX mode support */
 #define VIRTIO_NET_F_CTRL_VLAN  19  /* Control channel VLAN filtering */
 #define VIRTIO_NET_F_CTRL_RX_EXTRA 20   /* Extra RX mode control support */
-#define VIRTIO_NET_F_MQ 22          /* Device supports Receive Flow */
+#define VIRTIO_NET_F_GUEST_ANNOUNCE 21  /* Guest can announce device */
+#define VIRTIO_NET_F_MQ 22              /* Device supports Receive Flow */
+#define VIRTIO_NET_F_CTRL_MAC_ADDR 23   /* Set MAC address */
 
 #define VIRTIO_NET_F_SPEED_DUPLEX 63    /* Device set linkspeed and duplex */
 
 #define VIRTIO_NET_S_LINK_UP    1   /* Link is up */
+#define VIRTIO_NET_S_ANNOUNCE   2   /* Announcement is needed */
 
 #define VIRTIO_NET_DEV_INT      1
 #define VIRTIO_NET_DEV_INT_CTRL 2
@@ -79,6 +82,56 @@
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
 #endif
+
+/*
+ * Control the RX mode, ie. promiscuous, allmulti, etc...
+ * All commands require an "out" sg entry containing a 1 byte
+ * state value, zero = disable, non-zero = enable.  Commands
+ * 0 and 1 are supported with the VIRTIO_NET_F_CTRL_RX feature.
+ * Commands 2-5 are added with VIRTIO_NET_F_CTRL_RX_EXTRA.
+ */
+#define VIRTIO_NET_CTRL_RX              0
+#define VIRTIO_NET_CTRL_RX_PROMISC      0
+#define VIRTIO_NET_CTRL_RX_ALLMULTI     1
+#define VIRTIO_NET_CTRL_RX_ALLUNI       2
+#define VIRTIO_NET_CTRL_RX_NOMULTI      3
+#define VIRTIO_NET_CTRL_RX_NOUNI        4
+#define VIRTIO_NET_CTRL_RX_NOBCAST      5
+
+/*
+ * Control the MAC
+ *
+ * The MAC filter table is managed by the hypervisor, the guest should
+ * assume the size is infinite.  Filtering should be considered
+ * non-perfect, ie. based on hypervisor resources, the guest may
+ * received packets from sources not specified in the filter list.
+ *
+ * In addition to the class/cmd header, the TABLE_SET command requires
+ * two out scatterlists.  Each contains a 4 byte count of entries followed
+ * by a concatenated byte stream of the ETH_ALEN MAC addresses.  The
+ * first sg list contains unicast addresses, the second is for multicast.
+ * This functionality is present if the VIRTIO_NET_F_CTRL_RX feature
+ * is available.
+ *
+ * The ADDR_SET command requests one out scatterlist, it contains a
+ * 6 bytes MAC address. This functionality is present if the
+ * VIRTIO_NET_F_CTRL_MAC_ADDR feature is available.
+ */
+
+#define VIRTIO_NET_CTRL_MAC             1
+#define VIRTIO_NET_CTRL_MAC_TABLE_SET   0
+#define VIRTIO_NET_CTRL_MAC_ADDR_SET    1
+
+/*
+ * Control link announce acknowledgement
+ *
+ * The command VIRTIO_NET_CTRL_ANNOUNCE_ACK is used to indicate that
+ * driver has received the notification; device would clear the
+ * VIRTIO_NET_S_ANNOUNCE bit in the status field after it receives
+ * this command.
+ */
+#define VIRTIO_NET_CTRL_ANNOUNCE        3
+#define VIRTIO_NET_CTRL_ANNOUNCE_ACK    0
 
 typedef struct virtio_net_hdr_s {
     uint8_t flags;

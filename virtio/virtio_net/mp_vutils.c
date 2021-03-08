@@ -82,23 +82,43 @@ void
 vnif_report_link_status(PVNIF_ADAPTER adapter)
 {
     uint16_t link_status;
+    BOOLEAN link_up;
+    BOOLEAN link_anounce;
 
     VIRTIO_DEVICE_GET_CONFIG(&adapter->u.v.vdev,
         ETH_LENGTH_OF_ADDRESS,
         &link_status,
         sizeof(link_status));
 
-    link_status = (link_status & VIRTIO_NET_S_LINK_UP) != 0;
-    if (link_status != !VNIF_TEST_FLAG(adapter, VNF_ADAPTER_NO_LINK)) {
-        if (link_status) {
+    DPRINTK(DPRTL_ON, ("%s: link status %x.\n", __func__, link_status));
+
+    link_up = !!(link_status & VIRTIO_NET_S_LINK_UP);
+    if (link_up != !VNIF_TEST_FLAG(adapter, VNF_ADAPTER_NO_LINK)) {
+        if (link_up) {
             VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_NO_LINK);
         } else {
             VNIF_SET_FLAG(adapter, VNF_ADAPTER_NO_LINK);
         }
 
-        DPRINTK(DPRTL_ON, ("vnif_report_link_status: status change %x.\n",
-            link_status));
-        VNIFIndicateLinkStatus(adapter, link_status);
+        DPRINTK(DPRTL_ON, ("%s: indicate status %x.\n", __func__, link_up));
+        VNIFIndicateLinkStatus(adapter, link_up);
+    }
+    if (virtio_is_feature_enabled(adapter->u.v.features,
+                                  VIRTIO_NET_F_GUEST_ANNOUNCE)
+            && link_up
+            && !!(link_status & VIRTIO_NET_S_ANNOUNCE)) {
+
+        DPRINTK(DPRTL_ON, ("%s: send arp.\n", __func__));
+        vnif_send_arp(adapter);
+
+        DPRINTK(DPRTL_ON, ("%s: send anounce ctrl msg.\n", __func__));
+        vnif_send_control_msg(adapter,
+                      VIRTIO_NET_CTRL_ANNOUNCE,
+                      VIRTIO_NET_CTRL_ANNOUNCE_ACK,
+                      NULL,
+                      0,
+                      NULL,
+                      0);
     }
 }
 

@@ -211,11 +211,13 @@ vnif_miniport_interrupt_dpc(
          * after enabling interrupts, schedule a dpc.  This prevents having
          * work to do and not getting an interrupt.
          */
-        if ((int_status & (VNIF_RX_INT | VNIF_TX_INT))
-            && (VNIF_RING_HAS_UNCONSUMED_RESPONSES(
-                    adapter->path[path_id].u.vq.rx)
-                || VNIF_RING_HAS_UNCONSUMED_RESPONSES(
-                    adapter->path[path_id].u.vq.tx))) {
+        if ((((int_status & VNIF_RX_INT)
+                    && (VNIF_RING_HAS_UNCONSUMED_RESPONSES(
+                        adapter->path[path_id].u.vq.rx)))
+                || ((int_status & VNIF_TX_INT)
+                    && VNIF_RING_HAS_UNCONSUMED_RESPONSES(
+                        adapter->path[path_id].u.vq.tx)))
+            && VNIF_IS_READY(adapter)) {
 
             InterlockedOr(&adapter->path[path_id].u.vq.interrupt_status,
                           int_status);
