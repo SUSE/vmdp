@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -127,6 +127,8 @@ extern void (*VNIF_RING_FINAL_CHECK_FOR_RESPONSES)(void *vq, int *more_to_do);
 extern void (*vnif_ndis_queue_dpc)(struct _VNIF_ADAPTER *adapter,
                                    UINT rcv_qidx,
                                    UINT max_nbls_to_indicate);
+extern void (*vnif_send_packet_filter)(struct _VNIF_ADAPTER *adapter);
+extern void (*vnif_send_multicast_list )(struct _VNIF_ADAPTER *adapter);
 
 #ifdef NDIS60_MINIPORT
 #else

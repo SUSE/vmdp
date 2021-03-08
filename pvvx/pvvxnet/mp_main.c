@@ -96,6 +96,8 @@ void (*VNIF_RING_FINAL_CHECK_FOR_RESPONSES)(void *vq, int *more_to_do);
 void (*vnif_ndis_queue_dpc)(VNIF_ADAPTER *adapter,
                             UINT rcv_qidx,
                             UINT max_nbls_to_indicate);
+void (*vnif_send_packet_filter)(VNIF_ADAPTER *adapter);
+void (*vnif_send_multicast_list)(VNIF_ADAPTER *adapter);
 
 #ifdef NDIS60_MINIPORT
 #else
@@ -180,6 +182,9 @@ vnifv_setup(void)
     VNIFGetHWResources = VNIFV_GetHWResources;
 #endif
 
+    vnif_send_packet_filter = vnifv_send_packet_filter;
+    vnif_send_multicast_list = vnifv_send_multicast_list;
+
     VNIFRegisterNdisInterrupt = VNIFV_RegisterNdisInterrupt;
     VNIFDeregisterHardwareResources = VNIFV_DeregisterHardwareResources;
     VNIF_GET_NUM_PATHS = vnifv_get_num_paths;
@@ -251,6 +256,8 @@ vnifx_setup(void)
     VNIF_RING_HAS_UNCONSUMED_RESPONSES = VNIFX_RING_HAS_UNCONSUMED_RESPONSES;
     VNIF_RING_FINAL_CHECK_FOR_RESPONSES = VNIFX_RING_FINAL_CHECK_FOR_RESPONSES;
     vnif_ndis_queue_dpc = vnifx_ndis_queue_dpc;
+    vnif_send_packet_filter = vnifx_send_packet_filter;
+    vnif_send_multicast_list = vnifx_send_multicast_list;
 
 #ifdef NDIS60_MINIPORT
 #else
