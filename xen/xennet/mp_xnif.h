@@ -154,6 +154,8 @@ void VNIFX_CleanupRings(struct _VNIF_ADAPTER *adapter);
 uint32_t VNIFX_DisconnectBackend(struct _VNIF_ADAPTER *adapter);
 UINT vnifx_get_num_paths(struct _VNIF_ADAPTER *adapter);
 NDIS_STATUS vnifx_setup_path_info_ex(struct _VNIF_ADAPTER *adapter);
+void vnifx_send_packet_filter(struct _VNIF_ADAPTER *adapter);
+void vnifx_send_multicast_list(struct _VNIF_ADAPTER *adapter);
 
 
 #ifdef VNIF_TRACK_TX

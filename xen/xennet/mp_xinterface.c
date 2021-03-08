@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1538,6 +1538,16 @@ xennet_backend_changed(struct xenbus_watch *watch,
 
 void
 vnifx_restart_interface(PVNIF_ADAPTER adapter)
+{
+}
+
+void
+vnifx_send_packet_filter(PVNIF_ADAPTER adapter)
+{
+}
+
+void
+vnifx_send_multicast_list(PVNIF_ADAPTER adapter)
 {
 }
 
