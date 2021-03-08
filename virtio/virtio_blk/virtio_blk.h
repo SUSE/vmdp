@@ -239,6 +239,7 @@ typedef struct _virtio_sp_dev_ext {
     BOOLEAN         msi_enabled;
     BOOLEAN         msix_uses_one_vector;
     BOOLEAN         indirect;
+    BOOLEAN         b_use_packed_rings;
 #ifdef DBG
     uint32_t        sp_locks;
     uint32_t        cpu_locks;

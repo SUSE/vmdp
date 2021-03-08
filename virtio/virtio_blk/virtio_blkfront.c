@@ -100,8 +100,9 @@ void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext)
     if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_F_VERSION_1)) {
         virtio_feature_enable(guest_features, VIRTIO_F_VERSION_1);
 
-        if (virtio_is_feature_enabled(dev_ext->features,
-                                      VIRTIO_F_RING_PACKED)) {
+        if (dev_ext->b_use_packed_rings == TRUE
+                && virtio_is_feature_enabled(dev_ext->features,
+                                             VIRTIO_F_RING_PACKED)) {
             virtio_feature_enable(guest_features, VIRTIO_F_RING_PACKED);
         }
     }

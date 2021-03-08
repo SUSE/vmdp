@@ -514,6 +514,7 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
     NTSTATUS status = 0;
     PUCHAR reg_buf;
     ULONG len;
+    DWORD use_packed_rings;
 
     VBIF_ZERO_VALUE(dev_ext->alloc_cnt_i);
     VBIF_ZERO_VALUE(dev_ext->alloc_cnt_s);
@@ -523,6 +524,7 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
     dev_ext->msi_vectors = 0;
     dev_ext->indirect = 0;
     dev_ext->state = STOPPED;
+    use_packed_rings = 1;
 
     if (irql <= DISPATCH_LEVEL) {
         if (irql == PASSIVE_LEVEL) {
@@ -530,7 +532,12 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
             len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
                              &dbg_print_mask, &len);
+            len = sizeof(uint32_t);
+            sp_registry_read(dev_ext, PVCTRL_PACKED_RINGS_STR, REG_DWORD,
+                             &use_packed_rings, &len);
+            dev_ext->b_use_packed_rings = (BOOLEAN)use_packed_rings;
 #ifdef DBG
+            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
                              &conditional_times_to_print_limit, &len);
 #endif
@@ -785,7 +792,8 @@ virtio_sp_dump_config_info(virtio_sp_dev_ext_t *dev_ext,
     PRINTK(("\tMaximumTransferLength: %d\n",
             config_info->MaximumTransferLength));
     PRINTK(("\tqueue depth: %d\n", dev_ext->queue_depth));
-    PRINTK(("\tpacked rings: %d\n", dev_ext->vdev.packed_ring));
+    PRINTK(("\treg packed rings: %d\n", dev_ext->b_use_packed_rings));
+    PRINTK(("\tuse packed rings: %d\n", dev_ext->vdev.packed_ring));
     PRINTK(("\tdbg_print_mask: 0x%x\n", dbg_print_mask));
 
     RPRINTK(DPRTL_ON, ("\n\tInterrupt level 0x%x, vector 0x%x, mode 0x%x\n",

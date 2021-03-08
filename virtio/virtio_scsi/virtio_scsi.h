@@ -346,6 +346,7 @@ typedef struct _vscsi_dev_ext {
     BOOLEAN         msi_enabled;
     BOOLEAN         msix_uses_one_vector;
     BOOLEAN         indirect;
+    BOOLEAN         b_use_packed_rings;
 
 
     virtio_scsi_event_node_t *event_node;
