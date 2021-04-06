@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -215,11 +215,30 @@ MPRestart(IN NDIS_HANDLE MiniportAdapterContext,
     IN PNDIS_MINIPORT_RESTART_PARAMETERS  MiniportRestartParameters)
 {
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
+    KIRQL old_irql;
+    UINT i;
+    UINT num_rx_to_process;
 
     RPRINTK(DPRTL_ON, ("VNIF: MPRestart %s %x - IN\n",
         adapter->node_name, adapter->CurrentAddress[MAC_LAST_DIGIT]));
 
     VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_PAUSED);
+
+    KeRaiseIrql(DISPATCH_LEVEL, &old_irql);
+    for (i = 0; i < adapter->num_paths; i++) {
+        num_rx_to_process = VNIF_RING_HAS_UNCONSUMED_RESPONSES(
+            adapter->path[i].rx);
+        if (num_rx_to_process != 0){
+            RPRINTK(DPRTL_ON, ("  Number of RX[%d] to process: %d\n",
+                               i,
+                               num_rx_to_process));
+            vnif_txrx_interrupt_dpc(adapter,
+                                    VNF_ADAPTER_RX_DPC_IN_PROGRESS,
+                                    i,
+                                    NDIS_INDICATE_ALL_NBLS);
+        }
+    }
+    KeLowerIrql(old_irql);
 
     if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_NEEDS_RSTART)) {
         vnif_restart_interface(adapter);

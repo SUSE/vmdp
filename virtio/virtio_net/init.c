@@ -96,6 +96,7 @@ static NDIS_STRING reg_num_rss_qs = NDIS_STRING_CONST("*NumRssQueues");
 static NDIS_STRING reg_num_paths = NDIS_STRING_CONST("NumPaths");
 static NDIS_STRING reg_rss_tcp_ipv6_ext_hdrs_name =
     NDIS_STRING_CONST("RssTCPIPv6ExtHdrsSupport");
+static NDIS_STRING reg_8021pq = NDIS_STRING_CONST("*PriorityVLANTag");
 #endif
 
 static NDIS_STRING reg_split_evtchn = NDIS_STRING_CONST("SplitEvtchn");
@@ -1270,9 +1271,22 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         status = NDIS_STATUS_SUCCESS;
     }
 
-    RPRINTK(DPRTL_INIT,
-        ("VNIF: NdisReadConfiguration num_paths set to %d\n",
-         adapter->num_paths));
+    adapter->priority_vlan_support = 0;
+    NdisReadConfiguration(
+        &status,
+        &returned_value,
+        config_handle,
+        &reg_8021pq,
+        NdisParameterInteger);
+    if (status == NDIS_STATUS_SUCCESS) {
+        adapter->priority_vlan_support =
+            returned_value->ParameterData.IntegerData;
+    } else {
+        RPRINTK(DPRTL_INIT,
+            ("VNIF: NdisReadConfiguration Priority VLAN status %x\n", status));
+        adapter->b_rss_supported = FALSE;
+        status = NDIS_STATUS_SUCCESS;
+    }
 #endif
 
     adapter->b_use_split_evtchn = FALSE;
@@ -1415,16 +1429,20 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
                 adapter->b_use_split_evtchn));
     }
 #endif
-    PRINTK(("\tnum hw queues = %d\n", adapter->num_hw_queues));
-    PRINTK(("\tnum paths = %d\n", adapter->num_paths));
 #ifdef NDIS620_MINIPORT
+    PRINTK(("\tpriority vlan support = %d\n", adapter->priority_vlan_support));
+    PRINTK(("\tvlan id = %d\n", adapter->vlan_id));
     PRINTK(("\tmulti-queue supported = %d\n", adapter->b_multi_queue));
+#endif
+    PRINTK(("\tnum hw queues = %d\n", adapter->num_hw_queues));
+#ifdef NDIS620_MINIPORT
     PRINTK(("\trss supported = %d\n", adapter->b_rss_supported));
 
     /* Don't count the VNIVF_NO_RECEIVE_QUEUE if supported. */
     PRINTK(("\trss num receive queues = %d\n",
             adapter->num_rcv_queues - adapter->b_rss_supported));
 #endif
+    PRINTK(("\tnum paths = %d\n", adapter->num_paths));
 #ifndef NDIS60_MINIPORT
 #ifdef VNIF_RCV_DELAY
     PRINTK(("\trcv delay = %d\n", adapter->rcv_delay));

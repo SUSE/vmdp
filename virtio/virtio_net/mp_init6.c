@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,8 +112,13 @@ VNIFSetGeneralAttributes(PVNIF_ADAPTER adapter)
 
     GeneralAttributes.MacOptions = NDIS_MAC_OPTION_COPY_LOOKAHEAD_DATA |
         NDIS_MAC_OPTION_TRANSFERS_NOT_PEND |
-        NDIS_MAC_OPTION_8021P_PRIORITY |
         NDIS_MAC_OPTION_NO_LOOPBACK;
+    if (adapter->priority_vlan_support & P8021_PRIORITY_TAG) {
+        GeneralAttributes.MacOptions |= NDIS_MAC_OPTION_8021P_PRIORITY;
+    }
+    if (adapter->priority_vlan_support & P8021_VLAN_TAG) {
+        GeneralAttributes.MacOptions |= NDIS_MAC_OPTION_8021Q_VLAN;
+    }
 
     GeneralAttributes.SupportedPacketFilters = NDIS_PACKET_TYPE_DIRECTED |
         NDIS_PACKET_TYPE_MULTICAST |
@@ -827,7 +832,16 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
                     status = NDIS_ERROR_CODE_OUT_OF_RESOURCES;
                     break;
                 }
+
                 rcb->mdl_start_va = rcb->mdl->StartVa;
+                DPRINTK(DPRTL_RX,
+                        ("rcb[%d]: p %x sva %x %x mva %x s %d bc %x min %x\n",
+                        i, rcb->page, rcb->mdl->StartVa,
+                        rcb->mdl_start_va,
+                        rcb->mdl->MappedSystemVa, rcb->mdl->Size,
+                        rcb->mdl->ByteCount,
+                        min(adapter->max_frame_sz,
+                            adapter->rx_alloc_buffer_size)));
 
                 rcb->nb = NdisAllocateNetBuffer(
                     adapter->RecvBufferPoolHandle, NULL, 0, 0);
@@ -891,6 +905,13 @@ vnif_free_rcb_array(PVNIF_ADAPTER adapter, RCB **rcb_array)
         }
 
         if (rcb->mdl) {
+            DPRINTK(DPRTL_RX,
+                    ("frcb[%d]: p %x sva %x %x mva %x s %d bc %x min %x\n",
+                    i, rcb->page, rcb->mdl->StartVa,
+                    rcb->mdl_start_va,
+                    rcb->mdl->MappedSystemVa, rcb->mdl->Size,
+                    rcb->mdl->ByteCount,
+                    min(adapter->max_frame_sz, adapter->rx_alloc_buffer_size)));
             NdisFreeMdl(rcb->mdl);
             rcb->mdl = NULL;
         } else {

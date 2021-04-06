@@ -129,6 +129,8 @@ extern void (*vnif_ndis_queue_dpc)(struct _VNIF_ADAPTER *adapter,
                                    UINT max_nbls_to_indicate);
 extern void (*vnif_send_packet_filter)(struct _VNIF_ADAPTER *adapter);
 extern void (*vnif_send_multicast_list )(struct _VNIF_ADAPTER *adapter);
+extern void (*vnif_send_vlan_filter)(struct _VNIF_ADAPTER *adapter,
+                                     UCHAR add_del);
 
 #ifdef NDIS60_MINIPORT
 #else

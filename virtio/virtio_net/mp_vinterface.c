@@ -435,6 +435,12 @@ vnif_set_guest_features(PVNIF_ADAPTER adapter)
                                       VIRTIO_NET_F_CTRL_RX_EXTRA)) {
             virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_RX_EXTRA);
         }
+        if (virtio_is_feature_enabled(adapter->u.v.features,
+                                      VIRTIO_NET_F_CTRL_VLAN)) {
+            if (adapter->priority_vlan_support & P8021_VLAN_TAG) {
+                virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_VLAN);
+            }
+        }
     }
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_MTU)) {
@@ -613,7 +619,7 @@ vnif_send_control_msg(PVNIF_ADAPTER adapter,
                         __func__, *(virtio_net_ctrl_ack_t *)(pBase + offset),
                         cls));
             } else {
-                RPRINTK(DPRTL_ON,
+                RPRINTK(DPRTL_CONFIG,
                         ("%s OK(%d, %d.%d, buffers of size %d and %d)\n",
                         __func__, i, cls, cmd, size1, size2));
                 cc = TRUE;
@@ -1041,6 +1047,31 @@ vnifv_send_multicast_list(PVNIF_ADAPTER adapter)
                               &adapter->ulMCListSize,
                               adapter->ulMCListSize * ETH_LENGTH_OF_ADDRESS
                                 + sizeof(adapter->ulMCListSize));
+    }
+}
+void
+vnifv_send_vlan_filter(PVNIF_ADAPTER adapter, UCHAR add_del)
+{
+    ULONG i;
+
+    if (adapter->vlan_id == 0) {
+        for (i = 0; i <= P8021_MAX_VLAN_ID; i++) {
+            vnif_send_control_msg(adapter,
+                                  VIRTIO_NET_CTRL_VLAN,
+                                  add_del,
+                                  &i,
+                                  sizeof(i),
+                                  NULL,
+                                  0);
+        }
+    } else {
+        vnif_send_control_msg(adapter,
+                              VIRTIO_NET_CTRL_VLAN,
+                              add_del,
+                              &adapter->vlan_id,
+                              sizeof(adapter->vlan_id),
+                              NULL,
+                              0);
     }
 }
 

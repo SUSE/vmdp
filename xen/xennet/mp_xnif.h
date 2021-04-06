@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2020 SUSE LLC
+ * Copyright 2019-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -156,6 +156,7 @@ UINT vnifx_get_num_paths(struct _VNIF_ADAPTER *adapter);
 NDIS_STATUS vnifx_setup_path_info_ex(struct _VNIF_ADAPTER *adapter);
 void vnifx_send_packet_filter(struct _VNIF_ADAPTER *adapter);
 void vnifx_send_multicast_list(struct _VNIF_ADAPTER *adapter);
+void vnifx_send_vlan_filter(struct _VNIF_ADAPTER *adapter, UCHAR add_del);
 
 
 #ifdef VNIF_TRACK_TX

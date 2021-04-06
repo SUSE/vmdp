@@ -74,6 +74,7 @@ NDIS_OID VNIFSupportedOids[] = {
     OID_GEN_MAXIMUM_SEND_PACKETS,
     OID_GEN_XMIT_OK,
     OID_GEN_RCV_OK,
+    OID_GEN_VLAN_ID,
     OID_GEN_XMIT_ERROR,
     OID_GEN_RCV_ERROR,
     OID_GEN_RCV_NO_BUFFER,
@@ -371,6 +372,13 @@ MPQueryInformation(
         info = NDIS_MAC_OPTION_COPY_LOOKAHEAD_DATA |
             NDIS_MAC_OPTION_TRANSFERS_NOT_PEND     |
             NDIS_MAC_OPTION_NO_LOOPBACK;
+        if (adapter->priority_vlan_support & P8021_PRIORITY_TAG) {
+            info |= NDIS_MAC_OPTION_8021P_PRIORITY;
+        }
+        if (adapter->priority_vlan_support & P8021_VLAN_TAG) {
+            info |= NDIS_MAC_OPTION_8021Q_VLAN;
+        }
+        RPRINTK(DPRTL_CONFIG, ("OID_GEN_MAC_OPTIONS %x\n", info));
         break;
 
     case OID_GEN_LINK_SPEED:
@@ -701,6 +709,15 @@ MPQueryInformation(
     case OID_IP4_OFFLOAD_STATS:      /* 0xFC010209 */
     case OID_IP6_OFFLOAD_STATS:      /* 0xFC01020A */
         status = NDIS_STATUS_NOT_SUPPORTED;
+        break;
+    case OID_GEN_VLAN_ID:
+        if (adapter->priority_vlan_support & P8021_VLAN_TAG) {
+            RPRINTK(DPRTL_CONFIG, ("OID_GEN_VLAN_ID query vlan id %x\n",
+                                   adapter->vlan_id));
+            info = adapter->vlan_id;
+        } else {
+            status = NDIS_STATUS_NOT_SUPPORTED;
+        }
         break;
     default:
         RPRINTK(DPRTL_CONFIG, ("Unknown OID %x\n", Oid));
@@ -1294,6 +1311,29 @@ MPSetInformation(
         }
         status = NDIS_STATUS_SUCCESS;
         break;
+    case OID_GEN_VLAN_ID:
+        if (adapter->priority_vlan_support & P8021_VLAN_TAG) {
+            if (InformationBufferLength != sizeof(ULONG)) {
+                PRINTK(("Set vlan id bad length %x\n",
+                        InformationBufferLength));
+                *BytesNeeded = sizeof(ULONG);
+                status = NDIS_STATUS_INVALID_LENGTH;
+                break;
+            }
+
+            *BytesRead = InformationBufferLength;
+
+            RPRINTK(DPRTL_CONFIG,
+                    ("OID_GEN_VLAN_ID set vlan id %x to %x\n",
+                     adapter->vlan_id,
+                     *((PULONG)InformationBuffer)));
+
+            status = VNIFSetVLANFilter(adapter,
+                                       *((PULONG)InformationBuffer) & 0xfff);
+        } else {
+            status = NDIS_STATUS_NOT_SUPPORTED;
+        }
+        break;
 
     default:
         status = NDIS_STATUS_NOT_SUPPORTED;
@@ -1372,6 +1412,22 @@ VNIFSetMulticastList(
     vnif_send_multicast_list(adapter);
 
     return NDIS_STATUS_SUCCESS;
+}
+
+NDIS_STATUS
+VNIFSetVLANFilter(PVNIF_ADAPTER adapter, ULONG new_vlan_id)
+{
+    NDIS_STATUS status = NDIS_STATUS_SUCCESS;
+    ULONG vlan_filter_set;
+
+    if (adapter->vlan_id != new_vlan_id) {
+        vnif_send_vlan_filter(adapter, P8021_NET_CTRL_VLAN_DEL);
+
+        adapter->vlan_id = new_vlan_id;
+        vnif_send_vlan_filter(adapter, P8021_NET_CTRL_VLAN_ADD);
+    }
+
+    return status;
 }
 
 #ifdef NDIS60_MINIPORT

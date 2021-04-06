@@ -30,19 +30,19 @@
 
 #if defined NDIS60_MINIPORT
 #if defined ARCH_x86
-#define VER_FILEVERSION             2,6,1,31
-#define VER_FILEVERSION_STR         "2.6.1.31\0"
+#define VER_FILEVERSION             2,6,1,32
+#define VER_FILEVERSION_STR         "2.6.1.32\0"
 #else
-#define VER_FILEVERSION             2,6,1,31
-#define VER_FILEVERSION_STR         "2.6.1.31\0"
+#define VER_FILEVERSION             2,6,1,32
+#define VER_FILEVERSION_STR         "2.6.1.32\0"
 #endif
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06
 
 #else
-#define VER_FILEVERSION             2,6,1,31
-#define VER_FILEVERSION_STR         "2.6.1.31\0"
+#define VER_FILEVERSION             2,6,1,32
+#define VER_FILEVERSION_STR         "2.6.1.32\0"
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06

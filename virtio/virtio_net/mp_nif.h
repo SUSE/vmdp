@@ -131,6 +131,8 @@ typedef struct _vnif_xen_s {
 
 #define vnif_send_multicast_list vnifv_send_multicast_list
 
+#define vnif_send_vlan_filter vnifv_send_vlan_filter
+
 #define vnif_restart_interface vnifv_restart_interface
 
 #define VNIFFreeAdapterInterface VNIFV_FreeAdapterInterface

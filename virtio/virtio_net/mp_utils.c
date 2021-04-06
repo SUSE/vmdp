@@ -1628,6 +1628,22 @@ VNIFPvStatTimerDpc(
                             adapter->path[i].u.vq.rx)->num_free,
                         ((virtio_queue_split_t *)
                             adapter->path[i].u.vq.rx)->free_head));
+                    if (((virtio_queue_split_t *)
+                        adapter->path[i].u.vq.rx)->vring.used->idx >
+                        ((virtio_queue_split_t *)
+                            adapter->path[i].u.vq.rx)->last_used_idx) {
+                        PRINTK(
+                         ("    RX to be processed %d: f %x af %x\n",
+                         ((virtio_queue_split_t *)
+                             adapter->path[i].u.vq.rx)->vring.used->idx -
+                         ((virtio_queue_split_t *)
+                             adapter->path[i].u.vq.rx)->last_used_idx,
+                         ((virtio_queue_split_t *)
+                             adapter->path[i].u.vq.tx)->flags,
+                         ((virtio_queue_split_t *)
+                             adapter->path[i].u.vq.tx)->vring.avail->flags));
+                    }
+
                     PRINTK(
                     ("    TX [%d] lst_usd_idx %d usd->idx %d free %d head %d\n",
                         i,

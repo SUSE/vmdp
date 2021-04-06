@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2020 SUSE LLC
+ * Copyright 2019-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -88,6 +88,7 @@ typedef struct _TCB {
     uint16_t                tcp_hdr_len;
     uint16_t                flags;
     uint8_t                 ip_version;
+    uint8_t                 priority_vlan_adjust;
 #ifdef VNIF_TRACK_TX
     UINT                    granted;
     UINT                    ringidx;

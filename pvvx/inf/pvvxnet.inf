@@ -353,6 +353,14 @@ HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport,       type,      0, "enum"
 HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport\enum, "0",        0, %Disable%
 HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport\enum, "1",        0, %Enable%
 
+HKR, Ndi\Params\*PriorityVLANTag,       ParamDesc,  0,     %Priority_Vlan_Tag%
+HKR, Ndi\Params\*PriorityVLANTag,       Default,    0,     "3"
+HKR, Ndi\Params\*PriorityVLANTag,       type,       0,     "enum"
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "0",        0,     %Disable%
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "1",        0,     %Priority_Enabled%
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "2",        0,     %VLan_Enabled%
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "3",        0,     %Priority_Vlan%
+
 [pvvxnet.CopyFiles]
 pvvxnet.sys,,,2
 
@@ -413,3 +421,7 @@ SPLIT_EVTCHN = "Split Event Channels (Xen)"
 IndirectDesc = "Indirect Descriptors (virtio)"
 UsePackedRings = "Packed Rings (virtio)"
 TxSgCnt = "Maximum TX scatter gather elements (virtio)"
+Priority_Vlan_Tag = "Priority and VLAN Tagging"
+Priority_Enabled = "Priority Enabled"
+VLan_Enabled = "VLAN Enabled"
+Priority_Vlan = "Priority & VLAN Enabled"

@@ -139,7 +139,9 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
     UINT sg_cnt;
     uint16_t ip_hdr_len;
     uint8_t protocol;
+    uint8_t ip_version;
 #ifdef DBG
+    uint8_t *pDest;
     uint32_t k, j;
 
     hdr = NULL;
@@ -161,44 +163,66 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
         sg[1].len = send_len;
         sg_cnt = 2;
 
-        ip_hdr = tcb->data + adapter->buffer_offset + ETH_HEADER_SIZE;
+        ip_hdr = tcb->data
+                    + adapter->buffer_offset
+                    + tcb->priority_vlan_adjust
+                    + ETH_HEADER_SIZE;
 
-        if (IP_INPLACE_HEADER_VERSION(ip_hdr) == IPV4) {
-            ip_hdr_len = IP_INPLACE_HEADER_SIZE(ip_hdr);
-            protocol = ip_hdr[IP_HDR_TCP_UDP_OFFSET];
-        } else {
-            get_ipv6_hdr_len_and_protocol((ipv6_header_t *)ip_hdr,
-                                          send_len - ETH_HEADER_SIZE,
-                                          &ip_hdr_len,
-                                          &protocol);
+#ifdef DBG
+        pDest = tcb->data + adapter->buffer_offset;
+        if (pDest[12] == 0x81) {
+            DPRINTK(DPRTL_PRI, ("%s: TX [12] %x [13] %x [14] %x [15] %x\n",
+                                __func__,
+                                pDest[12], pDest[13], pDest[14], pDest[15]));
         }
-
-        if (flags & NETTXF_csum_blank) {
-            hdr = (virtio_net_hdr_t *)tcb->data;
-            hdr->flags |= VIRTIO_NET_HDR_F_NEEDS_CSUM;
-            hdr->csum_start = ip_hdr_len + ETH_HEADER_SIZE;
-            hdr->csum_offset = protocol == VNIF_PACKET_TYPE_TCP ?
-                VNIF_PACKET_BYTE_OFFSET_TCP_CHKSUM :
-                VNIF_PACKET_BYTE_OFFSET_UDP_CHKSUM;
-
-            DPRINTK(DPRTL_CHKSUM, ("%s: v%d - f %x st %x off %x\n",
-                    __func__,
-                    IP_INPLACE_HEADER_VERSION(ip_hdr),
-                    hdr->flags,
-                    hdr->csum_start,
-                    hdr->csum_offset));
+        if (pDest[12] == 0x81 && tcb->priority_vlan_adjust == 0) {
+            DPRINTK(DPRTL_PRI, ("%s: priority but adjust == 0\n", __func__));
         }
-        if (gso_mss) {
-            /*
-             * When copying the packet buffers to one buffer, need to
-             * get the ip header len, tcp header len, and do the checksums.
-             * These are already done if a sg list is obtained for the packet.
-             */
-            vnif_gos_hdr_update(tcb,
-                                ip_hdr,
-                                ip_hdr + ip_hdr_len,
-                                ip_hdr_len,
-                                send_len);
+#endif
+        ip_version = IP_INPLACE_HEADER_VERSION(ip_hdr);
+        if (ip_version == IPV4 || ip_version == IPV6) {
+            if (ip_version == IPV4) {
+                ip_hdr_len = IP_INPLACE_HEADER_SIZE(ip_hdr);
+                protocol = ip_hdr[IP_HDR_TCP_UDP_OFFSET];
+                DPRINTK(DPRTL_PRI, ("%s: ipv4\n", __func__));
+            } else {
+                DPRINTK(DPRTL_PRI, ("%s: ipv6\n", __func__));
+                get_ipv6_hdr_len_and_protocol((ipv6_header_t *)ip_hdr,
+                                              send_len - ETH_HEADER_SIZE,
+                                              &ip_hdr_len,
+                                              &protocol);
+            }
+
+            if (flags & NETTXF_csum_blank) {
+                DPRINTK(DPRTL_PRI, ("%s: flags and checksum\n", __func__));
+                hdr = (virtio_net_hdr_t *)tcb->data;
+                hdr->flags |= VIRTIO_NET_HDR_F_NEEDS_CSUM;
+                hdr->csum_start = ip_hdr_len + ETH_HEADER_SIZE;
+                hdr->csum_offset = protocol == VNIF_PACKET_TYPE_TCP ?
+                    VNIF_PACKET_BYTE_OFFSET_TCP_CHKSUM :
+                    VNIF_PACKET_BYTE_OFFSET_UDP_CHKSUM;
+
+                DPRINTK(DPRTL_CHKSUM, ("%s: v%d - f %x st %x off %x\n",
+                        __func__,
+                        IP_INPLACE_HEADER_VERSION(ip_hdr),
+                        hdr->flags,
+                        hdr->csum_start,
+                        hdr->csum_offset));
+            }
+            if (gso_mss) {
+                /*
+                 * When copying the packet buffers to one buffer, need to
+                 * get the ip header len, tcp header len, and do the checksums.
+                 * These are already done if a sg list is obtained for the
+                 * packet.
+                 */
+                DPRINTK(DPRTL_PRI, ("%s: gso_mss\n", __func__));
+                vnif_gos_hdr_update(tcb,
+                                    ip_hdr,
+                                    ip_hdr + ip_hdr_len,
+                                    ip_hdr_len,
+                                    send_len);
+            }
         }
     } else {
         for (sg_cnt = 0; sg_cnt < tcb->sg_cnt; sg_cnt++) {

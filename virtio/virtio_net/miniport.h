@@ -90,6 +90,7 @@
 # define VNIF_NDIS_MINOR_VERSION 0
 #endif
 
+#define ETH_ADDRESS_SIZE            6
 #define ETH_HEADER_SIZE             14
 #define ETH_MAX_DATA_SIZE           1500
 #define ETH_MAX_PACKET_SIZE         (ETH_HEADER_SIZE + ETH_MAX_DATA_SIZE)
@@ -215,15 +216,21 @@
 #define VNIF_IP_FLAGS_MF_OFFSET_BIT 0x01
 
 #define SRC_ADDR_END_BYTE           11
-#define P8021_MAC_LEN               12
 #define P8021_TPID_BYTE             12
 #define P8021_TCI_BYTE              14
 #define P8021_VLAN_BYTE             15
 #define P8021_BYTE_LEN              4
-#define P8021_BIT_SHIFT             5
+#define P8021_PRIORITY_SHIFT        5
+#define P8021_PRIORITY_WORD_SHIFT   13
+#define P8021_PRIORITY_TAG          1
+#define P8021_VLAN_TAG              2
+#define P8021_PRIORITY_VLAN         3
 #define P8021_TPID_TYPE             0x0081
 #define P8021_HOST_MASK             0xfff8
 #define P8021_NETWORK_MASK          0x1f
+#define P8021_MAX_VLAN_ID           0xfff
+#define P8021_NET_CTRL_VLAN_ADD     0
+#define P8021_NET_CTRL_VLAN_DEL     1
 
 #define GUID_LENGTH                 38
 
@@ -819,6 +826,9 @@ typedef struct _VNIF_ADAPTER {
     NDIS_HANDLE         recv_pool;
     NDIS_HANDLE         RecvBufferPoolHandle;
 
+    ULONG               priority_vlan_support;
+    ULONG               vlan_id;
+
     /* Packet Filter and look ahead size. */
     ULONG               PacketFilter;
     ULONG               ulLookAhead;
@@ -1164,6 +1174,9 @@ VNIFSetMulticastList(
 
 NDIS_STATUS
 VNIFSetPacketFilter(IN PVNIF_ADAPTER adapter, IN ULONG PacketFilter);
+
+NDIS_STATUS
+VNIFSetVLANFilter(PVNIF_ADAPTER adapter, ULONG new_vlan_id);
 
 int
 VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id);

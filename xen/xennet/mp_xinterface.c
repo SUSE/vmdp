@@ -1551,6 +1551,11 @@ vnifx_send_multicast_list(PVNIF_ADAPTER adapter)
 {
 }
 
+void
+vnifx_send_vlan_filter(PVNIF_ADAPTER adapter, UCHAR add_del)
+{
+}
+
 static void
 xennet_resume_failue_cleanup(PVNIF_ADAPTER adapter)
 {

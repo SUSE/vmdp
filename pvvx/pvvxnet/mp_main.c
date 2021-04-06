@@ -98,6 +98,7 @@ void (*vnif_ndis_queue_dpc)(VNIF_ADAPTER *adapter,
                             UINT max_nbls_to_indicate);
 void (*vnif_send_packet_filter)(VNIF_ADAPTER *adapter);
 void (*vnif_send_multicast_list)(VNIF_ADAPTER *adapter);
+void (*vnif_send_vlan_filter)(VNIF_ADAPTER *adapter, UCHAR add_del);
 
 #ifdef NDIS60_MINIPORT
 #else
@@ -184,6 +185,7 @@ vnifv_setup(void)
 
     vnif_send_packet_filter = vnifv_send_packet_filter;
     vnif_send_multicast_list = vnifv_send_multicast_list;
+    vnif_send_vlan_filter = vnifv_send_vlan_filter;
 
     VNIFRegisterNdisInterrupt = VNIFV_RegisterNdisInterrupt;
     VNIFDeregisterHardwareResources = VNIFV_DeregisterHardwareResources;
@@ -258,6 +260,7 @@ vnifx_setup(void)
     vnif_ndis_queue_dpc = vnifx_ndis_queue_dpc;
     vnif_send_packet_filter = vnifx_send_packet_filter;
     vnif_send_multicast_list = vnifx_send_multicast_list;
+    vnif_send_vlan_filter = vnifx_send_vlan_filter;
 
 #ifdef NDIS60_MINIPORT
 #else

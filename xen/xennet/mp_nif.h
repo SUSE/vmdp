@@ -130,6 +130,8 @@ typedef struct _vnif_virtio_s {
 
 #define vnif_send_multicast_list vnifx_send_multicast_list
 
+#define vnif_send_vlan_filter vnifx_send_vlan_filter
+
 #define vnif_restart_interface vnifx_restart_interface
 
 #define VNIFFreeAdapterInterface VNIFX_FreeAdapterInterface

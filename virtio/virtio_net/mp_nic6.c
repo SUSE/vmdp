@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,23 +112,56 @@ should_checksum_tx(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nb_list,
     return NDIS_STATUS_SUCCESS;
 }
 
-static uint32_t
-VNIFCopyNetBuffer(PNET_BUFFER nb, TCB *tcb, uint32_t adjust)
+static __inline uint16_t
+vnif_get_8021q_info(NET_BUFFER_LIST *nbl, uint32_t supported)
 {
-    ULONG          cur_len;
-    PUCHAR         pSrc;
-    PUCHAR         pDest;
-    ULONG          bytes_copied = 0;
-    ULONG          offset;
-    PMDL           cur_mdl;
     PNDIS_NET_BUFFER_LIST_8021Q_INFO p8021;
-    ULONG          data_len;
-    uint32_t loop_cnt;
-    uint32_t priority_len;
-    uint32_t mac_len;
-    uint32_t priority;
+    uint16_t    priority_vlan;
+
+    priority_vlan = 0;
+    if (supported) {
+        p8021 = (PNDIS_NET_BUFFER_LIST_8021Q_INFO)(&(NET_BUFFER_LIST_INFO(
+                                                  nbl,
+                                                  Ieee8021QNetBufferListInfo)));
+        if (p8021->Value != NULL) {
+            if (supported & P8021_PRIORITY_TAG) {
+                priority_vlan =
+                    p8021->TagHeader.UserPriority << P8021_PRIORITY_WORD_SHIFT;
+            }
+            if (supported & P8021_VLAN_TAG) {
+                priority_vlan |= p8021->TagHeader.VlanId;
+            }
+            priority_vlan = RtlUshortByteSwap(priority_vlan);
+
+            DPRINTK(DPRTL_PRI, ("TX 8021 priority %x vlan %x swapped %x.\n",
+                                p8021->TagHeader.UserPriority,
+                                p8021->TagHeader.VlanId,
+                                priority_vlan));
+        }
+    }
+    return priority_vlan;
+}
+
+static uint32_t
+VNIFCopyNetBuffer(PVNIF_ADAPTER adapter,
+                  TCB *tcb,
+                  PNET_BUFFER nb)
+{
+    ULONG       cur_len;
+    PUCHAR      pSrc;
+    PUCHAR      pDest;
+    ULONG       bytes_copied = 0;
+    ULONG       offset;
+    PMDL        cur_mdl;
+    ULONG       data_len;
+    uint32_t    adjust;
+    uint32_t    loop_cnt;
+    uint32_t    mac_len;
+    uint16_t    priority_vlan;
 
     DPRINTK(DPRTL_TRC, ("--> VNIFCopyNetBuffer\n"));
+
+    adjust = adapter->buffer_offset;
 
     pDest = tcb->data + adjust;
     cur_mdl = NET_BUFFER_FIRST_MDL(nb);
@@ -136,14 +169,10 @@ VNIFCopyNetBuffer(PNET_BUFFER nb, TCB *tcb, uint32_t adjust)
     data_len = NET_BUFFER_DATA_LENGTH(nb);
     DPRINTK(DPRTL_TRC, ("Copy: data len %d.\n", data_len));
 
+    priority_vlan = vnif_get_8021q_info(tcb->nb_list,
+                                        adapter->priority_vlan_support);
 
-    p8021 = (PNDIS_NET_BUFFER_LIST_8021Q_INFO) (
-            &(NET_BUFFER_LIST_INFO(
-            tcb->nb_list,
-            Ieee8021QNetBufferListInfo)));
-    priority = (uint32_t)(*(uintptr_t *)&p8021->Value),
-    priority_len = P8021_BYTE_LEN;
-    mac_len = P8021_MAC_LEN;
+    mac_len = P8021_TPID_BYTE;
     loop_cnt = 0;
     cur_len = 0;
 #ifdef DBG
@@ -174,22 +203,22 @@ VNIFCopyNetBuffer(PNET_BUFFER nb, TCB *tcb, uint32_t adjust)
             data_len -= cur_len;
             DPRINTK(DPRTL_TRC, ("              src %p, dest %p cl %x\n",
                     pSrc, pDest, cur_len));
-            /* Make sure this is a priority packet and not a Vlan packet. */
-            if (priority && priority_len && (priority & P8021_HOST_MASK) == 0) {
+            /* Check if the priority Vlan info has been handled. */
+            if (priority_vlan != 0) {
+                DPRINTK(DPRTL_PRI, ("%s: Priority 0x%x\n",
+                                    __func__, priority_vlan));
                 if (cur_len >= mac_len) {
                     NdisMoveMemory(pDest, pSrc, mac_len);
-                    bytes_copied += mac_len;
-                    cur_len -= mac_len;
                     pDest += mac_len;
                     pSrc += mac_len;
                     *(uint16_t *)pDest = P8021_TPID_TYPE;
-                    pDest += 2;
-                    *(uint16_t *)pDest =
-                        (uint16_t)(priority << P8021_BIT_SHIFT);
-                    pDest += 2;
+                    pDest += sizeof(uint16_t);
+                    *(uint16_t *)pDest = priority_vlan;
+                    pDest += sizeof(uint16_t);
+                    bytes_copied += P8021_BYTE_LEN + mac_len;
+                    cur_len -= mac_len;
                     mac_len = 0;
-                    priority_len = 0;
-                    bytes_copied += P8021_BYTE_LEN;
+                    priority_vlan = 0;
                 } else {
                     mac_len -= cur_len;
                 }
@@ -214,12 +243,18 @@ VNIFCopyNetBuffer(PNET_BUFFER nb, TCB *tcb, uint32_t adjust)
         bytes_copied = ETH_MIN_PACKET_SIZE;
     }
 
+    if (*(uint16_t *)(tcb->data + adjust + P8021_TPID_BYTE)
+            == P8021_TPID_TYPE) {
+        tcb->priority_vlan_adjust = P8021_BYTE_LEN;
+#ifdef DBG
+        pDest = tcb->data + adjust;
+        DPRINTK(DPRTL_PRI, ("CTX [12] %x [13] %x [14] %x [15] %x\n",
+                pDest[12], pDest[13], pDest[14], pDest[15]));
+#endif
+    }
+
     DPRINTK(DPRTL_TRC, ("<-- VNIFCopyNetBuffer\n"));
 #ifdef DBG
-    if (priority) {
-        DPRINTK(DPRTL_TRC, ("VNIFCopyNetBuffer 802.1p = %x, len = %d, %d\n",
-                  priority, NET_BUFFER_DATA_LENGTH(nb), bytes_copied));
-    }
     if (data_len != 0) {
         PRINTK(("data_len not 0: %d.\n", data_len));
     }
@@ -265,8 +300,13 @@ vnif_get_mdl_sg_cnt(PMDL mdl)
 }
 
 static UINT
-vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
-    PMDL mdl, ULONG mdl_offset, ULONG data_len, UINT path_id)
+vnif_collapse_tx(PVNIF_ADAPTER adapter,
+                 TCB *tcb,
+                 PMDL mdl,
+                 ULONG mdl_offset,
+                 ULONG data_len,
+                 UINT path_id,
+                 uint16_t priority_vlan)
 {
     PPFN_NUMBER pfn_list;
     PUCHAR      pSrc;
@@ -280,8 +320,10 @@ vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
     ULONG       dest_len;
     ULONG       cp_len;
     ULONG       len;
+    ULONG       adv_len;
     UINT        sg_idx;
     UINT        i;
+    BOOLEAN     check_for_vlan;
 #ifdef DBG
     UINT        avail_tcbs;
 
@@ -297,11 +339,14 @@ vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
         pSrc += mdl_offset;
     }
 
+    check_for_vlan = adapter->priority_vlan_support ? TRUE : FALSE;
     sg_idx = 0;
     cur_tcb = tcb;
     tail_tcb = tcb;
     pDest = tcb->data + adapter->buffer_offset;
-    bytes_in_page = PAGE_SIZE - adapter->buffer_offset;
+    bytes_in_page = PAGE_SIZE - (adapter->buffer_offset +
+                                (priority_vlan ? P8021_BYTE_LEN : 0));
+    adv_len = 0;
     dest_len = 0;
     len = 0;
 
@@ -315,9 +360,19 @@ vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
         }
 
         page_offset = (ULONG_PTR)pSrc & (PAGE_SIZE - 1);
-        if (((mdl_len & (PAGE_SIZE - 1)) == 0)
+        if (priority_vlan == 0
+                && ((mdl_len & (PAGE_SIZE - 1)) == 0)
                 && dest_len == 0 && page_offset == 0) {
             DPRINTK(DPRTL_LSO, ("  everything aligns.\n"));
+            if (check_for_vlan == TRUE) {
+                if (*(uint16_t *)(pSrc + P8021_TPID_BYTE) == P8021_TPID_TYPE) {
+                    tcb->priority_vlan_adjust = P8021_BYTE_LEN;
+                    DPRINTK(DPRTL_PRI,
+                            ("%s: vlan embedded in packet page aligned\n",
+                             __func__));
+                }
+                check_for_vlan = FALSE;
+            }
             pfn_list = MmGetMdlPfnArray(mdl);
             for (i = 0; len < mdl_len; i++) {
                 pfn = pfn_list[i];
@@ -327,7 +382,6 @@ vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
                 tcb->sg[sg_idx].pfn = (ULONG)pfn;
                 sg_idx++;
                 len += PAGE_SIZE;
-                mdl_len = 0;
             }
         } else {
             while (mdl_len > 0) {
@@ -340,12 +394,51 @@ vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
                 }
                 DPRINTK(DPRTL_LSO, ("    copy d %p s %p len %d\n",
                                          pDest, pSrc, cp_len));
-                NdisMoveMemory(pDest, pSrc, cp_len);
-                mdl_len -= cp_len;
-                pDest += cp_len;
-                pSrc += cp_len;
-                dest_len += cp_len;
-                len += cp_len;
+
+                if (priority_vlan != 0) {
+                    if (dest_len == 0) {
+                        if (cp_len >= P8021_TPID_BYTE) {
+                            adv_len = P8021_TPID_BYTE;
+                            NdisMoveMemory(pDest, pSrc, adv_len);
+                        }
+                    } else if (dest_len <= ETH_ADDRESS_SIZE) {
+                        if (cp_len >= P8021_TPID_BYTE - dest_len) {
+                            adv_len = P8021_TPID_BYTE - dest_len;
+                            NdisMoveMemory(pDest, pSrc, adv_len);
+                        }
+                    }
+                    if (adv_len != 0) {
+                        DPRINTK(DPRTL_PRI,
+                            ("mdl_len %d dest_len %d cp_len %d adv_len %d\n",
+                            mdl_len, dest_len, cp_len, adv_len));
+                        dest_len += adv_len + P8021_BYTE_LEN;
+                        len += adv_len + P8021_BYTE_LEN;
+                        cp_len -= adv_len;
+                        mdl_len -= adv_len;
+                        pSrc += adv_len;
+                        pDest += adv_len;
+                        *(uint16_t *)pDest = P8021_TPID_TYPE;
+                        pDest += sizeof(uint16_t);
+                        *(uint16_t *)pDest = priority_vlan;
+                        pDest += sizeof(uint16_t);
+                        priority_vlan = 0;
+
+                        /* Add back the P8021_BYTE_LEN to the page now that
+                         * the priority/vlan info has been copyied to the
+                         * page and dest_len has included it as well. */
+                        bytes_in_page += P8021_BYTE_LEN;
+                    }
+                }
+
+                if (cp_len != 0) {
+                    NdisMoveMemory(pDest, pSrc, cp_len);
+                    mdl_len -= cp_len;
+                    pDest += cp_len;
+                    pSrc += cp_len;
+                    dest_len += cp_len;
+                    len += cp_len;
+                }
+
                 DPRINTK(DPRTL_LSO,
                     ("    cp %p, len %d, dlen %d, tlen %d.\n",
                     cur_tcb->data, cp_len, dest_len, len));
@@ -390,6 +483,9 @@ vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
                 PRINTK(("%s: failed to get src from mdl\n", __func__));
                 return 0;
             }
+            DPRINTK(DPRTL_PRI,
+                    ("Gertting next mld of length %d cur dest_len %d\n",
+                    mdl_len, dest_len));
         }
     }
 
@@ -397,15 +493,29 @@ vnif_collapse_tx(PVNIF_ADAPTER adapter, TCB *tcb,
         DPRINTK(DPRTL_LSO,
             ("vnif_collapse_tx out: dlen %d, tlen %d sg_idx %d.\n",
             dest_len, len, sg_idx));
-        tcb->sg[sg_idx].phys_addr = cur_tcb->data_pa.QuadPart;
+        if (sg_idx == 0) {
+            tcb->sg[sg_idx].phys_addr =
+                cur_tcb->data_pa.QuadPart + adapter->buffer_offset;
+            tcb->sg[sg_idx].offset = adapter->buffer_offset;
+        } else {
+            tcb->sg[sg_idx].phys_addr = cur_tcb->data_pa.QuadPart;
+            tcb->sg[sg_idx].offset = 0;
+        }
         tcb->sg[sg_idx].len = dest_len;
-        tcb->sg[sg_idx].offset = 0;
         tcb->sg[sg_idx].pfn = phys_to_mfn(cur_tcb->data_pa.QuadPart);
         sg_idx++;
     }
 
+    if (check_for_vlan == TRUE) {
+        if (*(uint16_t *)(tcb->data + adapter->buffer_offset + P8021_TPID_BYTE)
+                == P8021_TPID_TYPE) {
+            DPRINTK(DPRTL_PRI, ("collapse setting tcb vlan adjust\n"));
+            tcb->priority_vlan_adjust = P8021_BYTE_LEN;
+        }
+    }
+
 #ifdef DBG
-    if (data_len != len) {
+    if (data_len + (adv_len ? P8021_BYTE_LEN : 0) != len) {
         dest_len = 0;
         PRINTK(("vnif_collapse_tx: len != data_len, %d %d\n", len, data_len));
         for (i = 0; i < sg_idx; i++) {
@@ -435,6 +545,7 @@ vnif_gso_chksum(TCB *tcb, PMDL mdl, ULONG mdl_offset, ULONG data_len)
     PUCHAR      ip_hdr;
     ULONG       mdl_len;
     UINT        loop_cnt;
+    UINT        vlan_adjust;
     uint16_t    ip_hdr_len;
 
     tcb->ip_hdr_len = IP_HEADER_SIZE_VAL;
@@ -442,6 +553,7 @@ vnif_gso_chksum(TCB *tcb, PMDL mdl, ULONG mdl_offset, ULONG data_len)
     tcp_hdr = NULL;
     ip_hdr = NULL;
     ip_hdr_len = IP_HEADER_SIZE_VAL;
+    vlan_adjust = 0;
     loop_cnt = 0;
     while (mdl && data_len > 0 && loop_cnt <= 2 && tcp_hdr == NULL) {
         pSrc = MmGetMdlVirtualAddress(mdl);
@@ -460,30 +572,40 @@ vnif_gso_chksum(TCB *tcb, PMDL mdl, ULONG mdl_offset, ULONG data_len)
         }
 
         if (loop_cnt == 0) {
-            if (mdl_len >= ETH_HEADER_SIZE + IP_HEADER_SIZE_VAL) {
-                ip_hdr = pSrc + ETH_HEADER_SIZE;
-                ip_hdr_len = get_ip_hdr_len(ip_hdr,
-                                            mdl_len - ETH_HEADER_SIZE);
-            }
-            if (mdl_len >= (ULONG)(ETH_HEADER_SIZE
-                                   + ip_hdr_len
-                                   + TCP_HEADER_SIZE)) {
-                tcp_hdr = pSrc + ETH_HEADER_SIZE + ip_hdr_len;
+            if (mdl_len >= P8021_TPID_BYTE + P8021_BYTE_LEN) {
+                if (*(uint16_t *)(pSrc + P8021_TPID_BYTE) == P8021_TPID_TYPE) {
+                    vlan_adjust = P8021_BYTE_LEN;
+                }
+                if (mdl_len >= ETH_HEADER_SIZE + IP_HEADER_SIZE_VAL) {
+                    ip_hdr = pSrc + vlan_adjust + ETH_HEADER_SIZE;
+                    ip_hdr_len = get_ip_hdr_len(ip_hdr,
+                        mdl_len - (vlan_adjust + ETH_HEADER_SIZE));
+                }
+                if (mdl_len >= (ULONG)(ETH_HEADER_SIZE
+                                       + ip_hdr_len
+                                       + TCP_HEADER_SIZE)) {
+                    tcp_hdr = pSrc + ETH_HEADER_SIZE + vlan_adjust + ip_hdr_len;
+                }
             }
         } else if (loop_cnt == 1) {
             if (ip_hdr == NULL) {
-                ip_hdr = pSrc;
+                if (vlan_adjust == 0 && *(uint16_t *)pSrc == P8021_TPID_TYPE) {
+                    vlan_adjust = P8021_BYTE_LEN;
+                }
+                ip_hdr = pSrc + vlan_adjust;
                 ip_hdr_len = get_ip_hdr_len(ip_hdr,
-                                            mdl_len - ETH_HEADER_SIZE);
+                    mdl_len - (vlan_adjust + ETH_HEADER_SIZE));
             }
             if (mdl_len >= (ULONG)(ip_hdr_len + TCP_HEADER_SIZE)) {
-                tcp_hdr = pSrc + ip_hdr_len;
+                tcp_hdr = pSrc + vlan_adjust + ip_hdr_len;
             }
         } else {
             tcp_hdr = pSrc;
         }
+
         if (tcp_hdr != NULL && ip_hdr != NULL) {
             vnif_gos_hdr_update(tcb, ip_hdr, tcp_hdr, ip_hdr_len, data_len);
+            break;
         } else {
             NdisGetNextMdl(mdl, &mdl);
             if (mdl) {
@@ -501,16 +623,16 @@ vnif_gso_chksum(TCB *tcb, PMDL mdl, ULONG mdl_offset, ULONG data_len)
 }
 
 static UINT
-vnif_build_sg(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
-    PMDL mdl, ULONG mdl_offset, ULONG data_len, UINT sg_cnt)
+vnif_build_sg(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb, UINT sg_cnt)
 {
     VNIF_GSO_INFO gso_info;
     PPFN_NUMBER pfn_list;
     PUCHAR      pSrc;
-    PMDL        org_mdl;
+    PUCHAR      pDest;
     PFN_NUMBER  pfn;
-    ULONG       org_mdl_offset;
-    ULONG       org_data_len;
+    PMDL        mdl;
+    ULONG       mdl_offset;
+    ULONG       data_len;
     ULONG       mdl_len;
     ULONG       len_inc;
     ULONG       len;
@@ -518,7 +640,25 @@ vnif_build_sg(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
     ULONG       bytes_copied;
     ULONG       page_offset;
     UINT        sg_idx;
+    UINT        adv_len;
     UINT        i;
+    UINT        cp_len;
+    uint16_t priority_vlan;
+#ifdef DBG
+    PMDL        org_mdl;
+    ULONG       org_mdl_offset;
+    ULONG       org_data_len;
+#endif
+
+    mdl = NET_BUFFER_FIRST_MDL(tcb->nb);
+    mdl_offset = NET_BUFFER_DATA_OFFSET(tcb->nb);
+    data_len = NET_BUFFER_DATA_LENGTH(tcb->nb);
+
+    priority_vlan = vnif_get_8021q_info(tcb->nb_list,
+                                        adapter->priority_vlan_support);
+    if (priority_vlan) {
+        sg_cnt++;   /* one for the vlan info */
+    }
 
     VNIF_GET_GOS_INFO(tcb, gso_info);
 
@@ -537,15 +677,18 @@ vnif_build_sg(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
              sg_cnt,
              vnif_num_in_list(&adapter->path[path_id].tcb_free_list, sg_cnt)));
         bytes_copied = vnif_collapse_tx(adapter, tcb, mdl, mdl_offset,
-                                        data_len, path_id);
+                                        data_len, path_id, priority_vlan);
         return bytes_copied;
     }
 
-    pSrc = NULL;
+#ifdef DBG
     org_mdl = mdl;
     org_mdl_offset = mdl_offset;
     org_data_len = data_len;
+#endif
+    pSrc = NULL;
     bytes_copied = 0;
+    sg_idx = 0;
 
     if (mdl) {
         pSrc = MmGetMdlVirtualAddress(mdl);
@@ -556,7 +699,59 @@ vnif_build_sg(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
         }
     }
 
-    sg_idx = 0;
+    if (priority_vlan != 0) {
+        pDest = tcb->data + adapter->buffer_offset;
+        tcb->sg[0].phys_addr = tcb->data_pa.QuadPart + adapter->buffer_offset;
+        tcb->sg[0].len = P8021_TPID_BYTE + P8021_BYTE_LEN;
+        tcb->sg[0].offset = adapter->buffer_offset;
+        tcb->sg[0].pfn = phys_to_mfn(tcb->data_pa.QuadPart);
+        cp_len = 0;
+        adv_len = 0;
+        do {
+            if (cp_len == 0) {
+                if (mdl_len >= P8021_TPID_BYTE) {
+                    cp_len = P8021_TPID_BYTE;
+                } else {
+                    cp_len = mdl_len;
+                }
+                adv_len = cp_len;
+            } else {
+                adv_len = P8021_TPID_BYTE - cp_len;
+                cp_len += adv_len;
+            }
+            NdisMoveMemory(pDest, pSrc, adv_len);
+            pSrc += adv_len;
+            pDest += adv_len;
+            mdl_offset += adv_len;
+            mdl_len -= adv_len;
+
+            if (cp_len == P8021_TPID_BYTE ) {
+                *(uint16_t *)pDest = P8021_TPID_TYPE;
+                pDest += sizeof(uint16_t);
+                *(uint16_t *)pDest = priority_vlan;
+                pDest += sizeof(uint16_t);
+                priority_vlan = 0;
+            }
+
+            if (mdl_len == 0) {
+                NdisGetNextMdl(mdl, &mdl);
+                if (mdl) {
+                    mdl_offset = MmGetMdlByteOffset(mdl);
+                    pSrc = MmGetMdlVirtualAddress(mdl);
+                    mdl_len = MmGetMdlByteCount(mdl);
+                    DPRINTK(DPRTL_TRC,
+                        ("Next: src %x, off %d, pg off %d, pp_ff %d, len %d.\n",
+                        pSrc, mdl_offset, (ULONG_PTR)pSrc & (PAGE_SIZE - 1),
+                        (ULONG_PTR)(pSrc + mdl_offset) & (PAGE_SIZE - 1),
+                        mdl_len));
+                }
+            }
+        } while (priority_vlan != 0);
+        sg_idx++;
+        data_len -= P8021_TPID_BYTE + P8021_BYTE_LEN;
+        bytes_copied += P8021_TPID_BYTE + P8021_BYTE_LEN;
+    }
+
     while (mdl && data_len > 0 && sg_idx < adapter->max_sg_el) {
         DPRINTK(DPRTL_TRC,
             ("Mdl: sg_idx %d, mdl %p, cl %d, dl %d, off %d\n",
@@ -702,7 +897,9 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
         }
 
         sg_cnt = vnif_get_mdl_sg_cnt(NET_BUFFER_FIRST_MDL(nb_to_send));
-        if (nb_len > (PAGE_SIZE - adapter->buffer_offset)) {
+        if (nb_len > (PAGE_SIZE
+                      - P8021_BYTE_LEN  /* Potential vlan info */
+                      - adapter->buffer_offset)) {
             if (sg_cnt > adapter->max_sg_el) {
                 needed_tcbs = (nb_len / (PAGE_SIZE - adapter->buffer_offset))
                               + 1;
@@ -734,22 +931,20 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
         tcb->adapter = adapter;
         tcb->nb = nb_to_send;
         tcb->nb_list = nb_list;
+        tcb->priority_vlan_adjust = 0;
 
         VNIFInterlockedIncrement(adapter->nBusySend);
         VNIFIncStat(adapter->pv_stats->tx_pkt_cnt);
 
         if (nb_len <= ETH_MAX_PACKET_SIZE
                 || (sg_cnt > adapter->max_sg_el
-                    && nb_len < (PAGE_SIZE - adapter->buffer_offset))) {
-            len = VNIFCopyNetBuffer(nb_to_send, tcb, adapter->buffer_offset);
+                    && nb_len < (PAGE_SIZE
+                                 - P8021_BYTE_LEN  /* potential vlan space */
+                                 - adapter->buffer_offset))) {
+            len = VNIFCopyNetBuffer(adapter, tcb, nb_to_send);
         } else {
-            len = vnif_build_sg(adapter,
-                                path_id,
-                                tcb,
-                                NET_BUFFER_FIRST_MDL(tcb->nb),
-                                NET_BUFFER_DATA_OFFSET(tcb->nb),
-                                NET_BUFFER_DATA_LENGTH(tcb->nb),
-                                sg_cnt);
+            len = vnif_build_sg(adapter, path_id, tcb, sg_cnt);
+
             if (adapter->cur_tx_tasks & (VNIF_CHKSUM_IPV4_TCP
                                          | VNIF_CHKSUM_IPV6_TCP)) {
                 flags |= NETTXF_data_validated | NETTXF_csum_blank;
@@ -1262,28 +1457,41 @@ MPSendNetBufferLists(
 }
 
 static UINT
-vnif_priority_packet_adj(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nbl, RCB *rcb)
+vnif_complete_priority_vlan_pkt(PVNIF_ADAPTER adapter, RCB *rcb)
 {
     PNDIS_NET_BUFFER_LIST_8021Q_INFO p8021;
     uint8_t *data_buf;
     int j, k;
 
-    /* Make sure it's a priority and not a Vlan packet. */
     data_buf = rcb->page + adapter->buffer_offset;
-    if (*(uint16_t *)&data_buf[P8021_TPID_BYTE]
-                == P8021_TPID_TYPE
-            && (data_buf[P8021_TCI_BYTE]
-                & P8021_NETWORK_MASK) == 0
-            && data_buf[P8021_VLAN_BYTE] == 0) {
+    if (*(uint16_t *)&data_buf[P8021_TPID_BYTE] == P8021_TPID_TYPE) {
 
-        p8021 = (PNDIS_NET_BUFFER_LIST_8021Q_INFO) (
-            &(NET_BUFFER_LIST_INFO(
-            nbl,
-            Ieee8021QNetBufferListInfo)));
-        (*(uintptr_t *)&p8021->Value) =
-            data_buf[P8021_TCI_BYTE] >> P8021_BIT_SHIFT;
-        DPRINTK(DPRTL_PRI, ("802.1.p page[14] = %x, pri = %x.\n",
-            data_buf[14], p8021->TagHeader.UserPriority));
+        p8021 = (PNDIS_NET_BUFFER_LIST_8021Q_INFO)(&(NET_BUFFER_LIST_INFO(
+                                                  rcb->nbl,
+                                                  Ieee8021QNetBufferListInfo)));
+
+        p8021->Value = NULL;
+        p8021->TagHeader.UserPriority =
+            data_buf[P8021_TCI_BYTE] >> P8021_PRIORITY_SHIFT;
+        p8021->TagHeader.VlanId =
+            (uint16_t)(data_buf[P8021_TCI_BYTE] & 0x0f) << 8
+                | (uint16_t)(data_buf[P8021_VLAN_BYTE]);
+
+
+        DPRINTK(DPRTL_PRI, ("RX 8021 [14] %x [15] %x priority %x vlan %x %x.\n",
+                            data_buf[14],
+                            data_buf[15],
+                            p8021->TagHeader.UserPriority,
+                            p8021->TagHeader.VlanId,
+                            adapter->vlan_id));
+
+        /* If the packet has a vlan_id, should match the one that is set. */
+        if (adapter->vlan_id
+                && adapter->vlan_id != p8021->TagHeader.VlanId) {
+            adapter->in_discards++;
+            PRINTK(("  vlan tags do not match\n"));
+            return VNIF_RECEIVE_DISCARD;
+        }
 
         /*
          * Copy the MAC header to fill in the space
@@ -1298,8 +1506,11 @@ vnif_priority_packet_adj(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nbl, RCB *rcb)
          * mdl start address.  Fix the address when the
          * packet is returned.
          */
+        rcb->total_len -= P8021_BYTE_LEN;
+        rcb->len -= P8021_BYTE_LEN;
         (uint8_t *)rcb->mdl->MappedSystemVa += P8021_BYTE_LEN;
         (uint8_t *)rcb->mdl->StartVa += P8021_BYTE_LEN;
+
         DPRINTK(DPRTL_PRI, ("  %02x %02x %02x %02x %02x %02x %02x %02x %02x",
                   data_buf[0],
                   data_buf[1],
@@ -1320,9 +1531,9 @@ vnif_priority_packet_adj(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nbl, RCB *rcb)
                   data_buf[15],
                   data_buf[16],
                   data_buf[17]));
-        return P8021_BYTE_LEN;
+
     }
-    return 0;
+    return VNIF_RECEIVE_COMPLETE;
 }
 
 static void
@@ -1418,9 +1629,6 @@ vnif_build_nb(PVNIF_ADAPTER adapter, RCB *rcb, PNET_BUFFER_LIST nbl)
     PMDL tail_mdl;
     UINT len;
 
-    len = vnif_priority_packet_adj(adapter, nbl, rcb);
-    rcb->total_len -= len;
-    rcb->len -= len;
     nb = rcb->nb;
     NET_BUFFER_LIST_FIRST_NB(nbl) = nb;
     NET_BUFFER_CURRENT_MDL_OFFSET(nb) = 0;
@@ -1472,9 +1680,9 @@ vnif_continue_proccessing_rcb(PVNIF_ADAPTER adapter,
         __func__, rcb, rcb->index, rcb->path_id));
     vnif_dump_buf(DPRTL_RX, rcb->page + adapter->buffer_offset, 16);
 
-    if (!vnif_should_complete_packet(adapter,
-                                     rcb->page + adapter->buffer_offset,
-                                     len)) {
+    if (vnif_should_complete_packet(adapter,
+                                    rcb->page + adapter->buffer_offset,
+                                    len) == VNIF_RECEIVE_DISCARD) {
         vnif_return_rcb(adapter, rcb);
         return FALSE;
     }
@@ -1490,6 +1698,13 @@ vnif_continue_proccessing_rcb(PVNIF_ADAPTER adapter,
         vnif_drop_rcb(adapter, rcb, rcb->len);
         return FALSE;
     }
+
+    if (vnif_complete_priority_vlan_pkt(adapter,
+                                        rcb) == VNIF_RECEIVE_DISCARD) {
+        vnif_return_rcb(adapter, rcb);
+        return FALSE;
+    }
+
 #ifdef DBG
     if (NET_BUFFER_LIST_GET_HASH_TYPE(rcb->nbl) != 0) {
         PRINTK(("** nbl hash type not 0 - %d\n",

@@ -133,6 +133,7 @@ void VNIFV_CleanupRings(struct _VNIF_ADAPTER *adapter);
 uint32_t VNIFV_DisconnectBackend(struct _VNIF_ADAPTER *adapter);
 void vnifv_send_packet_filter(struct _VNIF_ADAPTER *adapter);
 void vnifv_send_multicast_list(struct _VNIF_ADAPTER *adapter);
+void vnifv_send_vlan_filter(struct _VNIF_ADAPTER *adapter, UCHAR add_del);
 
 /* *************** mp_vutils.c ************ */
 #ifdef NDIS60_MINIPORT

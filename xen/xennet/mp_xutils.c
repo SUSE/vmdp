@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -218,7 +218,7 @@ vnifx_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
              * get the ip header len, tcp header len, and do the checksums.
              * These are already done if a sg list is obtained for the packet.
              */
-            ip_hdr = tcb->data + ETH_HEADER_SIZE;
+            ip_hdr = tcb->data + tcb->priority_vlan_adjust + ETH_HEADER_SIZE;
             ip_hdr_len = get_ip_hdr_len(ip_hdr,
                 send_len - (adapter->buffer_offset + ETH_HEADER_SIZE));
             vnif_gos_hdr_update(tcb,
