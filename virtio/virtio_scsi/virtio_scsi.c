@@ -154,6 +154,10 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         DPR_SRB("RD");
         break;
 
+    case SRB_FUNCTION_IO_CONTROL:
+        sp_io_control(Srb);
+        break;
+
     case SRB_FUNCTION_WMI: {
         /*
          * With config_info->WmiDataProvider defaulting to TRUE, we need to

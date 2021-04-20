@@ -48,6 +48,7 @@
 #include <virtio_pci.h>
 #include <virtio_queue_ops.h>
 #include <storport_reg.h>
+#include <sp_io_control.h>
 #include <sp_defs.h>
 
 #define VBIF_DESIGNATOR_STR "Virtio Block Device"

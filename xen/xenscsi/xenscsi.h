@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,6 +55,7 @@
 #include <win_maddr.h>
 #include <win_cmp_strtol.h>
 #include <storport_reg.h>
+#include <sp_io_control.h>
 #include <vxscsi.h>
 #include <win_vxprintk.h>
 

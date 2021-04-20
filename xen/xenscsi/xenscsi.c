@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -944,6 +944,10 @@ XenScsiStartIo(XENSCSI_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK srb)
     case SRB_FUNCTION_PNP:
         srb->SrbStatus = SRB_STATUS_SUCCESS;
         RPRINTK(DPRTL_IO, ("PNP success\n"));
+        break;
+
+    case SRB_FUNCTION_IO_CONTROL:
+        sp_io_control(srb);
         break;
 
     case SRB_FUNCTION_POWER:

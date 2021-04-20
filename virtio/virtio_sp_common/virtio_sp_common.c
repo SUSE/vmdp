@@ -271,9 +271,10 @@ sp_adapter_control(
     BOOLEAN ret;
 
     irql = KeGetCurrentIrql();
-    PRINTK(("%s %s: IN ct = %x\n\tdev = %p, irql = %d, cpu %d, op %x, st %x\n",
-        VIRTIO_SP_DRIVER_NAME, __func__, control_type, dev_ext, irql,
-        KeGetCurrentProcessorNumber(), dev_ext->op_mode, dev_ext->state));
+    RPRINTK(DPRTL_ON,
+            ("%s %s: IN ct = %x\n\tdev = %p, irql = %d, cpu %d, op %x, st %x\n",
+             VIRTIO_SP_DRIVER_NAME, __func__, control_type, dev_ext, irql,
+             KeGetCurrentProcessorNumber(), dev_ext->op_mode, dev_ext->state));
     DPR_SRB("AC");
 
     switch (control_type) {
@@ -284,11 +285,9 @@ sp_adapter_control(
         supportedList->SupportedTypeList[ScsiRestartAdapter] = TRUE;
         supportedList->SupportedTypeList[ScsiQuerySupportedControlTypes] =
             TRUE;
-
         if (dev_ext->state == INITIALIZING) {
             sp_passive_init(dev_ext);
         }
-
         break;
     }
 
@@ -306,6 +305,8 @@ sp_adapter_control(
         break;
     }
     default:
+        RPRINTK(DPRTL_ON, ("%s: unknown control type %d\n",
+                           __func__, control_type));
         break;
     }
 
@@ -313,8 +314,8 @@ sp_adapter_control(
                        VIRTIO_SP_DRIVER_NAME, __func__,
                        irql, KeGetCurrentProcessorNumber()));
     DPRINTK(DPRTL_ON, ("  locks %x\n", dev_ext->sp_locks));
-
     DPR_SRB("ACE");
+
     return ScsiAdapterControlSuccess;
 }
 

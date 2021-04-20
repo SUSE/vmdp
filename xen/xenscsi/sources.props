@@ -7,6 +7,6 @@
   <PropertyGroup>
     <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(SolutionDir)xenbus\$(IntDir)xenbus.lib   $(DDK_LIB_PATH)\ntstrsafe.lib   $(DDK_LIB_PATH)\storport.lib</TARGETLIBS>
     <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">.;..\..\virtio\virtio_scsi;..\include;..\include\virtio;..\..\virtio\include;..\..\virtio\include\virtio</INCLUDES>
-    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">xenscsi_entry.c      xenscsi.c      xenscsi_front.c      ..\..\virtio\virtio_blk\storport_reg.c  xenscsi.rc</SOURCES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">xenscsi_entry.c      xenscsi.c      xenscsi_front.c      ..\..\virtio\virtio_blk\storport_reg.c  ..\..\virtio\virtio_blk\sp_io_control.c    xenscsi.rc</SOURCES>
   </PropertyGroup>
 </Project>

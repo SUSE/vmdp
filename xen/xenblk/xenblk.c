@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1266,8 +1266,7 @@ XenBlkStartIo(XENBLK_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         break;
 
     case SRB_FUNCTION_IO_CONTROL:
-        RPRINTK(DPRTL_ON, ("%x: SRB_FUNCTION_IO_CONTROL\n", Srb->TargetId));
-        Srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+        sp_io_control(Srb);
         break;
 
     case SRB_FUNCTION_RESET_LOGICAL_UNIT:

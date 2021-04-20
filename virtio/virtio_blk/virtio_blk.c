@@ -287,9 +287,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
     }
 
     case SRB_FUNCTION_IO_CONTROL:
-        RPRINTK(DPRTL_ON, ("%s %x: SRB_FUNCTION_IO_CONTROL\n",
-                           VIRTIO_SP_DRIVER_NAME, Srb->TargetId));
-        Srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+        sp_io_control(Srb);
         break;
 
     case SRB_FUNCTION_WMI: {

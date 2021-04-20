@@ -1,8 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,17 +24,21 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _VXSCSI_VER_H
-#define _VXSCSI_VER_H
+#ifndef _SP_IO_CONTROL_H_
+#define _SP_IO_CONTROL_H_
 
-#ifdef IS_STORPORT
-#define VER_FILEVERSION             1,0,1,07
-#define VER_FILEVERSION_STR         "1.0.1.07\0"
+#if NTDDI_VERSION > 0x06010000
+#include <ntddk.h>
+#include <storport.h>
+#include <ntddstor.h>
+#include <ntddscsi.h>
+#include <srbhelper.h>
+#include <win_vxprintk.h>
+
+void sp_io_control(PSCSI_REQUEST_BLOCK srb);
+
 #else
-#define VER_FILEVERSION             1,0,1,07
-#define VER_FILEVERSION_STR         "1.0.1.07\0"
+#define sp_io_control(_srb) (_srb)->SrbStatus = SRB_STATUS_INVALID_REQUEST;
 #endif
-
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2013-2021 SUSE All rights reserved.", "\0"
 
 #endif
