@@ -202,9 +202,11 @@ XenBlkInitDevExt(
             len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_QDEPTH_STR, REG_DWORD,
                              &dev_ext->qdepth, &len);
+            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
                              &dbg_print_mask, &len);
 #ifdef DBG
+            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
                              &conditional_times_to_print_limit, &len);
 #endif
