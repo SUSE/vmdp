@@ -60,6 +60,8 @@ static void virtio_sp_init_config_info(virtio_sp_dev_ext_t *dev_ext,
     PPORT_CONFIGURATION_INFORMATION config_info);
 static NTSTATUS virtio_sp_find_vq(virtio_sp_dev_ext_t *dev_ext);
 static void virtio_sp_shutdown(virtio_sp_dev_ext_t *dev_ext);
+static SCSI_ADAPTER_CONTROL_STATUS virtio_sp_restart(
+    virtio_sp_dev_ext_t *dev_ext);
 
 ULONG
 KvmDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
@@ -265,10 +267,10 @@ sp_adapter_control(
     IN PVOID parameters)
 {
     SP_LOCK_HANDLE lh;
+    SCSI_ADAPTER_CONTROL_STATUS status;
     uint32_t i;
     int j;
     KIRQL irql;
-    BOOLEAN ret;
 
     irql = KeGetCurrentIrql();
     RPRINTK(DPRTL_ON,
@@ -277,6 +279,7 @@ sp_adapter_control(
              KeGetCurrentProcessorNumber(), dev_ext->op_mode, dev_ext->state));
     DPR_SRB("AC");
 
+    status = ScsiAdapterControlSuccess;
     switch (control_type) {
     case ScsiQuerySupportedControlTypes: {
         PSCSI_SUPPORTED_CONTROL_TYPE_LIST supportedList = parameters;
@@ -296,12 +299,7 @@ sp_adapter_control(
         break;
 
     case ScsiRestartAdapter: {
-        VIRTIO_DEVICE_RESET(&dev_ext->vdev);
-        ret = sp_initialize(dev_ext);
-        if (ret == FALSE) {
-            PRINTK(("%s %s: failed sp_initialize\n",
-                    VIRTIO_SP_DRIVER_NAME, __func__));
-        }
+        status = virtio_sp_restart(dev_ext);
         break;
     }
     default:
@@ -316,7 +314,7 @@ sp_adapter_control(
     DPRINTK(DPRTL_ON, ("  locks %x\n", dev_ext->sp_locks));
     DPR_SRB("ACE");
 
-    return ScsiAdapterControlSuccess;
+    return status;
 }
 
 BOOLEAN
@@ -582,22 +580,20 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
     PPCI_COMMON_HEADER  pPciComHeader;
     PPCI_COMMON_CONFIG pPciConf = NULL;
     PACCESS_RANGE accessRange;
-    UCHAR pci_cfg_buf[sizeof(PCI_COMMON_CONFIG)];
-    virtio_bar_t bar[PCI_TYPE0_ADDRESSES];
     NTSTATUS status;
     ULONG pci_cfg_len;
     ULONG i;
     UCHAR CapOffset;
     int iBar;
 
-    pPciConf = (PPCI_COMMON_CONFIG)pci_cfg_buf;
-    pPciComHeader = (PPCI_COMMON_HEADER)pci_cfg_buf;
+    pPciConf = (PPCI_COMMON_CONFIG)dev_ext->pci_cfg_buf;
+    pPciComHeader = (PPCI_COMMON_HEADER)dev_ext->pci_cfg_buf;
 
     pci_cfg_len = StorPortGetBusData(dev_ext,
                                      PCIConfiguration,
                                      config_info->SystemIoBusNumber,
                                      (ULONG)config_info->SlotNumber,
-                                     (PVOID)pci_cfg_buf,
+                                     (PVOID)dev_ext->pci_cfg_buf,
                                      sizeof(PCI_COMMON_CONFIG));
     if (pci_cfg_len != sizeof(PCI_COMMON_CONFIG)) {
         PRINTK(("%s: Cannot read PCI CONFIGURATION SPACE %d\n",
@@ -619,10 +615,10 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
                         accessRange->RangeStart.QuadPart));
                 return SP_RETURN_ERROR;
             }
-            bar[iBar].pa = accessRange->RangeStart;
-            bar[iBar].len = accessRange->RangeLength;
-            bar[iBar].bPortSpace = !accessRange->RangeInMemory;
-            bar[iBar].va = StorPortGetDeviceBase(dev_ext,
+            dev_ext->bar[iBar].pa = accessRange->RangeStart;
+            dev_ext->bar[iBar].len = accessRange->RangeLength;
+            dev_ext->bar[iBar].bPortSpace = !accessRange->RangeInMemory;
+            dev_ext->bar[iBar].va = StorPortGetDeviceBase(dev_ext,
                 config_info->AdapterInterfaceType,
                 config_info->SystemIoBusNumber,
                 accessRange->RangeStart,
@@ -631,7 +627,7 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
             RPRINTK(DPRTL_ON,
                     ("%s %s: AR[%d] ibar %d pa %llx\n\tva %p len %d inmem %d\n",
                      VIRTIO_SP_DRIVER_NAME, __func__, i,
-                     iBar, accessRange->RangeStart, bar[iBar].va,
+                     iBar, accessRange->RangeStart, dev_ext->bar[iBar].va,
                      accessRange->RangeLength, accessRange->RangeInMemory));
         }
     }
@@ -646,7 +642,7 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
             CapOffset = pPciComHeader->u.type0.CapabilitiesPtr;
             while (CapOffset != 0) {
                 pMsixCapOffset =
-                    (PPCI_MSIX_CAPABILITY)(pci_cfg_buf + CapOffset);
+                    (PPCI_MSIX_CAPABILITY)(dev_ext->pci_cfg_buf + CapOffset);
                 if (pMsixCapOffset->Header.CapabilityID
                         == PCI_CAPABILITY_ID_MSIX) {
                     RPRINTK(DPRTL_ON, ("\tMessageControl.TableSize = %d\n",
@@ -676,8 +672,8 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
 
     /* Reset and add status VIRTIO_CONFIG_S_ACKNOWLEDGE are handled in init */
     status = virtio_device_init(&dev_ext->vdev,
-                                bar,
-                                pci_cfg_buf,
+                                dev_ext->bar,
+                                dev_ext->pci_cfg_buf,
                                 VIRTIO_SP_DRIVER_NAME,
                                 dev_ext->msi_enabled);
     return status;
@@ -1129,6 +1125,35 @@ virtio_sp_shutdown(virtio_sp_dev_ext_t *dev_ext)
         }
     }
     PRINTK(("%s %s: done.\n", VIRTIO_SP_DRIVER_NAME, __func__));
+}
+
+static SCSI_ADAPTER_CONTROL_STATUS
+virtio_sp_restart(virtio_sp_dev_ext_t *dev_ext)
+{
+    NTSTATUS nt_status;
+    BOOLEAN ret;
+
+    nt_status = virtio_device_init(&dev_ext->vdev,
+                                   dev_ext->bar,
+                                   dev_ext->pci_cfg_buf,
+                                   VIRTIO_SP_DRIVER_NAME,
+                                   dev_ext->msi_enabled);
+    if (!NT_SUCCESS(nt_status)) {
+        PRINTK(("%s %s: failed virtio_device_init %x\n",
+                VIRTIO_SP_DRIVER_NAME, __func__, nt_status));
+        return ScsiAdapterControlUnsuccessful;
+    }
+
+    dev_ext->features = VIRTIO_DEVICE_GET_FEATURES(&dev_ext->vdev);
+    virtio_sp_enable_features(dev_ext);
+
+    ret = sp_initialize(dev_ext);
+    if (ret == FALSE) {
+        PRINTK(("%s %s: failed sp_initialize\n",
+                VIRTIO_SP_DRIVER_NAME, __func__));
+        return ScsiAdapterControlUnsuccessful;
+    }
+    return ScsiAdapterControlSuccess;
 }
 
 #ifdef DBG

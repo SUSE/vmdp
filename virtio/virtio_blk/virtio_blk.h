@@ -227,6 +227,9 @@ typedef struct _virtio_sp_dev_ext {
     uint32_t        queue_depth;
     ULONG           msi_vectors;
 
+    UCHAR           pci_cfg_buf[sizeof(PCI_COMMON_CONFIG)];
+    virtio_bar_t    bar[PCI_TYPE0_ADDRESSES];
+
     /* Common to the adapter */
     uint32_t        state;              /* Current device state */
     uint32_t        op_mode;            /* operation mode e.g. OP_MODE_NORMAL */
