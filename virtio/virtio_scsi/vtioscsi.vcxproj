@@ -206,7 +206,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <!-- The WrappedTaskItems label is used by the conversion tool to identify the location where items 
+  <!-- The WrappedTaskItems label is used by the conversion tool to identify the location where items
         associated with wrapped tasks will reside.-->
   <ItemGroup Label="WrappedTaskItems">
     <ClInclude Include="virtio_scsi.h" />
@@ -218,7 +218,7 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -227,7 +227,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -236,7 +236,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -245,7 +245,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -254,7 +254,7 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|x64'">
@@ -262,7 +262,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|x64'">
@@ -270,7 +270,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|x64'">
@@ -278,7 +278,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -286,7 +286,7 @@
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -295,7 +295,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -304,7 +304,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -313,7 +313,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -322,7 +322,7 @@
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10 Release|Win32'">
@@ -330,7 +330,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|Win32'">
@@ -338,7 +338,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|Win32'">
@@ -346,7 +346,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

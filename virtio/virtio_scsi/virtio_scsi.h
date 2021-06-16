@@ -273,6 +273,7 @@ typedef struct virtio_scsi_event_s {
 
 /* Command queue element */
 typedef struct virtio_scsi_cmd_s {
+    LIST_ENTRY list_entry;
     void *sc;
     void *comp;
     union {
@@ -334,19 +335,14 @@ typedef struct _vscsi_dev_ext {
     uint32_t        state;              /* Current device state */
     uint32_t        op_mode;            /* operation mode e.g. OP_MODE_NORMAL */
 #ifdef USE_STORPORT_DPC
-    KSPIN_LOCK      dev_lock;
-    STOR_DPC        srb_complete_dpc;
+    STOR_DPC        *srb_complete_dpc;
 #endif
 #ifndef IS_STORPORT
     sp_sgl_t        scsi_sgl;
 #endif
-#ifdef DBG
-    uint32_t        sp_locks;
-    uint32_t        cpu_locks;
-    uint32_t        alloc_cnt_i;
-    uint32_t        alloc_cnt_s;
-    uint32_t        alloc_cnt_v;
-#endif
+    KSPIN_LOCK      control_lock;
+    KSPIN_LOCK      event_lock;
+    KSPIN_LOCK      request_lock;
     BOOLEAN         msi_enabled;
     BOOLEAN         msix_uses_one_vector;
     BOOLEAN         indirect;
@@ -359,35 +355,16 @@ typedef struct _vscsi_dev_ext {
     uint32_t        underruns;
     BOOLEAN         tmf_infly;
     BOOLEAN         inquiry_supported;
+#ifdef DBG
+    uint32_t        sp_locks;
+    uint32_t        cpu_locks;
+    uint32_t        alloc_cnt_i;
+    uint32_t        alloc_cnt_s;
+    uint32_t        alloc_cnt_v;
+#endif
 } virtio_sp_dev_ext_t;
 
 #include <virtio_sp_common.h>
-
-#ifdef IS_STORPORT
-/***************************** STOR PORT *******************************/
-#ifdef USE_STORPORT_DPC
-#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
-{                                                                           \
-    if ((_dev_ext)->op_mode == OP_MODE_NORMAL) {                            \
-        StorPortIssueDpc((_dev_ext), &(_dev_ext)->srb_complete_dpc,         \
-           (void *)(_reason), (void *)(_msg_id));                           \
-        (_cc) = TRUE;                                                       \
-    }                                                                       \
-    else                                                                    \
-        (_cc) = virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id));   \
-}
-#else
-#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
-    (_cc) = virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id))
-#endif
-
-#else
-/***************************** SCSI MINIPORT *******************************/
-#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
-    (_cc) = virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id))
-
-
-#endif
 
 void virtio_scsi_get_scsi_config(virtio_sp_dev_ext_t *dev_ext);
 void virtio_scsi_dump_config_info(virtio_sp_dev_ext_t *dev_ext,

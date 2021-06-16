@@ -233,6 +233,8 @@ sp_initialize(virtio_sp_dev_ext_t *dev_ext)
 BOOLEAN
 sp_passive_init(virtio_sp_dev_ext_t *dev_ext)
 {
+    ULONG i;
+
     RPRINTK(DPRTL_ON, ("%s %s: IN dev %p, irql = %d\n",
         VIRTIO_SP_DRIVER_NAME, __func__, dev_ext, KeGetCurrentIrql(),
         KeGetCurrentProcessorNumber()));
@@ -245,9 +247,11 @@ sp_passive_init(virtio_sp_dev_ext_t *dev_ext)
 
     if (dev_ext->op_mode & OP_MODE_NORMAL) {
 #ifdef USE_STORPORT_DPC
-        StorPortInitializeDpc(dev_ext,
-            &dev_ext->srb_complete_dpc,
-            virtio_sp_int_dpc);
+        for (i = 0; i < dev_ext->num_queues + VIRTIO_SCSI_QUEUE_REQUEST; i++) {
+            StorPortInitializeDpc(dev_ext,
+                                  &dev_ext->srb_complete_dpc[i],
+                                  sp_dpc_complete_cmd);
+        }
 #endif
         StorPortResume(dev_ext);
     }
@@ -321,7 +325,7 @@ BOOLEAN
 sp_interrupt(virtio_sp_dev_ext_t *dev_ext)
 {
     ULONG reason;
-    BOOLEAN int_serviced;
+    BOOLEAN int_serviced = FALSE;
 
     DPRINTK(DPRTL_INT, ("%s %s: in (irql %d)\n",
         VIRTIO_SP_DRIVER_NAME, __func__, KeGetCurrentIrql()));
@@ -342,11 +346,10 @@ sp_interrupt(virtio_sp_dev_ext_t *dev_ext)
     if (reason > 0
             || (dev_ext->op_mode & (OP_MODE_HIBERNATE | OP_MODE_CRASHDUMP))) {
 
-        virtio_sp_int_complete_cmd(dev_ext, reason,
+        virtio_sp_int_complete_cmd(dev_ext,
+                                   reason,
                                    VIRTIO_SCSI_QUEUE_REQUEST,
                                    int_serviced);
-    } else {
-        int_serviced = FALSE;
     }
 
     DPRINTK(DPRTL_INT, ("%s %s: out reason %d, serviced interrupt %d\n",
@@ -360,7 +363,7 @@ BOOLEAN
 sp_msinterrupt_routine(virtio_sp_dev_ext_t *dev_ext, ULONG  msg_id)
 {
     ULONG i;
-    BOOLEAN int_serviced = TRUE;
+    BOOLEAN int_serviced = FALSE;
 
     DPRINTK(DPRTL_INT, ("%s %s: in (irql %d) msg_id 0x%x\n",
         VIRTIO_SP_DRIVER_NAME, __func__, KeGetCurrentIrql(), msg_id));
@@ -382,10 +385,10 @@ sp_msinterrupt_routine(virtio_sp_dev_ext_t *dev_ext, ULONG  msg_id)
     }
 
     if (dev_ext->msix_uses_one_vector == FALSE) {
-        int_serviced = virtio_sp_complete_cmd(dev_ext, 0, msg_id - 1);
+        virtio_sp_int_complete_cmd(dev_ext, 0, msg_id - 1, int_serviced);
     } else {
         for (i = 0; i < dev_ext->num_queues + VIRTIO_SCSI_QUEUE_REQUEST; i++) {
-            int_serviced |= virtio_sp_complete_cmd(dev_ext, 0, i);
+            virtio_sp_int_complete_cmd(dev_ext, 0, i, int_serviced);
         }
     }
 
@@ -395,12 +398,24 @@ sp_msinterrupt_routine(virtio_sp_dev_ext_t *dev_ext, ULONG  msg_id)
 }
 #endif
 
+#ifdef USE_STORPORT_DPC
+void
+sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2)
+{
+    virtio_sp_complete_cmd((virtio_sp_dev_ext_t *)context,
+                           PtrToUlong(s1),
+                           PtrToUlong(s2),
+                           FALSE);
+}
+#endif
+
 BOOLEAN
 virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
 {
     STARTIO_PERFORMANCE_PARAMETERS param;
     PHYSICAL_ADDRESS pa;
     virtio_sp_srb_ext_t *srb_ext;
+    KLOCK_QUEUE_HANDLE lh;
     NTSTATUS status;
     ULONG len;
     ULONG qidx;
@@ -427,6 +442,7 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
         qidx = VIRTIO_SCSI_QUEUE_REQUEST;
     }
 
+    KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->request_lock, &lh);
     if (dev_ext->indirect) {
         pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, srb_ext->vr_desc, &len);
         num_free = vq_add_buf_indirect(dev_ext->vq[qidx],
@@ -449,8 +465,10 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
         DPRINTK(DPRTL_TRC, ("%s %s: out TRUE, added %d\n",
                             VIRTIO_SP_DRIVER_NAME,  __func__, ++g_addb));
         VBIF_CLEAR_FLAG(dev_ext->sp_locks, (BLK_ADD_L));
+        KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
         return TRUE;
     }
+    KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
 
     SP_BUSY(dev_ext, max(dev_ext->queue_depth, 5));
     DPRINTK(DPRTL_UNEXPD, ("%s %s: busy out FALSE\n",
@@ -464,8 +482,7 @@ BOOLEAN
 virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
     SCSI_REQUEST_BLOCK *srb)
 {
-#ifdef UUSE_STORPORT_DPC
-    KLOCK_QUEUE_HANDLE lh;
+#ifdef USE_STORPORT_DPC
     BOOLEAN cc;
 #endif
 #ifdef DBG
@@ -475,10 +492,8 @@ virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
         g_int_to_send = 0;
     }
 #endif
-#ifdef UUSE_STORPORT_DPC
-    KeAcquireInStackQueuedSpinLock(&dev_ext->dev_lock, &lh);
+#ifdef USE_STORPORT_DPC
     cc =  virtio_scsi_do_cmd(dev_ext, srb);
-    KeReleaseInStackQueuedSpinLock(&lh);
     return cc;
 #else
     return StorPortSynchronizeAccess(dev_ext, virtio_scsi_do_cmd, srb);
@@ -487,10 +502,17 @@ virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
 #endif
 
 BOOLEAN
+virtio_sp_enable_interrupt(virtio_sp_dev_ext_t *dev_ext, virtio_queue_t *vq)
+{
+    vq_enable_interrupt(vq);
+    return TRUE;
+}
+
+BOOLEAN
 virtio_sp_do_poll(virtio_sp_dev_ext_t *dev_ext, void *not_used)
 {
     RPRINTK(DPRTL_ON, ("%s %s: in\n", VIRTIO_SP_DRIVER_NAME, __func__));
-    virtio_sp_complete_cmd(dev_ext, 1, VIRTIO_SCSI_QUEUE_REQUEST);
+    virtio_sp_complete_cmd(dev_ext, 1, VIRTIO_SCSI_QUEUE_REQUEST, TRUE);
     RPRINTK(DPRTL_ON, ("%s %s: out\n", VIRTIO_SP_DRIVER_NAME, __func__));
     return TRUE;
 }
@@ -551,20 +573,17 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
         dev_ext->op_mode = OP_MODE_CRASHDUMP;
     }
 
-#if defined VIRTIO_BLK_DRIVER
-    InitializeListHead(&dev_ext->srb_list);
-
     dev_ext->queue_depth = VSP_QUEUE_DEPTH_NOT_SET;
     len = sizeof(uint32_t);
     sp_registry_read(dev_ext, PVCTRL_QDEPTH_STR, REG_DWORD,
                      &dev_ext->queue_depth, &len);
-#elif defined VIRTIO_SCSI_DRIVER
-#ifdef USE_STORPORT_DPC
-    KeInitializeSpinLock(&dev_ext->dev_lock);
-#endif
+#if defined VIRTIO_SCSI_DRIVER
     dev_ext->underruns = 0;
     dev_ext->inquiry_supported = FALSE;
+    KeInitializeSpinLock(&dev_ext->control_lock);
+    KeInitializeSpinLock(&dev_ext->event_lock);
 #endif
+    KeInitializeSpinLock(&dev_ext->request_lock);
 
     VBIF_CLEAR_FLAG(dev_ext->sp_locks, 0xffffffff);
     VBIF_CLEAR_FLAG(dev_ext->cpu_locks, 0xffffffff);
@@ -900,6 +919,8 @@ virtio_sp_get_uncached_size_offsets(virtio_sp_dev_ext_t *dev_ext,
 
     virtio_sp_init_num_queues(dev_ext, &num_queues);
     max_queues = num_queues + VIRTIO_SCSI_QUEUE_REQUEST;
+    RPRINTK(DPRTL_ON, ("%s %s: num_queues %d max_queues %d\n",
+            VIRTIO_SP_DRIVER_NAME, __func__, num_queues, max_queues));
 
     total_vring_size = 0;
     total_vq_size = 0;
@@ -934,7 +955,8 @@ virtio_sp_get_uncached_size_offsets(virtio_sp_dev_ext_t *dev_ext,
                  + total_srb_ext_size
                  + total_event_node_size
                  + sizeof(void *) * max_queues
-                 + sizeof(virtio_queue_t *) * max_queues));
+                 + sizeof(virtio_queue_t *) * max_queues
+                 + sizeof(STOR_DPC) * max_queues));
     if (ring_va == (ULONG_PTR)NULL) {
         PRINTK(("%s %s: failed to get get_uncached_extension\n",
                 VIRTIO_SP_DRIVER_NAME, __func__));
@@ -966,6 +988,15 @@ virtio_sp_get_uncached_size_offsets(virtio_sp_dev_ext_t *dev_ext,
         + total_srb_ext_size
         + total_event_node_size
         + sizeof(void *) * max_queues);
+#ifdef USE_STORPORT_DPC
+    dev_ext->srb_complete_dpc = (STOR_DPC *)(dev_ext->ring_va
+        + total_vring_size
+        + total_vq_size
+        + total_srb_ext_size
+        + total_event_node_size
+        + sizeof(void *) * max_queues
+        + sizeof(virtio_queue_t *) * max_queues);
+#endif
     RPRINTK(DPRTL_ON, ("%s %s:\n\tring_va %p %p, queue_va %p\n\tvr %p vq %p\n",
             VIRTIO_SP_DRIVER_NAME, __func__,
             ring_va,

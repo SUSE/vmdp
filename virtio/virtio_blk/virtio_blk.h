@@ -116,8 +116,6 @@
 #define UNLOADING               0x400
 #define REGISTERING             0x800
 
-#define VSP_QUEUE_DEPTH_NOT_SET -1
-
 #ifdef DBG
 #define BLK_SIO_L               1
 #define BLK_INT_L               2
@@ -209,6 +207,7 @@ typedef struct _vbif_srb_extension {
     ULONG            in;
     virtio_buffer_descriptor_t sg[VIRTIO_MAX_SG];
     struct vring_desc vr_desc[VIRTIO_MAX_SG];
+    BOOLEAN         force_unit_access;
 #ifndef IS_STORPORT
     BOOLEAN         notify_next;
 #endif
@@ -234,16 +233,17 @@ typedef struct _virtio_sp_dev_ext {
     uint32_t        state;              /* Current device state */
     uint32_t        op_mode;            /* operation mode e.g. OP_MODE_NORMAL */
 #ifdef IS_STORPORT
-    STOR_DPC        srb_complete_dpc;
-    LIST_ENTRY      srb_list;
+    STOR_DPC        *srb_complete_dpc;
 #else
     sp_sgl_t        scsi_sgl;
-    KSPIN_LOCK      dev_lock;
 #endif
+    KSPIN_LOCK      request_lock;
     BOOLEAN         msi_enabled;
     BOOLEAN         msix_uses_one_vector;
     BOOLEAN         indirect;
     BOOLEAN         b_use_packed_rings;
+
+    vbif_info_t     info;
 #ifdef DBG
     uint32_t        sp_locks;
     uint32_t        cpu_locks;
@@ -251,8 +251,6 @@ typedef struct _virtio_sp_dev_ext {
     uint32_t        alloc_cnt_s;
     uint32_t        alloc_cnt_v;
 #endif
-
-    vbif_info_t     info;
 } virtio_sp_dev_ext_t;
 
 #include <virtio_sp_common.h>
@@ -260,41 +258,12 @@ typedef struct _virtio_sp_dev_ext {
 #ifdef IS_STORPORT
 /***************************** STOR PORT *******************************/
 #define vbif_do_flush virtio_blk_stor_do_flush
-
-#define vbif_complete_srb_int(_dev_ext, _srb, _vbr, _cnt)                   \
-{                                                                           \
-    if ((_dev_ext)->op_mode == OP_MODE_NORMAL) {                            \
-        InsertTailList(&(_dev_ext)->srb_list, &(_vbr)->list_entry);         \
-        (_cnt)++;                                                           \
-    }                                                                       \
-    else                                                                    \
-        SP_COMPLETE_SRB((_dev_ext), (_srb));                                \
-}
-
-void virtio_blk_int_dpc(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
-BOOLEAN virtio_blk_stor_do_flush(virtio_sp_dev_ext_t *dev_ext,
-    SCSI_REQUEST_BLOCK *srb);
-
 #else
 /***************************** SCSI MINIPORT *******************************/
 #define vbif_do_read_write virtio_blk_do_read_write
 #define vbif_do_flush virtio_blk_do_flush
 
-#define vbif_complete_srb_int(_dev_ext, _srb, _vrb, _cnt)                   \
-{                                                                           \
-    ScsiPortNotification(RequestComplete, (_dev_ext), (_srb));              \
-    if (((vbif_srb_ext_t *)(_srb)->SrbExtension)->notify_next) {            \
-        ScsiPortNotification(NextLuRequest,                                 \
-            (_dev_ext), (_srb)->PathId, (_srb)->TargetId, (_srb)->Lun);     \
-    }                                                                       \
-}
-
-#define virtio_blk_int_dpc(_Dpc, _context, _s1, _s2)
-
 #endif
-
-#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
-    (_cc) = virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id))
 
 BOOLEAN virtio_blk_do_poll(virtio_sp_dev_ext_t *dev_ext, void *no_used);
 void virtio_blk_get_blk_config(virtio_sp_dev_ext_t *dev_ext);

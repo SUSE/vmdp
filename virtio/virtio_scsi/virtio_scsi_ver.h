@@ -28,11 +28,11 @@
 #define _VIRTIO_SCSI_VER_H
 
 #ifdef IS_STORPORT
-#define VER_FILEVERSION             1,0,1,10
-#define VER_FILEVERSION_STR         "1.0.1.10\0"
+#define VER_FILEVERSION             1,0,1,11
+#define VER_FILEVERSION_STR         "1.0.1.11\0"
 #else
-#define VER_FILEVERSION             1,0,1,10
-#define VER_FILEVERSION_STR         "1.0.1.10\0"
+#define VER_FILEVERSION             1,0,1,11
+#define VER_FILEVERSION_STR         "1.0.1.11\0"
 #endif
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2012-2021 SUSE. All rights reserved.", "\0"

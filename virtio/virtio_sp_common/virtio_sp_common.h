@@ -34,6 +34,8 @@
 #define VIRTIO_SP_MAX_SGL_ELEMENTS  64
 #endif
 
+#define VSP_QUEUE_DEPTH_NOT_SET -1
+
 #define PVCTRL_QDEPTH_STR "qdepth"
 #define PVCTRL_PACKED_RINGS_STR "PackedRings"
 
@@ -117,22 +119,15 @@ void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext);
 void virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext);
 NTSTATUS virtio_sp_find_vq(virtio_sp_dev_ext_t *dev_ext);
 BOOLEAN virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
-                            ULONG reason,
-                            ULONG  msg_id);
-#ifdef USE_STORPORT_DPC
-void virtio_sp_int_dpc(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
-#endif
+                               ULONG reason,
+                               ULONG  msg_id,
+                               BOOLEAN from_int);
 
 BOOLEAN virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
     SCSI_REQUEST_BLOCK *srb);
 
-#ifdef IS_STORPORT
-BOOLEAN virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
-    SCSI_REQUEST_BLOCK *srb);
-#define virtio_sp_do_cmd virtio_sp_scsi_do_cmd
-#else
-#define virtio_sp_do_cmd virtio_scsi_do_cmd
-#endif
+BOOLEAN virtio_sp_enable_interrupt(virtio_sp_dev_ext_t *dev_ext,
+                                   virtio_queue_t *vq);
 
 BOOLEAN virtio_sp_do_poll(virtio_sp_dev_ext_t *dev_ext, void *not_used);
 void virtio_sp_poll(IN virtio_sp_dev_ext_t *dev_ext);
@@ -145,6 +140,48 @@ void virtio_sp_verify_sgl(virtio_sp_dev_ext_t *dev_ext,
     STOR_SCATTER_GATHER_LIST *sgl);
 #else
 #define virtio_sp_verify_sgl(_dev_ext, _srb, _sgl)
+#endif
+
+#ifdef IS_STORPORT
+/***************************** STOR PORT *******************************/
+BOOLEAN virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
+    SCSI_REQUEST_BLOCK *srb);
+#define virtio_sp_do_cmd virtio_sp_scsi_do_cmd
+
+#ifdef USE_STORPORT_DPC
+void sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
+
+#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
+{                                                                           \
+    if ((_dev_ext)->op_mode & OP_MODE_NORMAL) {                             \
+        (_cc) = StorPortIssueDpc((_dev_ext),                                \
+                         &(_dev_ext)->srb_complete_dpc[(_msg_id)],          \
+                         (void *)(_reason),                                 \
+                         (void *)(_msg_id));                                \
+        if ((_cc) == TRUE) {                                                \
+            vq_disable_interrupt(dev_ext->vq[(_msg_id)]);                   \
+        }                                                                   \
+        (_cc) |= TRUE;                                                      \
+    }                                                                       \
+    else                                                                    \
+        (_cc) |= virtio_sp_complete_cmd((_dev_ext),                         \
+                                       (_reason),                           \
+                                       (_msg_id),                           \
+                                       TRUE);                               \
+}
+#else
+#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
+    (_cc) |= virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id), TRUE)
+#endif
+
+#else
+/***************************** SCSI MINIPORT *******************************/
+#define virtio_sp_do_cmd virtio_scsi_do_cmd
+
+#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
+    (_cc) |= virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id), TRUE)
+
+
 #endif
 
 #endif  /* _VIRTIO_SP_COMMON_H */

@@ -208,7 +208,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
             /* SrbStatus set when complete. */
             Srb->SrbStatus = SRB_STATUS_PENDING;
             Srb->ScsiStatus = SCSISTAT_GOOD;
-            if (!vbif_do_flush(dev_ext, Srb)) {
+            if (virtio_blk_do_flush(dev_ext, Srb) == FALSE) {
                 Srb->SrbStatus = SRB_STATUS_ERROR;
                 break;
             }
@@ -247,7 +247,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         /* SrbStatus set when complete. */
         Srb->SrbStatus = SRB_STATUS_PENDING;
         Srb->ScsiStatus = SCSISTAT_GOOD;
-        if (!vbif_do_flush(dev_ext, Srb)) {
+        if (virtio_blk_do_flush(dev_ext, Srb) == FALSE) {
             Srb->SrbStatus = SRB_STATUS_ERROR;
             break;
         }
@@ -267,6 +267,13 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         }
 
         dev_ext->op_mode |= OP_MODE_RESET;
+
+        if (vq_has_unconsumed_responses(
+                dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])) {
+            /* Try to clean up any outstanding requests. */
+            dev_ext->op_mode |= OP_MODE_POLLING;
+            virtio_sp_poll(dev_ext);
+        }
 
         Srb->SrbStatus = SRB_STATUS_SUCCESS;
         DPR_SRB("RD");
@@ -335,6 +342,7 @@ sp_build_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
     PHYSICAL_ADDRESS pa;
     vbif_srb_ext_t *srb_ext;
     sp_sgl_t *sgl;
+    CDB *cdb;
     ULONG i;
     ULONG el;
     ULONG len;
@@ -368,9 +376,10 @@ sp_build_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
     }
 
     VBIF_INC_SRB(srbs_seen);
+    cdb = (CDB *)srb->Cdb;
     srb_ext = (vbif_srb_ext_t *)srb->SrbExtension;
 
-    switch (srb->Cdb[0]) {
+    switch (cdb->CDB6GENERIC.OperationCode) {
     case SCSIOP_READ6:
     case SCSIOP_WRITE6:
     case SCSIOP_READ12:
@@ -417,6 +426,10 @@ sp_build_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
             dev_ext, NULL, &srb_ext->vbr.status, &len);
         srb_ext->sg[el].phys_addr = pa.QuadPart;
         srb_ext->sg[el].len = sizeof(srb_ext->vbr.status);
+        srb_ext->force_unit_access = virtio_is_feature_enabled(
+            dev_ext->features, VIRTIO_BLK_F_WCACHE)
+                ? (cdb->CDB10.ForceUnitAccess == 1)
+                : FALSE;
         break;
     default:
         srb->SrbStatus = SRB_STATUS_SUCCESS;
@@ -442,23 +455,35 @@ sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
 BOOLEAN
 virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                        ULONG reason,
-                       ULONG  msg_id)
+                       ULONG  msg_id,
+                       BOOLEAN from_int)
 {
-    virtio_blk_req_t *vbr;
+    vbif_srb_ext_t *srb_ext;
     PSCSI_REQUEST_BLOCK srb;
+    virtio_blk_req_t *vbr;
+    LIST_ENTRY srb_complete_list;
+    KLOCK_QUEUE_HANDLE lh;
     unsigned int len;
-    int cnt;
-#ifdef DBG
-    ULONG did_work = 0;
-    ULONG infly = 0;
-#endif
 
+    DPRINTK(DPRTL_INT, ("%s %s: msg_id %d\n",
+                        VIRTIO_SP_DRIVER_NAME, __func__, msg_id));
     if (reason == 1 || (LONG)msg_id >= VIRTIO_SCSI_QUEUE_REQUEST) {
         VBIF_INC(g_int_to_send);
-        cnt = 0;
+
+        InitializeListHead(&srb_complete_list);
+
+        KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->request_lock, &lh);
         while ((vbr = vq_get_buf(dev_ext->vq[msg_id], &len)) != NULL) {
-            VBIF_INC(did_work);
+            InsertTailList(&srb_complete_list, &vbr->list_entry);
+        }
+        KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
+
+
+        while (!IsListEmpty(&srb_complete_list)) {
+            vbr  = (virtio_blk_req_t *)RemoveHeadList(&srb_complete_list);
             srb = (PSCSI_REQUEST_BLOCK)vbr->req;
+            srb_ext = (vbif_srb_ext_t *)srb->SrbExtension;
+
             switch (vbr->status) {
             case VIRTIO_BLK_S_OK:
                 srb->SrbStatus = SRB_STATUS_SUCCESS;
@@ -468,73 +493,47 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                 break;
             default:
                 srb->SrbStatus = SRB_STATUS_ERROR;
-                RPRINTK(DPRTL_INT, ("%s %s: SRB_STATUS_ERROR\n",
+                PRINTK(("%s %s: SRB_STATUS_ERROR\n",
                                     VIRTIO_SP_DRIVER_NAME, __func__));
                 break;
             }
+
             if (vbr->out_hdr.type == VIRTIO_BLK_T_FLUSH) {
-                DPRINTK(DPRTL_INT, ("%s Flush: number between work to do: %d\n",
-                        VIRTIO_SP_DRIVER_NAME, g_no_work));
-                VBIF_ZERO_VALUE(g_no_work);
                 dev_ext->op_mode &= ~OP_MODE_FLUSH;
             }
-            vbif_complete_srb_int(dev_ext, srb, vbr, cnt);
+
+            if (srb_ext->force_unit_access == TRUE) {
+                srb->SrbStatus = SRB_STATUS_PENDING;
+                if (virtio_blk_do_flush(dev_ext, srb) == FALSE) {
+                    srb->SrbStatus = SRB_STATUS_ERROR;
+                    SP_COMPLETE_SRB(dev_ext, srb);
+                }
+                srb_ext->force_unit_access = FALSE;
+            } else {
+                SP_COMPLETE_SRB(dev_ext, srb);
+            }
         }
-#ifdef DBG
-        if (did_work == 0) {
-            VBIF_INC(g_no_work);
-        } else if (g_no_work) {
-            DPRINTK(DPRTL_INT, ("%s Interrupt: number between work to do: %d\n",
-                    VIRTIO_SP_DRIVER_NAME, g_no_work));
-            VBIF_ZERO_VALUE(g_no_work);
-        }
-#endif
-        DPRINTK(DPRTL_INT, ("%s %s: msg_id %d, cnt %d\n",
-                            VIRTIO_SP_DRIVER_NAME, __func__, msg_id, cnt));
-        if (cnt && msg_id != -1) {
-            SP_ISSUE_DPC(dev_ext, &dev_ext->srb_complete_dpc,
-                         ULongToPtr(msg_id), NULL);
-        }
-        return TRUE;
     } else if (reason == 3 || msg_id + 1 == VIRTIO_BLK_MSIX_CONFIG_VECTOR) {
         RPRINTK(DPRTL_ON, ("%s %s: reason %d, msg_id %d\n",
                             VIRTIO_SP_DRIVER_NAME, __func__, reason, msg_id));
         virtio_sp_get_device_config(dev_ext);
         SP_NOTIFICATION(BusChangeDetected, dev_ext, 0);
-        return TRUE;
     }
-    return FALSE;
-}
-
-#ifdef IS_STORPORT
-#pragma warning(disable : 4100 4701)
-void
-virtio_sp_int_dpc(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2)
-{
-    virtio_sp_dev_ext_t *dev_ext = (virtio_sp_dev_ext_t *)context;
-    STOR_LOCK_HANDLE  lh = {0};
-    PSCSI_REQUEST_BLOCK srb;
-    virtio_blk_req_t *vbr;
-    ULONG msg_id = PtrToUlong(s1);
-    ULONG old_irql = 0;
-
-    DPRINTK(DPRTL_INT, ("%s %s: msg_id %d\n",
-                        VIRTIO_SP_DRIVER_NAME, __func__, msg_id));
-    SP_ACQUIRE_SPINLOCK(dev_ext, InterruptLock, msg_id,
-        &old_irql, NULL, &lh);
-
-    while (!IsListEmpty(&dev_ext->srb_list)) {
-        vbr  = (virtio_blk_req_t *)RemoveHeadList(&dev_ext->srb_list);
-        srb = (PSCSI_REQUEST_BLOCK)vbr->req;
-
-        SP_RELEASE_SPINLOCK(dev_ext, msg_id, old_irql, &lh);
-
-        SP_COMPLETE_SRB(dev_ext, srb);
-
-        SP_ACQUIRE_SPINLOCK(dev_ext, InterruptLock, msg_id,
-            &old_irql, NULL, &lh);
+#ifdef USE_STORPORT_DPC
+    if (from_int == FALSE) {
+        StorPortSynchronizeAccess(dev_ext, virtio_sp_enable_interrupt,
+                                  dev_ext->vq[msg_id]);
+        if (vq_has_unconsumed_responses(dev_ext->vq[msg_id])) {
+            RPRINTK(DPRTL_DPC, ("%s: issue DPC, msg_id %d has work to do: %d\n",
+                    VIRTIO_SP_DRIVER_NAME,
+                    msg_id,
+                    vq_has_unconsumed_responses(dev_ext->vq[msg_id])));
+            StorPortIssueDpc(dev_ext,
+                             &dev_ext->srb_complete_dpc[msg_id],
+                             (void *)reason,
+                             (void *)msg_id);
+        }
     }
-
-    SP_RELEASE_SPINLOCK(dev_ext, msg_id, old_irql, &lh);
-}
 #endif
+    return TRUE;
+}

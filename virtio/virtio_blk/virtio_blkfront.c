@@ -127,8 +127,8 @@ virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
                 dev_ext->vq[0]->num / VIRTIO_SP_MAX_SGL_ELEMENTS;
     if (dev_ext->queue_depth > qdepth) {
         dev_ext->queue_depth = qdepth;
+        PRINTK(("\tusing default queue depth: %d\n", dev_ext->queue_depth));
     }
-    PRINTK(("\tadjusted queue depth: %d\n", dev_ext->queue_depth));
 }
 
 void
@@ -387,6 +387,7 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     STARTIO_PERFORMANCE_PARAMETERS param;
     PHYSICAL_ADDRESS pa;
     vbif_srb_ext_t *srb_ext;
+    KLOCK_QUEUE_HANDLE lh;
     ULONG len;
     ULONG i;
     ULONG qidx;
@@ -425,6 +426,8 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     srb_ext->sg[1].phys_addr = pa.QuadPart;
     srb_ext->sg[1].len   = sizeof(srb_ext->vbr.status);
 
+    KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->request_lock, &lh);
+
     dev_ext->op_mode |= OP_MODE_FLUSH;
     if (dev_ext->indirect) {
         pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, srb_ext->vr_desc, &len);
@@ -445,6 +448,8 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     if (num_free >= 0) {
         vq_kick(dev_ext->vq[qidx]);
 
+        KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
+
 #ifndef IS_STORPORT
         for (i = 0; i < wait; i++) {
             if (!(dev_ext->op_mode & OP_MODE_FLUSH)) {
@@ -452,7 +457,7 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
                 break;
             }
             SP_STALL_EXECUTION(1000);
-            virtio_sp_complete_cmd(dev_ext, 1, 0);
+            virtio_sp_complete_cmd(dev_ext, 1, 0, FALSE);
         }
         if (status != SRB_STATUS_SUCCESS) {
             srb->SrbStatus = SRB_STATUS_ERROR;
@@ -465,13 +470,6 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     }
 
     PRINTK(("Failed to add FLUSH srb: %p.\n", srb));
+    KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
     return FALSE;
 }
-
-#ifdef IS_STORPORT
-BOOLEAN
-virtio_blk_stor_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
-{
-    return StorPortSynchronizeAccess(dev_ext, virtio_blk_do_flush, (PVOID)srb);
-}
-#endif

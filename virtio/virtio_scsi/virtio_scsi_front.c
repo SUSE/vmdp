@@ -157,6 +157,7 @@ void
 virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
 {
     uint32_t i;
+    uint32_t qdepth;
 
     if ((dev_ext->op_mode & OP_MODE_NORMAL)
             && virtio_is_feature_enabled(dev_ext->features,
@@ -170,12 +171,12 @@ virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
         }
     }
 
-    dev_ext->queue_depth = dev_ext->indirect ?
-        max(VIRTIO_SCSI_MAX_Q_DEPTH, VIRTIO_SCSI_DEFAULT_QUEU_NUM / 4) :
-        VIRTIO_SCSI_DEFAULT_QUEU_NUM /
-            min(VIRTIO_SP_MAX_SGL_ELEMENTS, dev_ext->scsi_config.seg_max);
-
-    PRINTK(("\tqueue depth: %d\n", dev_ext->queue_depth));
+    qdepth = dev_ext->indirect ? dev_ext->vq[0]->num :
+                dev_ext->vq[0]->num / VIRTIO_SP_MAX_SGL_ELEMENTS;
+    if (dev_ext->queue_depth > qdepth) {
+        dev_ext->queue_depth = qdepth;
+        PRINTK(("\tusing default queue depth: %d\n", dev_ext->queue_depth));
+    }
 }
 
 BOOLEAN
