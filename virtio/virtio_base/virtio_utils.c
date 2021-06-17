@@ -26,6 +26,8 @@
  */
 
 #include <ntddk.h>
+#define NTSTRSAFE_NO_DEPRECATE
+#define NTSTRSAFE_LIB
 #include <ntstrsafe.h>
 #include <virtio_dbg_print.h>
 

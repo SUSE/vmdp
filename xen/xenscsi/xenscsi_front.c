@@ -173,7 +173,6 @@ vs_free(struct vscsi_front_info *info, int suspend)
     }
 }
 
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 static int
 vs_setup_ring(struct vscsi_front_info *info)
 {

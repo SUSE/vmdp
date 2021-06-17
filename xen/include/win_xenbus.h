@@ -43,15 +43,27 @@
 #define ENOMEM    12
 #define ENOSPC    28
 #define EIO        5
+#ifdef ENOTEMPTY
+#undef ENOTEMPTY
+#endif
 #define ENOTEMPTY 39
+#ifdef ENOSYS
+#undef ENOSYS
+#endif
 #define ENOSYS    38
 #define EROFS     30
 #define EBUSY     16
 #define EAGAIN    11
+#ifdef EISCONN
+#undef EISCONN
+#endif
 #define EISCONN  106
 #define ERANGE    34
 #define E2BIG      7
 #define EPIPE     32
+#ifdef EPROTO
+#undef EPROTO
+#endif
 #define EPROTO    71      /* Protocol error */
 #define ESHUTDOWN   108
 #include <xen/public/io/xs_wire.h>
