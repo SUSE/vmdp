@@ -32,6 +32,7 @@
 #define PV_PRODUCTVERSION_STR       "2.5.3\0"
 #define PV_PRODUCTVERSION_MJMN      205
 #define PV_PRODUCTVERSION_NUMBER    20503
+#define SETUP_CAPTION_STR           "SUSE VMDP v2.5.3 - User License Agreement"
 
 #define VIRT_COMPANYNAME_STR        "SUSE"
 
