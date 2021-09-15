@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 NDIS_HANDLE NdisMiniportDriverHandle;
@@ -54,7 +53,7 @@ MPDriverEntry(PVOID DriverObject, PVOID RegistryPath)
     return status;
 }
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 NDIS_STATUS
 MPInitialize(
     IN NDIS_HANDLE MiniportAdapterHandle,
@@ -75,7 +74,7 @@ MPInitialize(
     NDIS_STATUS dmastatus = NDIS_STATUS_FAILURE;
     PVNIF_ADAPTER adapter;
 
-    DPRINTK(DPRTL_ON, ("VNIF: MPInitialize.\n"));
+    RPRINTK(DPRTL_ON, ("VNIF: MPInitialize.\n"));
 
     KeWaitForSingleObject(
         &vnif_init_event,
@@ -103,6 +102,8 @@ MPInitialize(
         gmyadapter = adapter;
 #endif
         NdisZeroMemory(adapter, sizeof(VNIF_ADAPTER));
+        vnif_get_runtime_ndis_ver(&adapter->running_ndis_major_ver,
+                                  &adapter->running_ndis_minor_ver);
         adapter->adapter_flags |= VNF_DISCONNECTED;
         adapter->AdapterHandle = MiniportAdapterHandle;
         adapter->buffer_offset = 0;
@@ -165,10 +166,11 @@ MPInitialize(
         NdisWriteErrorLogEntry(MiniportAdapterHandle,
             NDIS_ERROR_CODE_OUT_OF_RESOURCES, 0);
     }
+    RPRINTK(DPRTL_ON, ("VNIF: MPInitialize %x.\n", status));
     return status;
 }
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 VOID
 MPHalt(IN NDIS_HANDLE MiniportAdapterContext, IN NDIS_HALT_ACTION HaltAction)
 #else
@@ -218,7 +220,7 @@ MPHalt(IN NDIS_HANDLE MiniportAdapterContext)
     RPRINTK(DPRTL_ON, ("VNIF: MPHalt - OUT.\n"));
 }
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 NDIS_STATUS
 MPReset(IN NDIS_HANDLE MiniportAdapterContext, OUT PBOOLEAN AddressingReset)
 #else
@@ -320,7 +322,7 @@ MPUnload(IN PDRIVER_OBJECT DriverObject)
 {
     RPRINTK(DPRTL_ON, ("VNIF: Miniport Unload - IN.\n"));
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     NdisMDeregisterMiniportDriver(NdisMiniportDriverHandle);
 #endif
     RPRINTK(DPRTL_ON, ("VNIF: Miniport Unload - OUT.\n"));
@@ -330,7 +332,7 @@ MPUnload(IN PDRIVER_OBJECT DriverObject)
  * typical shutdown just disable the interrupt and stop DMA,
  * do nothing else. We are doing nothing in this function.
  */
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 VOID
 MPShutdown(IN NDIS_HANDLE MiniportAdapterContext,
     IN  NDIS_SHUTDOWN_ACTION ShutdownAction)
@@ -371,8 +373,8 @@ MPAllocateComplete(
     RPRINTK(DPRTL_ON, ("VNIF: MPAllocateComplete.\n"));
 }
 
-#if defined(NDIS60_MINIPORT) || defined(NDIS51_MINIPORT)
-#if defined(NDIS60_MINIPORT)
+#if NDIS_SUPPORT_NDIS6 || defined(NDIS51_MINIPORT)
+#if NDIS_SUPPORT_NDIS6
 VOID
 MPPnPEventNotify(NDIS_HANDLE MiniportAdapterContext,
     IN PNET_DEVICE_PNP_EVENT   NetDevicePnPEvent)

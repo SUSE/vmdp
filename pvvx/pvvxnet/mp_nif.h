@@ -132,7 +132,7 @@ extern void (*vnif_send_multicast_list )(struct _VNIF_ADAPTER *adapter);
 extern void (*vnif_send_vlan_filter)(struct _VNIF_ADAPTER *adapter,
                                      UCHAR add_del);
 
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
 #else
 extern void (*DriverEntryEx)(NDIS_MINIPORT_CHARACTERISTICS *mp_char);
 extern NDIS_STATUS (*VNIFGetHWResources)(struct _VNIF_ADAPTER *adapter);

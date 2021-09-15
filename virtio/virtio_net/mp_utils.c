@@ -27,7 +27,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 static __inline BOOLEAN
@@ -116,7 +115,7 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
 
     } while (more_to_do);
 
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     if (g_running_hypervisor == HYPERVISOR_KVM) {
         if (did_work) {
             NdisAcquireSpinLock(&adapter->adapter_flag_lock);
@@ -181,7 +180,7 @@ vnif_rx_path_dpc(
             ("%s: rxDPC path_id %d max_nbls_to_indicate %d\n",
              __func__, path_id, max_nbls_to_indicate));
 
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
 #ifdef DBG
     cur_cpu = vnif_get_current_processor(NULL);
     if (cur_cpu != path_id) {
@@ -717,7 +716,7 @@ vnif_collapse_rx(PVNIF_ADAPTER adapter, RCB *rcb)
         NdisMoveMemory(dest, cur_rcb->page, cur_rcb->len);
         dest += cur_rcb->len;
         rcb->len += cur_rcb->len;
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         NDIS_MDL_LINKAGE(rcb->mdl) = NDIS_MDL_LINKAGE(cur_rcb->mdl);
 #else
         rcb->buffer->Next = cur_rcb->buffer->Next;
@@ -730,7 +729,7 @@ vnif_collapse_rx(PVNIF_ADAPTER adapter, RCB *rcb)
         vnif_return_rcb(adapter, discard_rcb);
         rcb_added_to_ring++;
     }
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     NdisAdjustMdlLength(rcb->mdl, rcb->len);
 #else
     NdisAdjustBufferLength(rcb->buffer, rcb->len);
@@ -781,7 +780,7 @@ vnif_should_complete_packet(PVNIF_ADAPTER adapter, PUCHAR dest, UINT len)
 
     /* Is this a directed packet? */
     if ((dest[0] & 0x01) == 0) {
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         adapter->ifHCInUcastPkts++;
         adapter->ifHCInUcastOctets += len;
 #endif
@@ -809,7 +808,7 @@ vnif_should_complete_packet(PVNIF_ADAPTER adapter, PUCHAR dest, UINT len)
 
     /* Must be a broadcast or multicast. */
     if (ETH_IS_BROADCAST(dest)) {
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         adapter->ifHCInBroadcastPkts++;
         adapter->ifHCInBroadcastOctets += len;
 #endif
@@ -827,7 +826,7 @@ vnif_should_complete_packet(PVNIF_ADAPTER adapter, PUCHAR dest, UINT len)
     }
 
     /* Must be a multicast */
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     adapter->ifHCInMulticastPkts++;
     adapter->ifHCInMulticastOctets += len;
 #endif
@@ -878,7 +877,7 @@ vnif_add_rcb_to_ring(PVNIF_ADAPTER adapter, RCB *rcb)
         cur_rcb->total_len = 0;
 
         /* In case of priority packet, put things back the way it was.*/
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         cur_rcb->nbl = NULL;
 
         cur_rcb->mdl->MappedSystemVa =
@@ -1504,7 +1503,7 @@ VNIFPvStatTimerDpc(
         delta,
         adapter->pv_stats->ints));
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     RPRINTK(DPRTL_ON,
            ("    Tx: Sent %lld, Completed %lld, Busy %d, Errors %lld\n",
         adapter->pv_stats->tx_pkt_cnt,

@@ -226,16 +226,19 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS685_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
+    <Link>
+      <CETCompat>true</CETCompat>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|x64'">
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -244,7 +247,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -261,15 +264,18 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS685_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <CETCompat>true</CETCompat>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|x64'">
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|x64'">
@@ -277,7 +283,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -294,7 +300,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS685_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -303,7 +309,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -312,7 +318,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -329,7 +335,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|Win32'">
@@ -337,7 +343,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|Win32'">
@@ -345,7 +351,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS60_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS620_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

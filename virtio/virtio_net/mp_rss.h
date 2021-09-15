@@ -40,8 +40,8 @@ typedef enum VNIF_RSS_MODE_s {
 #define VNIF_FIRST_RSS_RECEIVE_QUEUE    (0)
 #define VNIF_RECEIVE_UNCLASSIFIED_PACKET (-1)
 #define VNIF_INVALID_INDIRECTION_INDEX (-1)
-#define VNIF_MAX_NUM_RSS_QUEUES 16
-#define VNIF_DEFAULT_NUM_RSS_QUEUES 8
+#define VNIF_MAX_NUM_RSS_QUEUES 32
+#define VNIF_DEFAULT_NUM_RSS_QUEUES 16
 
 #define IS_POWER_OF_TWO(_num) (((_num) != 0) && (((_num) & ((_num) - 1)) == 0))
 
@@ -96,20 +96,29 @@ typedef struct _hash_sg_entry {
     ULONG chunkLen;
 } hash_sg_entry_t;
 
+
+typedef struct _vnif_rss_hash_params
+{
+    NDIS_RECEIVE_HASH_PARAMETERS rcv_hash_params;
+    CCHAR hash_secret_key[NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2];
+} vnif_rss_hash_params_t;
+
 typedef struct _vnif_rss_s {
     PROCESSOR_NUMBER indirection_tbl[VNIF_RSS_MAX_INDRECTION_TBL_SIZE];
-    CCHAR q_indirection_tbl[VNIF_RSS_MAX_INDRECTION_TBL_SIZE];
-    CCHAR hash_secret_key[VNIF_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION];
-    PCHAR           cpu_idx_mapping;
-    USHORT          *rss2_queue_map;
-    ULONG           cpu_idx_mapping_sz;
-    ULONG           hash_mask;
-    ULONG           hash_info;
-    LONG            first_q_indirection_idx;
-    VNIF_RSS_MODE   rss_mode;
-    UINT            rss2_queue_len;
     USHORT          indirection_tbl_sz;
+    CCHAR           q_indirection_tbl[VNIF_RSS_MAX_INDRECTION_TBL_SIZE];
+    ULONG           hash_mask;
+    PCHAR           cpu_idx_mapping;
+    ULONG           cpu_idx_mapping_sz;
+    LONG            first_q_indirection_idx;
+
+    ULONG           hash_info;
+    CCHAR hash_secret_key[VNIF_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION];
     USHORT          hash_secret_key_sz;
+
+    USHORT          *rss2_queue_map;
+    UINT            rss2_queue_len;
+    VNIF_RSS_MODE   rss_mode;
 
 } vnif_rss_t;
 
@@ -129,6 +138,17 @@ vnif_rss_oid_gen_receive_scale_params(struct _VNIF_ADAPTER *adapter,
                                       ULONG rss_params_len,
                                       PULONG bytes_read,
                                       PULONG bytes_needed);
+
+void
+vnif_rss_query_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
+    vnif_rss_hash_params_t *rss_hash_params);
+
+NDIS_STATUS
+vnif_rss_set_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
+                                  NDIS_RECEIVE_HASH_PARAMETERS *rss_params,
+                                  ULONG rss_params_len,
+                                  PULONG bytes_read,
+                                  PULONG bytes_needed);
 UINT
 vnif_rss_get_rcv_qidx_for_cur_processor(struct _VNIF_ADAPTER *adapter);
 #define vnif_rss_get_rcv_qidx_for_cur_cpu(_adapter_)                        \

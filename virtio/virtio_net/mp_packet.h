@@ -42,7 +42,7 @@
 
 #define VNIF_MAX_TX_SG_ELEMENTS 36
 
-#ifndef NDIS60_MINIPORT
+#ifndef NDIS_SUPPORT_NDIS6
 typedef enum _NET_IF_MEDIA_DUPLEX_STATE {
     MediaDuplexStateUnknown,
     MediaDuplexStateHalf,
@@ -63,7 +63,7 @@ typedef struct _TCB {
     LIST_ENTRY              list;
     struct _TCB             *next;
     struct _TCB             *next_free;
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
     PNET_BUFFER             nb;
     PNET_BUFFER_LIST        nb_list;
     struct _VNIF_ADAPTER    *adapter;
@@ -97,7 +97,7 @@ typedef struct _TCB {
 } TCB, *PTCB;
 
 typedef struct _rcb_pkt_info {
-#ifdef NDIS620_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS620
     ULONG hash_type;
     ULONG hash_value;
     ULONG hash_function;
@@ -111,7 +111,7 @@ typedef struct _rcb_pkt_info {
 typedef struct _RCB {
     LIST_ENTRY              list;
     struct _RCB             *next;
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
     PMDL                    mdl;
     void                    *mdl_start_va;
     PNET_BUFFER             nb;
@@ -146,7 +146,7 @@ typedef struct _rcb_ring_pool {
     LIST_ENTRY          rcb_free_list;
     RCB                 **rcb_array;
     RCB                 *rcb_ring[NET_RX_RING_SIZE];
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
     PNET_BUFFER_LIST    rcb_nbl;
 #endif
 } rcb_ring_pool_t;

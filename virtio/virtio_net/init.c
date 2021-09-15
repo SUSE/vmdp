@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 static NDIS_STRING reg_tcp_chksum_name =
@@ -70,7 +69,7 @@ static NDIS_STRING reg_delay_name =
     NDIS_STRING_CONST("RcvDelay");
 #endif
 
-#ifndef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6 == 0
 static NDIS_STRING reg_tx_throttle_start_name =
     NDIS_STRING_CONST("TxThrottleStart");
 static NDIS_STRING reg_tx_throttle_stop_name =
@@ -90,7 +89,7 @@ static NDIS_STRING reg_dbg_print_mask_name =
     NDIS_STRING_CONST("rel_print_mask");
 #endif
 
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
 static NDIS_STRING reg_rss = NDIS_STRING_CONST("*RSS");
 static NDIS_STRING reg_num_rss_qs = NDIS_STRING_CONST("*NumRssQueues");
 static NDIS_STRING reg_num_paths = NDIS_STRING_CONST("NumPaths");
@@ -107,6 +106,23 @@ static NDIS_STRING reg_packed_rings_desc =
     NDIS_STRING_CONST("PackedRings");
 
 static NDIS_STRING reg_tx_sg_cnt = NDIS_STRING_CONST("TxSgCnt");
+
+void
+vnif_get_runtime_ndis_ver(UCHAR *major, UCHAR *minor)
+{
+    UINT runtime_ver;
+
+    runtime_ver = NdisGetVersion();
+    *major = (UCHAR)(runtime_ver >> 16);
+    *minor = runtime_ver & 0xff;
+
+    if (*major > NDIS_MINIPORT_MAJOR_VERSION) {
+        *major = NDIS_MINIPORT_MAJOR_VERSION;
+        *minor = NDIS_MINIPORT_MINOR_VERSION;
+    } else if (*minor > NDIS_MINIPORT_MINOR_VERSION) {
+        *minor = NDIS_MINIPORT_MINOR_VERSION;
+    }
+}
 
 static NDIS_STATUS
 VNIFSetupNdisAdapterTx(PVNIF_ADAPTER adapter)
@@ -388,7 +404,7 @@ static NDIS_STATUS
 vnif_setup_path_info(PVNIF_ADAPTER adapter)
 {
     NDIS_STATUS status;
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
     PROCESSOR_NUMBER target_processor;
 #endif
     UINT i;
@@ -429,7 +445,7 @@ vnif_setup_path_info(PVNIF_ADAPTER adapter)
         NdisAllocateSpinLock(&adapter->path[i].rx_path_lock);
         NdisAllocateSpinLock(&adapter->path[i].tx_path_lock);
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS620
         InitializeQueueHeader(&adapter->path[i].send_wait_queue);
 #endif
 
@@ -936,8 +952,10 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         config_handle,
         &reg_resource_timeout_name,
         NdisParameterInteger);
-    RPRINTK(DPRTL_INIT, ("VNIF: NdisReadConfiguration resource timeout %d\n",
-        returned_value->ParameterData.IntegerData));
+    RPRINTK(DPRTL_INIT,
+            ("VNIF: NdisReadConfiguration resource timeout %d 0x%x\n",
+            returned_value->ParameterData.IntegerData,
+            returned_value->ParameterData.IntegerData));
     if (status == NDIS_STATUS_SUCCESS) {
         adapter->resource_timeout = returned_value->ParameterData.IntegerData;
         if (adapter->resource_timeout > VNIF_MAX_RESOURCE_TIMEOUT) {
@@ -1002,6 +1020,9 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             NdisParameterInteger);
         if (status == NDIS_STATUS_SUCCESS) {
             adapter->mtu = returned_value->ParameterData.IntegerData;
+            if (adapter->mtu > MTU_MAX_SIZE) {
+                adapter->mtu = MTU_MAX_SIZE;
+            }
         } else {
             adapter->mtu = ETH_MAX_DATA_SIZE;
         }
@@ -1050,7 +1071,7 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
     adapter->ul64LinkSpeed *= VNIF_BASE_LINK_SPEED;
     status = NDIS_STATUS_SUCCESS;
 
-#ifndef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6 == 0
 
 #ifdef VNIF_RCV_DELAY
     NdisReadConfiguration(
@@ -1158,7 +1179,7 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
 
     adapter->num_paths = 1;
     adapter->num_rcv_queues = 1;
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
     NdisReadConfiguration(
         &status,
         &returned_value,
@@ -1193,11 +1214,13 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
 
         if (status == NDIS_STATUS_SUCCESS) {
             max_multi_queues = returned_value->ParameterData.IntegerData;
+            if (max_multi_queues > VNIF_MAX_NUM_RSS_QUEUES) {
+                max_multi_queues = VNIF_MAX_NUM_RSS_QUEUES;
+            }
             RPRINTK(DPRTL_INIT,
                 ("VNIF: NdisReadConfiguration reg_num_rss_qs value: %d\n",
                  max_multi_queues));
-            adapter->num_rcv_queues = min(adapter->num_rcv_queues,
-                                          max_multi_queues);
+            adapter->num_rcv_queues = max_multi_queues;
         } else {
             RPRINTK(DPRTL_INIT,
                ("VNIF: NdisReadConfiguration failed to read reg_num_rss_qs\n"));
@@ -1398,6 +1421,11 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
 {
     PRINTK(("%s %x: initialization complete.\n",
         adapter->node_name, adapter->CurrentAddress[MAC_LAST_DIGIT]));
+    PRINTK(("\tCompiled NDIS version = %d.%d\n", NDIS_MINIPORT_MAJOR_VERSION,
+            NDIS_MINIPORT_MINOR_VERSION));
+    PRINTK(("\tRunning NDIS version  = %d.%d\n",
+            adapter->running_ndis_major_ver,
+           adapter->running_ndis_minor_ver));
     PRINTK(("\thw_tasks = 0x%x\n", adapter->hw_tasks));
     PRINTK(("\tlso_enabled = 0x%x\n", adapter->lso_enabled));
     PRINTK(("\ttx_checksum = 0x%x\n\trx_checksum = 0x%x\n",
@@ -1429,13 +1457,13 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
                 adapter->b_use_split_evtchn));
     }
 #endif
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
     PRINTK(("\tpriority vlan support = %d\n", adapter->priority_vlan_support));
     PRINTK(("\tvlan id = %d\n", adapter->vlan_id));
     PRINTK(("\tmulti-queue supported = %d\n", adapter->b_multi_queue));
 #endif
     PRINTK(("\tnum hw queues = %d\n", adapter->num_hw_queues));
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
     PRINTK(("\trss supported = %d\n", adapter->b_rss_supported));
 
     /* Don't count the VNIVF_NO_RECEIVE_QUEUE if supported. */
@@ -1443,7 +1471,7 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
             adapter->num_rcv_queues - adapter->b_rss_supported));
 #endif
     PRINTK(("\tnum paths = %d\n", adapter->num_paths));
-#ifndef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6 == 0
 #ifdef VNIF_RCV_DELAY
     PRINTK(("\trcv delay = %d\n", adapter->rcv_delay));
 #endif

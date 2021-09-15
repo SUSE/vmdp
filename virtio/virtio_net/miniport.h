@@ -34,6 +34,7 @@
  */
 #define NTSTRSAFE_NO_DEPRECATE
 #define NTSTRSAFE_LIB
+#include <ndis.h>
 #include <ntstrsafe.h>
 #include <mp_packet.h>
 #include <mp_rss.h>
@@ -76,20 +77,6 @@
 #define VNIF_SEND_PRINT_CNT 0
 #endif
 
-#if defined(NDIS620_MINIPORT)
-# define VNIF_NDIS_MAJOR_VERSION 6
-# define VNIF_NDIS_MINOR_VERSION 20
-#elif defined(NDIS60_MINIPORT)
-# define VNIF_NDIS_MAJOR_VERSION 6
-# define VNIF_NDIS_MINOR_VERSION 0
-#elif defined(NDIS51_MINIPORT)
-# define VNIF_NDIS_MAJOR_VERSION 5
-# define VNIF_NDIS_MINOR_VERSION 1
-#elif defined(NDIS50_MINIPORT)
-# define VNIF_NDIS_MAJOR_VERSION 5
-# define VNIF_NDIS_MINOR_VERSION 0
-#endif
-
 #define ETH_ADDRESS_SIZE            6
 #define ETH_HEADER_SIZE             14
 #define ETH_MAX_DATA_SIZE           1500
@@ -101,7 +88,7 @@
 #define VNIF_MAX_RCV_SIZE           65536 /* 64k */
 
 #define VIRTIO_LSO_MAX_DATA_SIZE    61440 /* 64k - 4k */
-#if defined(NDIS60_MINIPORT)
+#if defined(NDIS_SUPPORT_NDIS6)
 #define XEN_LSO_MAX_DATA_SIZE       61440 /* 64k - 4k */
 #else
 #define XEN_LSO_MAX_DATA_SIZE       31744 /* 31k */
@@ -372,10 +359,10 @@
         (_int_time) = 0;                                                \
     }                                                                   \
 }
-#if NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
 #define VNFI_GET_PROCESSOR_COUNT                                        \
     NdisGroupActiveProcessorCount(ALL_PROCESSOR_GROUPS)
-#elif NDIS60_MINIPORT
+#elif NDIS_SUPPORT_NDIS6
 #define VNFI_GET_PROCESSOR_COUNT NdisSystemProcessorCount()
 #else
 #define VNFI_GET_PROCESSOR_COUNT 1
@@ -426,7 +413,9 @@
 NTSTATUS
 MPDriverEntry(PVOID DriverObject, PVOID RegistryPath);
 
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
+void vnif_get_runtime_ndis_ver(UCHAR *major, UCHAR *minor);
+
 NDIS_STATUS DriverEntry6(PVOID DriverObject, PVOID RegistryPath);
 #define DRIVER_ENTRY DriverEntry6
 
@@ -637,7 +626,7 @@ typedef ULONG VNIF_GSO_INFO;
 #endif
 
 
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
 #define vnif_schedule_msi_dpc(a, mid, pid, qdpc)                        \
 {                                                                       \
     if ((a)->path[(pid)].dpc_affinity.Mask != 0) {                      \
@@ -676,7 +665,7 @@ typedef struct txlist_s {
 #endif
 
 typedef struct vnif_pv_stats_s {
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
     NDIS_HANDLE     stat_timer;
 #else
     NDIS_TIMER      stat_timer;
@@ -720,13 +709,13 @@ typedef struct vnif_path_s {
     rcb_ring_pool_t     rcb_rp;
     LIST_ENTRY          tcb_free_list;
     struct vring_desc   *tx_desc;
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
     QUEUE_HEADER        send_wait_queue;
     PNET_BUFFER_LIST    sending_nbl;
 #endif
     ULONG               Flags;
     UINT                cpu_idx;
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
     GROUP_AFFINITY      dpc_affinity;
 #else
     KAFFINITY           dpc_target_proc;
@@ -746,7 +735,7 @@ typedef struct _VNIF_ADAPTER {
     UINT                num_paths;
     rcv_to_process_q_t  *rcv_q;
     UINT                num_rcv_queues; /* registry */
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
     vnif_rss_t          rss;
 #endif
 
@@ -779,7 +768,7 @@ typedef struct _VNIF_ADAPTER {
     uint32_t            max_frame_sz;
     NDIS_DEVICE_POWER_STATE power_state;
     NDIS_HANDLE         NdisMiniportDmaHandle;
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
     PNDIS_OID_REQUEST   NdisRequest;
     NDIS_HANDLE         ResetTimer;
     NDIS_HANDLE         rcv_timer;
@@ -802,7 +791,7 @@ typedef struct _VNIF_ADAPTER {
     NDIS_OID            oid;
 
     /* Variables to track resources for the send operation */
-#ifndef NDIS60_MINIPORT
+#ifndef NDIS_SUPPORT_NDIS6
     LIST_ENTRY          SendWaitList;
 #endif
     TCB                 **TCBArray;
@@ -819,7 +808,7 @@ typedef struct _VNIF_ADAPTER {
     LONG                nResetTimerCount;
 
     /* Variables to track resources for the Receive operation */
-#ifndef NDIS60_MINIPORT
+#ifndef NDIS_SUPPORT_NDIS6
     NDIS_ENCAPSULATION_FORMAT EncapsulationFormat;
 #endif
     LONG                nBusyRecv;
@@ -847,7 +836,7 @@ typedef struct _VNIF_ADAPTER {
     ULONG64             ifInErrors;             /* GEN_RCV_ERROR */
     ULONG64             ifOutErrors;            /* GEN_XMIT_ERROR */
     ULONG64             ifOutDiscards;          /* GEN_XMIT_DISCARDS */
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
     ULONG64             ifHCInUcastPkts;        /* GEN_DIRECTED_FRAMES_RCV */
     ULONG64             ifHCInMulticastPkts;    /* GEN_MULTICAST_FRAMES_RCV */
     ULONG64             ifHCInBroadcastPkts;    /* GEN_BROADCAST_FRAMES_RCV */
@@ -876,6 +865,9 @@ typedef struct _VNIF_ADAPTER {
     BOOLEAN             b_use_split_evtchn;
     BOOLEAN             b_indirect;
     BOOLEAN             b_use_packed_rings;
+
+    UCHAR               running_ndis_major_ver;
+    UCHAR               running_ndis_minor_ver;
 
 #ifdef DBG
     uint32_t            dbg_print_cnt;
@@ -1000,7 +992,7 @@ extern NDIS_HANDLE NdisMiniportDriverHandle;
 extern void (*VNIF_ALLOCATE_SHARED_MEMORY)(struct _VNIF_ADAPTER *adapter,
     void **va, PHYSICAL_ADDRESS *pa, uint32_t len, NDIS_HANDLE hndl);
 
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
 extern NDIS_OID VNIFSupportedOids[];
 extern uint32_t SupportedOidListLength;
 
@@ -1155,6 +1147,14 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter);
 
 NDIS_STATUS
 VNIFNdisOpenConfiguration(PVNIF_ADAPTER adapter, NDIS_HANDLE *config_handle);
+
+#if NDIS_SUPPORT_NDIS620
+void
+VNIFSetPowerCapabilities(NDIS_PM_CAPABILITIES *pmc);
+#else
+void
+VNIFSetPowerCapabilities(NDIS_PNP_CAPABILITIES *pmc);
+#endif
 
 void
 VNIFInitChksumOffload(PVNIF_ADAPTER adapter,

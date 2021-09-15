@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 static NDIS_STATUS
@@ -46,7 +45,12 @@ VNIFSetRegistrationAttributes(PVNIF_ADAPTER adapter)
 
     RegistrationAttributes.MiniportAdapterContext = (NDIS_HANDLE)adapter;
     RegistrationAttributes.AttributeFlags =
+        NDIS_MINIPORT_ATTRIBUTES_HARDWARE_DEVICE |
         NDIS_MINIPORT_ATTRIBUTES_BUS_MASTER;
+#if NDIS_SUPPORT_NDIS630
+    RegistrationAttributes.AttributeFlags |=
+        NDIS_MINIPORT_ATTRIBUTES_NO_PAUSE_ON_SUSPEND;
+#endif
 
     RegistrationAttributes.CheckForHangTimeInSeconds = 0;
     RegistrationAttributes.InterfaceType = VNIF_INTERFACE_TYPE;
@@ -57,12 +61,56 @@ VNIFSetRegistrationAttributes(PVNIF_ADAPTER adapter)
     return status;
 }
 
+#if NDIS_SUPPORT_NDIS620
+void
+VNIFSetPowerCapabilities(NDIS_PM_CAPABILITIES *pmc)
+{
+    NdisZeroMemory(pmc, sizeof(*pmc));
+
+    pmc->Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
+
+#if NDIS_SUPPORT_NDIS650
+    /* Use REVISION_2 for Win 10 and above for now. */
+    pmc->Header.Revision = NDIS_PM_CAPABILITIES_REVISION_2;
+    pmc->Header.Size = NDIS_SIZEOF_NDIS_PM_CAPABILITIES_REVISION_2;
+#else
+    pmc->Header.Revision = NDIS_PM_CAPABILITIES_REVISION_1;
+    pmc->Header.Size = NDIS_SIZEOF_NDIS_PM_CAPABILITIES_REVISION_1;
+#endif
+
+    pmc->SupportedWoLPacketPatterns = 0;
+    pmc->NumTotalWoLPatterns = 0;
+    pmc->MaxWoLPatternSize = 0;
+    pmc->MaxWoLPatternOffset = 0;
+    pmc->MaxWoLPacketSaveBuffer = 0;
+
+    pmc->SupportedProtocolOffloads = 0;
+    pmc->NumArpOffloadIPv4Addresses = 0;
+    pmc->NumNSOffloadIPv6Addresses = 0;
+
+    pmc->MinMagicPacketWakeUp = NdisDeviceStateUnspecified;
+    pmc->MinLinkChangeWakeUp = NdisDeviceStateUnspecified;
+    pmc->MinPatternWakeUp = NdisDeviceStateUnspecified;
+}
+#else
+void
+VNIFSetPowerCapabilities(NDIS_PNP_CAPABILITIES *pmc)
+{
+    NdisZeroMemory(pmc, sizeof(*pmc));
+    pmc->WakeUpCapabilities.MinMagicPacketWakeUp = NdisDeviceStateUnspecified;
+    pmc->WakeUpCapabilities.MinPatternWakeUp = NdisDeviceStateUnspecified;
+    pmc->WakeUpCapabilities.MinLinkChangeWakeUp  = NdisDeviceStateUnspecified;
+}
+#endif
+
 static NDIS_STATUS
 VNIFSetGeneralAttributes(PVNIF_ADAPTER adapter)
 {
     NDIS_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES GeneralAttributes;
     NDIS_RECEIVE_SCALE_CAPABILITIES rss_caps;
-#if !defined TARGET_OS_WinLH && !defined TARGET_OS_Win7
+#if NDIS_SUPPORT_NDIS620
+    NDIS_PM_CAPABILITIES pmc;
+#else
     NDIS_PNP_CAPABILITIES pmc;
 #endif
     NDIS_STATUS status;
@@ -72,19 +120,26 @@ VNIFSetGeneralAttributes(PVNIF_ADAPTER adapter)
 
     GeneralAttributes.Header.Type =
         NDIS_OBJECT_TYPE_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES;
+#if NDIS_SUPPORT_NDIS620
+    GeneralAttributes.Header.Revision =
+        NDIS_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES_REVISION_2;
+    GeneralAttributes.Header.Size =
+        NDIS_SIZEOF_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES_REVISION_2;
+#else
     GeneralAttributes.Header.Revision =
         NDIS_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES_REVISION_1;
     GeneralAttributes.Header.Size =
         NDIS_SIZEOF_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES_REVISION_1;
+#endif
 
     GeneralAttributes.MediaType = NdisMedium802_3;
 
     GeneralAttributes.MaxXmitLinkSpeed = adapter->ul64LinkSpeed;
     GeneralAttributes.MaxRcvLinkSpeed = adapter->ul64LinkSpeed;
-    GeneralAttributes.XmitLinkSpeed = NDIS_LINK_SPEED_UNKNOWN;
-    GeneralAttributes.RcvLinkSpeed = NDIS_LINK_SPEED_UNKNOWN;
+    GeneralAttributes.XmitLinkSpeed = adapter->ul64LinkSpeed;
+    GeneralAttributes.RcvLinkSpeed = adapter->ul64LinkSpeed;
     GeneralAttributes.MediaConnectState = MediaConnectStateUnknown;
-    GeneralAttributes.MediaDuplexState = MediaDuplexStateUnknown;
+    GeneralAttributes.MediaDuplexState = adapter->duplex_state;
     if (adapter->hw_tasks & VNIF_RX_SG_LARGE) {
         GeneralAttributes.MtuSize = VNIF_MAX_RCV_SIZE - ETH_HEADER_SIZE;
         GeneralAttributes.LookaheadSize = VNIF_MAX_RCV_SIZE - ETH_HEADER_SIZE;
@@ -95,19 +150,16 @@ VNIFSetGeneralAttributes(PVNIF_ADAPTER adapter)
 
     GeneralAttributes.PowerManagementCapabilities = NULL;
 
-#if !defined TARGET_OS_WinLH && !defined TARGET_OS_Win7
-    pmc.Flags = 0;
-    pmc.WakeUpCapabilities.MinMagicPacketWakeUp = NdisDeviceStateUnspecified;
-    pmc.WakeUpCapabilities.MinPatternWakeUp = NdisDeviceStateUnspecified;
-    pmc.WakeUpCapabilities.MinLinkChangeWakeUp  = NdisDeviceStateUnspecified;
+#if NDIS_SUPPORT_NDIS620
+    VNIFSetPowerCapabilities(&pmc);
+    GeneralAttributes.Header.Revision =
+        NDIS_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES_REVISION_2;
+    GeneralAttributes.Header.Size =
+        NDIS_SIZEOF_MINIPORT_ADAPTER_GENERAL_ATTRIBUTES_REVISION_2;
+    GeneralAttributes.PowerManagementCapabilitiesEx = &pmc;
+#else
+    VNIFSetPowerCapabilities(&pmc);
     GeneralAttributes.PowerManagementCapabilities = &pmc;
-#if defined TARGET_OS_GE_Win8
-    if (g_running_hypervisor == HYPERVISOR_KVM) {
-        if (!(adapter->hw_tasks & VNIF_PMC)) {
-            GeneralAttributes.PowerManagementCapabilities = NULL;
-        }
-    }
-#endif
 #endif
 
     GeneralAttributes.MacOptions = NDIS_MAC_OPTION_COPY_LOOKAHEAD_DATA |
@@ -137,8 +189,12 @@ VNIFSetGeneralAttributes(PVNIF_ADAPTER adapter)
         adapter->CurrentAddress,
         ETH_LENGTH_OF_ADDRESS);
 
+#if NDIS_SUPPORT_NDIS650
+    GeneralAttributes.PhysicalMediumType = NdisPhysicalMediumUnspecified;
+#else
     /* Must be NdisPhysicalMedium802_3 to pass WHQL test. */
     GeneralAttributes.PhysicalMediumType = NdisPhysicalMedium802_3;
+#endif
 
     GeneralAttributes.AccessType = NET_IF_ACCESS_BROADCAST;
     GeneralAttributes.DirectionType = NET_IF_DIRECTION_SENDRECEIVE;
@@ -301,12 +357,30 @@ VNIFSetOffloadAttributes(PVNIF_ADAPTER adapter)
     offload_attrs.HardwareOffloadCapabilities = &hw_offload;
 
     def_offload.Header.Type = NDIS_OBJECT_TYPE_OFFLOAD;
+    hw_offload.Header.Type = NDIS_OBJECT_TYPE_OFFLOAD;
+
+#if (NDIS_SUPPORT_NDIS630)
+    def_offload.Header.Revision = NDIS_OFFLOAD_REVISION_3;
+    def_offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_3;
+
+    hw_offload.Header.Revision = NDIS_OFFLOAD_REVISION_3;
+    hw_offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_3;
+#if (NDIS_SUPPORT_NDIS683)
+    if (adapter->running_ndis_minor_ver >= 83) {
+        def_offload.Header.Revision = NDIS_OFFLOAD_REVISION_6;
+        def_offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_6;
+
+        hw_offload.Header.Revision = NDIS_OFFLOAD_REVISION_6;
+        hw_offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_6;
+    }
+#endif
+#else
     def_offload.Header.Revision = NDIS_OFFLOAD_REVISION_1;
     def_offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_1;
 
-    hw_offload.Header.Type = NDIS_OBJECT_TYPE_OFFLOAD;
     hw_offload.Header.Revision = NDIS_OFFLOAD_REVISION_1;
     hw_offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_1;
+#endif
 
     /*
      * Normally we would set the hardware capabilities based on what the

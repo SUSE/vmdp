@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 #ifdef NDIS51_MINIPORT
@@ -39,15 +38,20 @@ DriverEntry5(PVOID DriverObject, PVOID RegistryPath)
 {
     NDIS_MINIPORT_CHARACTERISTICS mp_char;
     NDIS_STATUS status;
+    UCHAR major_ver;
+    UCHAR minor_ver;
 
     DPRINTK(DPRTL_ON, ("VNIF: DriverEntry5 - IN.\n"));
+
+    vnif_get_runtime_ndis_ver(&major_ver, &minor_ver);
+
     NdisZeroMemory(&mp_char, sizeof(mp_char));
 
     NdisMInitializeWrapper(&NdisWrapperHandle, DriverObject,
                            RegistryPath, NULL);
 
-    mp_char.MajorNdisVersion = VNIF_NDIS_MAJOR_VERSION;
-    mp_char.MinorNdisVersion = VNIF_NDIS_MINOR_VERSION;
+    mp_char.MajorNdisVersion = major_ver;
+    mp_char.MinorNdisVersion = minor_ver;
 
     mp_char.InitializeHandler = MPInitialize;
     mp_char.HaltHandler = MPHalt;

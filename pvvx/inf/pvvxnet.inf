@@ -149,7 +149,7 @@ HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLim
 HKR, Ndi\params\NumRcb,          ParamDesc, 0, "%ReceiveBuffers%"
 HKR, Ndi\params\NumRcb,          default,   0, "256"
 HKR, Ndi\params\NumRcb,          min,       0, "256"
-HKR, Ndi\params\NumRcb,          max,       0, "1024"
+HKR, Ndi\params\NumRcb,          max,       0, "4096"
 HKR, Ndi\params\NumRcb,          step,      0, "1"
 HKR, Ndi\params\NumRcb,          base,      0, "10"
 HKR, Ndi\params\NumRcb,          type,      0, "int"
@@ -332,9 +332,9 @@ HKR, Ndi\params\*RSS\enum,         "0",       0, %Disable%
 HKR, Ndi\params\*RSS\enum,         "1",       0, %Enable%
 
 HKR, Ndi\params\*NumRssQueues,     ParamDesc, 0, %RSS_QUEUES%
-HKR, Ndi\params\*NumRssQueues,     default,   0, "1"
+HKR, Ndi\params\*NumRssQueues,     default,   0, "16"
 HKR, Ndi\params\*NumRssQueues,     min,       0, "1"
-HKR, Ndi\params\*NumRssQueues,     max,       0, "16"
+HKR, Ndi\params\*NumRssQueues,     max,       0, "32"
 HKR, Ndi\params\*NumRssQueues,     step,      0, "1"
 HKR, Ndi\params\*NumRssQueues,     base,      0, "10"
 HKR, Ndi\params\*NumRssQueues,     type,      0, "int"

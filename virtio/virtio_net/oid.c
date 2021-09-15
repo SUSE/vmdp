@@ -25,10 +25,9 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
-#ifndef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6 == 0
 static NDIS_TASK_OFFLOAD OffloadTasks[] = {
     {
         NDIS_TASK_OFFLOAD_VERSION,
@@ -80,13 +79,13 @@ NDIS_OID VNIFSupportedOids[] = {
     OID_GEN_RCV_NO_BUFFER,
     OID_GEN_RCV_CRC_ERROR,
     OID_GEN_TRANSMIT_QUEUE_LENGTH,
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     OID_GEN_STATISTICS,
     OID_GEN_INTERRUPT_MODERATION,
 #else
     OID_802_3_MAC_OPTIONS,
 #endif
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
     OID_GEN_RECEIVE_SCALE_CAPABILITIES,
     OID_GEN_RECEIVE_SCALE_PARAMETERS,
     OID_GEN_RECEIVE_HASH,
@@ -108,7 +107,7 @@ NDIS_OID VNIFSupportedOids[] = {
     OID_PNP_QUERY_POWER,
     OID_PNP_SET_POWER,
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     OID_PNP_CAPABILITIES,
     OID_OFFLOAD_ENCAPSULATION,
     OID_TCP_OFFLOAD_PARAMETERS,
@@ -117,7 +116,7 @@ NDIS_OID VNIFSupportedOids[] = {
 #endif
 };
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 uint32_t SupportedOidListLength = sizeof(VNIFSupportedOids);
 #endif
 
@@ -125,7 +124,7 @@ static NDIS_STATUS
 NICGetStatsCounters(PVNIF_ADAPTER adapter, NDIS_OID Oid, PULONG64 info64)
 {
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     PNDIS_STATISTICS_INFO stats;
 #endif
 
@@ -189,7 +188,7 @@ NICGetStatsCounters(PVNIF_ADAPTER adapter, NDIS_OID Oid, PULONG64 info64)
     case OID_802_3_XMIT_LATE_COLLISIONS:
         *info64 = 0;
         break;
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     case OID_GEN_XMIT_OK:
         *info64 = adapter->ifHCOutUcastPkts +
             adapter->ifHCOutMulticastPkts +
@@ -302,7 +301,7 @@ MPQueryInformation(
     ULONG infolen = sizeof(info);
     ULONG ulBytesAvailable = infolen;
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     NDIS_INTERRUPT_MODERATION_PARAMETERS int_mod;
 #else
     PNDIS_TASK_OFFLOAD_HEADER pNdisTaskOffloadHdr;
@@ -416,8 +415,8 @@ MPQueryInformation(
 
     /* NDIS version  */
     case OID_GEN_DRIVER_VERSION:
-        info16 = (USHORT) (VNIF_NDIS_MAJOR_VERSION << 8)
-            + VNIF_NDIS_MINOR_VERSION;
+        info16 = (USHORT)(adapter->running_ndis_major_ver << 8)
+                        | adapter->running_ndis_minor_ver;
         infoptr = (PVOID) &info16;
         ulBytesAvailable = infolen = sizeof(USHORT);
         RPRINTK(DPRTL_INIT, ("OID_GEN_DRIVER_VERSION: %d\n", info16));
@@ -473,7 +472,7 @@ MPQueryInformation(
         info = VNIF_MAX_MCAST_LIST;
         break;
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     case OID_GEN_STATISTICS:
         /* we are going to directly fill the information buffer */
         do_copy = FALSE;
@@ -540,7 +539,7 @@ MPQueryInformation(
         RPRINTK(DPRTL_CONFIG, ("OID_TCP_TASK_OFFLOAD query: %s rx %x tx %x\n",
                                adapter->node_name, adapter->cur_rx_tasks,
                                adapter->cur_tx_tasks));
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         status = NDIS_STATUS_SUCCESS;
         break;
 #else
@@ -662,7 +661,7 @@ MPQueryInformation(
         return NDIS_STATUS_SUCCESS;
 #endif
 
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
     case OID_GEN_RECEIVE_SCALE_CAPABILITIES:
         RPRINTK(DPRTL_RSS,
                 ("%s: OID_GEN_RECEIVE_SCALE_CAPABILITIES\n", __func__));
@@ -687,13 +686,20 @@ MPQueryInformation(
         break;
 
     case OID_GEN_RECEIVE_HASH:
-        RPRINTK(DPRTL_RSS,
-                ("%s: OID_GEN_RECEIVE_HASH\n", __func__));
-        /*
-         * pInfo = &u.RSSHashKeyParameters;
-         * ulSize = ParaNdis6_QueryReceiveHash(&pContext->RSSParameters,
-         *                                     &u.RSSHashKeyParameters);
-         */
+        RPRINTK(DPRTL_CONFIG,
+                ("%s: Query OID_GEN_RECEIVE_HASH\n", __func__));
+        do_copy = FALSE;
+        ulBytesAvailable = infolen = sizeof(vnif_rss_hash_params_t);
+
+        if (InformationBufferLength < sizeof(vnif_rss_hash_params_t)) {
+            *BytesNeeded = sizeof(vnif_rss_hash_params_t);
+            status = NDIS_STATUS_BUFFER_TOO_SHORT;
+            break;
+        }
+
+        vnif_rss_query_oid_gen_receive_hash(adapter,
+            (vnif_rss_hash_params_t *)InformationBuffer);
+
         break;
 #endif
 
@@ -754,7 +760,7 @@ MPSetInformation(
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     PNDIS_OFFLOAD_ENCAPSULATION encapsulation;
     PNDIS_OFFLOAD_PARAMETERS offload_parms;
     uint32_t offload_changed;
@@ -827,7 +833,7 @@ MPSetInformation(
         status = NDIS_STATUS_SUCCESS;
         break;
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     case OID_GEN_INTERRUPT_MODERATION:
         /* This driver does not support interrupt moderation at this time */
         status = NDIS_STATUS_INVALID_DATA;
@@ -873,7 +879,7 @@ MPSetInformation(
     case OID_TCP_OFFLOAD_PARAMETERS:
         RPRINTK(DPRTL_CONFIG,
                 ("OID_TCP_OFFLOAD_PARAMETERS %s\n", adapter->node_name));
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
         offload_params_size = NDIS_SIZEOF_OFFLOAD_PARAMETERS_REVISION_2;
 #else
         offload_params_size = NDIS_SIZEOF_OFFLOAD_PARAMETERS_REVISION_1;
@@ -1040,11 +1046,20 @@ MPSetInformation(
         RPRINTK(DPRTL_CONFIG, ("\tBytesRead %x.\n", *BytesRead));
         break;
 
-#ifdef NDIS620_MINIPORT
+#if NDIS_SUPPORT_NDIS620
     case OID_GEN_RECEIVE_SCALE_PARAMETERS:
         status = vnif_rss_oid_gen_receive_scale_params(
             adapter,
             (NDIS_RECEIVE_SCALE_PARAMETERS *)InformationBuffer,
+            InformationBufferLength,
+            BytesRead,
+            BytesNeeded);
+        break;
+    case OID_GEN_RECEIVE_HASH:
+        RPRINTK(DPRTL_CONFIG, ("Set OID_GEN_RECEIVE_HASH\n"));
+        status = vnif_rss_set_oid_gen_receive_hash(
+            adapter,
+            (NDIS_RECEIVE_HASH_PARAMETERS *)InformationBuffer,
             InformationBufferLength,
             BytesRead,
             BytesNeeded);
@@ -1300,7 +1315,7 @@ MPSetInformation(
             if (NewPowerState == NdisDeviceStateD0) {
                 VNIF_SET_FLAG(adapter, VNF_ADAPTER_NEEDS_RSTART);
             }
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
             else {
                 if (g_running_hypervisor == HYPERVISOR_KVM) {
                     VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_POLLING);
@@ -1430,7 +1445,7 @@ VNIFSetVLANFilter(PVNIF_ADAPTER adapter, ULONG new_vlan_id)
     return status;
 }
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 
 #define     ADD_TWO_INTEGERS        1
 #define     MINUS_TWO_INTEGERS      2
@@ -1531,8 +1546,19 @@ VNIFIndicateOffload(PVNIF_ADAPTER adapter)
     NdisZeroMemory(&status_indication, sizeof(NDIS_STATUS_INDICATION));
 
     offload.Header.Type = NDIS_OBJECT_TYPE_OFFLOAD;
+#if (NDIS_SUPPORT_NDIS630)
+    offload.Header.Revision = NDIS_OFFLOAD_REVISION_3;
+    offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_3;
+#if (NDIS_SUPPORT_NDIS683)
+    if (adapter->running_ndis_minor_ver >= 83) {
+        offload.Header.Revision = NDIS_OFFLOAD_REVISION_6;
+        offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_6;
+    }
+#endif
+#else
     offload.Header.Revision = NDIS_OFFLOAD_REVISION_1;
     offload.Header.Size = NDIS_SIZEOF_NDIS_OFFLOAD_REVISION_1;
+#endif
 
     /* Check Ipv4 */
     if (adapter->cur_tx_tasks & VNIF_CHKSUM_IPV4_IP) {

@@ -24,7 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 ULONG g_running_hypervisor = HYPERVISOR_KVM;
@@ -47,8 +46,6 @@ DriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
 {
     KeInitializeSpinLock(&virtio_print_lock);
     printk = virtio_dbg_printk;
-    PRINTK(("%s Ndis %d.%d Miniport Driver: Version %s.\n",
-        VNIF_DRIVER_NAME, VNIF_NDIS_MAJOR_VERSION,
-        VNIF_NDIS_MINOR_VERSION, VER_FILEVERSION_STR));
+    PRINTK(("%s Version %s.\n", VNIF_DRIVER_NAME, VER_FILEVERSION_STR));
     return MPDriverEntry(DriverObject, RegistryPath);
 }

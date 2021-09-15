@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 /*
@@ -64,7 +63,7 @@ void
 VNIFX_ALLOCATE_SHARED_MEMORY(struct _VNIF_ADAPTER *adapter,
     void **va, PHYSICAL_ADDRESS *pa, uint32_t len, NDIS_HANDLE hndl)
 {
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     *va = NdisAllocateMemoryWithTagPriority(
         hndl,
         len,
@@ -1066,7 +1065,7 @@ VNIFInitTxGrants(PVNIF_ADAPTER adapter)
         }
     }
 
-#ifndef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6 == 0
     NdisInitializeListHead(&adapter->SendWaitList);
 #endif
     adapter->nBusySend = 0;
@@ -1595,7 +1594,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
             }
         }
         if (adapter->nBusySend) {
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
             PRINTK(("MPResume: starting, nBusySend = %d, nWaitSend = %d\n",
                 adapter->nBusySend, adapter->nWaitSend));
 #else
@@ -1615,7 +1614,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
         }
 
         if (adapter->nBusySend) {
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
             PRINTK(("MPResume %s: nBusySend %d, nWaitSend %d, flags 0x%x\n",
                 adapter->u.x.otherend, adapter->nBusySend,
                 adapter->nWaitSend, adapter->adapter_flags));

@@ -154,7 +154,7 @@ typedef struct _vnif_virtio_s {
 
 #define VNIF_SETUP_PATH_INFO_EX vnifx_setup_path_info_ex
 
-#ifndef NDIS60_MINIPORT
+#ifndef NDIS_SUPPORT_NDIS6
 #define DriverEntryEx MPX_DriverEntryEx
 #endif
 

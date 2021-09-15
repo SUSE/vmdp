@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 #include <virtio_config.h>
 #include <virtio_utils.h>
@@ -348,13 +347,13 @@ vnifv_get_rx(PVNIF_ADAPTER adapter, UINT path_id, UINT rp, UINT *i, INT *len)
     return rcb;
 }
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 void
 vnifv_ndis_queue_dpc(PVNIF_ADAPTER adapter,
                      UINT rcv_qidx,
                      UINT max_nbls_to_indicate)
 {
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
     GROUP_AFFINITY target_affinity;
 #endif
     UINT path_id;
@@ -362,7 +361,7 @@ vnifv_ndis_queue_dpc(PVNIF_ADAPTER adapter,
     path_id = adapter->rcv_q[rcv_qidx].path_id;
 
     if (path_id < adapter->num_paths) {
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
         target_affinity.Group = adapter->rcv_q[rcv_qidx].rcv_processor.Group;
         target_affinity.Mask = 1;
         target_affinity.Mask <<= adapter->rcv_q[rcv_qidx].rcv_processor.Number;

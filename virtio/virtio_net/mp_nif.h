@@ -167,7 +167,7 @@ typedef struct _vnif_xen_s {
 #define vnif_rcv_stats_dump(_adapter, _path_id)
 #endif
 
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
 #else
 #define DriverEntryEx MPV_DriverEntryEx
 

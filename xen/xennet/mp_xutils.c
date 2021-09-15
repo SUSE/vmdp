@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 VOID
@@ -697,7 +696,7 @@ VNIFX_RING_FINAL_CHECK_FOR_RESPONSES(void *vq, int *more_to_do)
     *more_to_do = mtd;
 }
 
-#ifndef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6 == 0
 void
 MPX_DriverEntryEx(NDIS_MINIPORT_CHARACTERISTICS *mp_char)
 {

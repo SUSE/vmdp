@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 NDIS_HANDLE MiniportDriverContext;
@@ -39,12 +38,19 @@ DriverEntry6(PVOID DriverObject, PVOID RegistryPath)
 {
     NDIS_STATUS status;
     NDIS_MINIPORT_DRIVER_CHARACTERISTICS mp_char;
+    UINT ver;
+    UCHAR major_ver;
+    UCHAR minor_ver;
 
     RPRINTK(DPRTL_ON, ("VNIF: DriverEntry6 - IN.\n"));
+
+    vnif_get_runtime_ndis_ver(&major_ver, &minor_ver);
+
     NdisZeroMemory(&mp_char, sizeof(mp_char));
 
     mp_char.Header.Type = NDIS_OBJECT_TYPE_MINIPORT_DRIVER_CHARACTERISTICS;
-#ifdef NDIS620_MINIPORT
+
+#if NDIS_SUPPORT_NDIS61
     mp_char.Header.Size =
         NDIS_SIZEOF_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_2;
     mp_char.Header.Revision =
@@ -55,9 +61,18 @@ DriverEntry6(PVOID DriverObject, PVOID RegistryPath)
     mp_char.Header.Revision =
         NDIS_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_1;
 #endif
+#if NDIS_SUPPORT_NDIS680
+    if (minor_ver >= 80) {
+        mp_char.Header.Size =
+            NDIS_SIZEOF_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_3;
+        mp_char.Header.Revision =
+            NDIS_MINIPORT_DRIVER_CHARACTERISTICS_REVISION_3;
+    }
+#endif
 
-    mp_char.MajorNdisVersion    = NDIS_MINIPORT_MAJOR_VERSION;
-    mp_char.MinorNdisVersion    = NDIS_MINIPORT_MINOR_VERSION;
+    mp_char.MajorNdisVersion    = major_ver;
+    mp_char.MinorNdisVersion    = minor_ver;
+
     mp_char.MajorDriverVersion  = VNIF_MAJOR_DRIVER_VERSION;
     mp_char.MinorDriverVersion  = VNIF_MINOR_DRIVER_VERSION;
 

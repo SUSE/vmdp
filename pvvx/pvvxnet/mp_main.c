@@ -24,7 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 ULONG g_running_hypervisor = HYPERVISOR_KVM;
@@ -100,7 +99,7 @@ void (*vnif_send_packet_filter)(VNIF_ADAPTER *adapter);
 void (*vnif_send_multicast_list)(VNIF_ADAPTER *adapter);
 void (*vnif_send_vlan_filter)(VNIF_ADAPTER *adapter, UCHAR add_del);
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 #else
 void (*DriverEntryEx)(NDIS_MINIPORT_CHARACTERISTICS *mp_char);
 NDIS_STATUS (*VNIFGetHWResources)(struct _VNIF_ADAPTER *adapter);
@@ -176,7 +175,7 @@ vnifv_setup(void)
     VNIF_RING_HAS_UNCONSUMED_RESPONSES = VNIFV_RING_HAS_UNCONSUMED_RESPONSES;
     VNIF_RING_FINAL_CHECK_FOR_RESPONSES = VNIFV_RING_FINAL_CHECK_FOR_RESPONSES;
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     vnif_ndis_queue_dpc = vnifv_ndis_queue_dpc;
 #else
     DriverEntryEx = MPV_DriverEntryEx;
@@ -262,7 +261,7 @@ vnifx_setup(void)
     vnif_send_multicast_list = vnifx_send_multicast_list;
     vnif_send_vlan_filter = vnifx_send_vlan_filter;
 
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 #else
     DriverEntryEx = MPX_DriverEntryEx;
     VNIFGetHWResources = VNIFX_GetHWResources;
@@ -319,8 +318,6 @@ DriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
         return STATUS_UNSUCCESSFUL;
         break;
     }
-    PRINTK(("%s Ndis %d.%d Miniport Driver: Version %s.\n",
-        VNIF_DRIVER_NAME, VNIF_NDIS_MAJOR_VERSION,
-        VNIF_NDIS_MINOR_VERSION, VER_FILEVERSION_STR));
+    PRINTK(("%s Version %s.\n", VNIF_DRIVER_NAME, VER_FILEVERSION_STR));
     return MPDriverEntry(DriverObject, RegistryPath);
 }

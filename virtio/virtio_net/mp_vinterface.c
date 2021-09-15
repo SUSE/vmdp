@@ -25,7 +25,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 #include <virtio_config.h>
 #include <virtio_utils.h>
@@ -353,7 +352,7 @@ vnif_init_tx(PVNIF_ADAPTER adapter)
     for (i = 0; i < adapter->num_paths; i++) {
         NdisInitializeListHead(&adapter->path[i].tcb_free_list);
     }
-#ifndef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6 == 0
     NdisInitializeListHead(&adapter->SendWaitList);
 #endif
     adapter->nBusySend = 0;
@@ -1092,7 +1091,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
         VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_SUSPENDED);
 
         if (adapter->nBusySend) {
-#ifdef NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
             PRINTK(("MPResume: starting, nBusySend = %d, nWaitSend = %d\n",
                 adapter->nBusySend, adapter->nWaitSend));
 #else
@@ -1107,7 +1106,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
 
         status = VNIFFindAdapter(adapter);
         if (status == STATUS_SUCCESS) {
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
             status = VNIF_SETUP_PATH_INFO_EX(adapter);
 #endif
             status = VNIFSetupAdapterInterface(adapter);
@@ -1118,7 +1117,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
                 }
                 VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_RESUMING);
                 VNIF_SET_FLAG(adapter, VNF_ADAPTER_POLLING);
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
                 VNIF_SET_TIMER(adapter->poll_timer, 1);
 #endif
             }

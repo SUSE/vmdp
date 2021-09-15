@@ -126,7 +126,7 @@ NDIS_STATUS VNIFX_GetHWResources(struct _VNIF_ADAPTER *adapter);
 NDIS_STATUS VNIFX_RegisterNdisInterrupt(struct _VNIF_ADAPTER *adapter);
 void VNIFX_DeregisterHardwareResources(struct _VNIF_ADAPTER *adapter);
 
-#ifdef NDIS60_MINIPORT
+#ifdef NDIS_SUPPORT_NDIS6
 #else
 void MPX_DriverEntryEx(NDIS_MINIPORT_CHARACTERISTICS *mp_char);
 #endif

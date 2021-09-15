@@ -230,6 +230,9 @@
       <PreprocessorDefinitions>ARCH_x86_64;IS_STORPORT;XENSCSI_STORPORT;USE_INDIRECT_XENBUS_APIS;CAN_USE_MSI;PVVXSCSI;PVVX;USE_STORPORT_DPC;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
+    <Link>
+      <CETCompat>true</CETCompat>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|x64'">
     <ResourceCompile>
@@ -264,6 +267,9 @@
     <ClCompile>
       <PreprocessorDefinitions>ARCH_x86_64;IS_STORPORT;XENSCSI_STORPORT;USE_INDIRECT_XENBUS_APIS;CAN_USE_MSI;PVVXSCSI;PVVX;USE_STORPORT_DPC;VIRTIO_SCSI_DRIVER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <CETCompat>true</CETCompat>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|x64'">
     <ResourceCompile>

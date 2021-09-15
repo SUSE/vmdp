@@ -24,7 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ndis.h>
 #include "miniport.h"
 
 NDIS_RECEIVE_SCALE_CAPABILITIES *
@@ -194,7 +193,7 @@ vnif_rss_fill_cpu_mapping(vnif_rss_t *rss, UINT num_receive_queues)
 void
 vnif_rss_set_rcv_q_targets(VNIF_ADAPTER *adapter)
 {
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
     PROCESSOR_NUMBER target_processor;
 #endif
     UINT rcvq;
@@ -208,7 +207,7 @@ vnif_rss_set_rcv_q_targets(VNIF_ADAPTER *adapter)
                      __func__, cpu_idx));
             rcvq = adapter->num_rcv_queues - 1;
         }
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
         KeGetProcessorNumberFromIndex(cpu_idx, &target_processor);
         adapter->rcv_q[rcvq].rcv_processor = target_processor;
         adapter->rcv_q[rcvq].path_id = cpu_idx;
@@ -431,6 +430,20 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
     }
 
     *bytes_read = sizeof(NDIS_RECEIVE_SCALE_PARAMETERS);
+    if (rss_params->Header.Revision
+            == NDIS_RECEIVE_SCALE_PARAMETERS_REVISION_2) {
+        *bytes_read = NDIS_SIZEOF_RECEIVE_SCALE_PARAMETERS_REVISION_2;
+
+    }
+#if NDIS_SUPPORT_NDIS660
+    else {
+        if (rss_params->Header.Revision
+                == NDIS_RECEIVE_SCALE_PARAMETERS_REVISION_3) {
+            *bytes_read = NDIS_SIZEOF_RECEIVE_SCALE_PARAMETERS_REVISION_3;
+
+        }
+    }
+#endif
 
     if (rss_params->Flags & NDIS_RSS_PARAM_FLAG_DISABLE_RSS
         || (rss_params->HashInformation == 0)) {
@@ -563,6 +576,11 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
 
     RPRINTK(DPRTL_INIT, ("%s rss_params_len %d, bytes read %d\n",
                          __func__, rss_params_len, *bytes_read));
+    if (*bytes_read > rss_params_len) {
+        *bytes_read = rss_params_len;
+        PRINTK(("%s setting bytes read %d to rss_params_len %d\n",
+                             __func__,  *bytes_read, rss_params_len));
+    }
     vnif_rss_move_rx(adapter);
 
     status = vnif_rss_setup_q_map(adapter, rss_params);
@@ -577,15 +595,117 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
     return NDIS_STATUS_SUCCESS;
 }
 
+void
+vnif_rss_query_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
+                                    vnif_rss_hash_params_t *rss_hash_params)
+{
+    //CNdisPassiveReadAutoLock autoLock(RSSParameters->rwLock);
+
+    NdisZeroMemory(rss_hash_params, sizeof(*rss_hash_params));
+    rss_hash_params->rcv_hash_params.Header.Type =
+        NDIS_OBJECT_TYPE_DEFAULT;
+    rss_hash_params->rcv_hash_params.Header.Revision =
+        NDIS_RECEIVE_HASH_PARAMETERS_REVISION_1;
+    rss_hash_params->rcv_hash_params.Header.Size =
+        NDIS_SIZEOF_RECEIVE_HASH_PARAMETERS_REVISION_1;
+    rss_hash_params->rcv_hash_params.HashInformation =
+        adapter->rss.hash_info;
+
+    if (adapter->rss.rss_mode == VNIF_RSS_HASHING) {
+        rss_hash_params->rcv_hash_params.Flags =
+            NDIS_RECEIVE_HASH_FLAG_ENABLE_HASH;
+    }
+
+    rss_hash_params->rcv_hash_params.HashSecretKeySize =
+        adapter->rss.hash_secret_key_sz;
+
+    NdisMoveMemory(rss_hash_params->hash_secret_key,
+        adapter->rss.hash_secret_key,
+        rss_hash_params->rcv_hash_params.HashSecretKeySize);
+
+    rss_hash_params->rcv_hash_params.HashSecretKeyOffset =
+        FIELD_OFFSET(vnif_rss_hash_params_t, hash_secret_key);
+}
+
+NDIS_STATUS
+vnif_rss_set_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
+                                  NDIS_RECEIVE_HASH_PARAMETERS *rss_params,
+                                  ULONG rss_params_len,
+                                  PULONG bytes_read,
+                                  PULONG bytes_needed)
+{
+    if (adapter->b_rss_supported == FALSE) {
+        return NDIS_STATUS_NOT_SUPPORTED;
+    }
+
+    if (rss_params_len < sizeof(NDIS_RECEIVE_HASH_PARAMETERS))
+        return NDIS_STATUS_INVALID_LENGTH;
+
+    *bytes_read += sizeof(NDIS_RECEIVE_HASH_PARAMETERS);
+
+    if (adapter->rss.rss_mode == VNIF_RSS_FULL) {
+        /* Don't try to enable hashing while full RSS is on. */
+        /* Disable hashing and clear parameters is OK. */
+        if (rss_params->Flags & NDIS_RECEIVE_HASH_FLAG_ENABLE_HASH) {
+            if (!(rss_params->Flags
+                        & NDIS_RECEIVE_HASH_FLAG_HASH_INFO_UNCHANGED)
+                    && (rss_params->HashInformation != 0)) {
+                return NDIS_STATUS_NOT_SUPPORTED;
+            }
+            if ((rss_params->Flags & NDIS_RECEIVE_HASH_FLAG_HASH_INFO_UNCHANGED)
+                && (adapter->rss.hash_info != 0)) {
+                return NDIS_STATUS_NOT_SUPPORTED;
+            }
+        }
+    }
+
+    if (!(rss_params->Flags & NDIS_RECEIVE_HASH_FLAG_HASH_INFO_UNCHANGED) &&
+        (!vnif_rss_is_valid_hash_info(adapter, rss_params->HashInformation))) {
+        return NDIS_STATUS_INVALID_PARAMETER;
+    }
+
+    if ((!(rss_params->Flags & NDIS_RECEIVE_HASH_FLAG_HASH_KEY_UNCHANGED))
+            && ((rss_params->HashSecretKeySize >
+                 NDIS_RSS_HASH_SECRET_KEY_MAX_SIZE_REVISION_2)
+                    || (rss_params_len <
+                        (rss_params->HashSecretKeyOffset
+                            + rss_params->HashSecretKeySize)))) {
+        return NDIS_STATUS_INVALID_LENGTH;
+    }
+
+    if (!(rss_params->Flags & NDIS_RECEIVE_HASH_FLAG_HASH_INFO_UNCHANGED)) {
+        adapter->rss.hash_info = rss_params->HashInformation;
+    }
+
+    if (!(rss_params->Flags & NDIS_RECEIVE_HASH_FLAG_HASH_KEY_UNCHANGED)) {
+        adapter->rss.hash_secret_key_sz = rss_params->HashSecretKeySize;
+
+        NdisMoveMemory(adapter->rss.hash_secret_key,
+                       (char*)rss_params + rss_params->HashSecretKeyOffset,
+                       rss_params->HashSecretKeySize);
+
+        *bytes_read += rss_params->HashSecretKeySize;
+    }
+
+    if (adapter->rss.rss_mode != VNIF_RSS_FULL) {
+        adapter->rss.rss_mode =
+            ((rss_params->Flags & NDIS_RECEIVE_HASH_FLAG_ENABLE_HASH)
+                && (rss_params->HashInformation != 0))
+            ? VNIF_RSS_HASHING : VNIF_RSS_DISABLED;
+    }
+
+    vnif_rss_move_rx(adapter);
+
+    return NDIS_STATUS_SUCCESS;
+}
+
 NDIS_STATUS
 vnif_rss_setup_queue_dpc_path(PVNIF_ADAPTER adapter, UINT path_id)
 {
-#if NDIS620_MINIPORT_SUPPORT
+#if NDIS_SUPPORT_NDIS620
     NDIS_STATUS status;
     PROCESSOR_NUMBER proc_num;
-#endif
 
-#if NDIS_SUPPORT_NDIS620
     status = KeGetProcessorNumberFromIndex(path_id, &proc_num);
     if (status != NDIS_STATUS_SUCCESS) {
         PRINTK(("[%s] - KeGetProcessorNumberFromIndex failed idx %d - %d\n",
@@ -1171,7 +1291,7 @@ vnif_rss_dbg_dump_map(PVNIF_ADAPTER adapter)
             if (rcvq == VNIF_NO_RECEIVE_QUEUE) {
                 rcvq = 0;
             }
-    #if NDIS620_MINIPORT_SUPPORT
+    #if NDIS_SUPPORT_NDIS620
             KeGetProcessorNumberFromIndex(cpu_idx, &target_processor);
             if (adapter->rcv_q[rcvq].rcv_processor.Number
                     != target_processor.Number) {
