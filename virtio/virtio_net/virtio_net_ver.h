@@ -29,7 +29,7 @@
 #define _VIRTIO_NET_VER_H
 
 
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
 #if defined ARCH_x86
 #define VER_FILEVERSION             2,6,1,03
 #define VER_FILEVERSION_STR         "2.6.1.03\0"

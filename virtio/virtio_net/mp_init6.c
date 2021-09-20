@@ -693,7 +693,7 @@ VNIFSetupNdisAdapterEx(PVNIF_ADAPTER adapter)
     do {
         adapter->ResetTimer = NULL;
         adapter->rcv_timer = NULL;
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         if (g_running_hypervisor == HYPERVISOR_KVM) {
             adapter->poll_timer = NULL;
             KeInitializeDpc(&adapter->poll_dpc, vnif_poll_dpc, adapter);
@@ -725,7 +725,7 @@ VNIFSetupNdisAdapterEx(PVNIF_ADAPTER adapter)
             break;
         }
 
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         if (g_running_hypervisor == HYPERVISOR_KVM) {
             Timer.TimerFunction = VNIFPollTimerDpc;
             Timer.FunctionContext = adapter;
@@ -763,7 +763,7 @@ VNIFSetupNdisAdapterEx(PVNIF_ADAPTER adapter)
             NdisFreeTimerObject(adapter->rcv_timer);
             adapter->rcv_timer = NULL;
         }
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
         if (g_running_hypervisor == HYPERVISOR_KVM) {
             if (adapter->poll_timer) {
                 NdisFreeTimerObject(adapter->poll_timer);
@@ -1073,7 +1073,7 @@ VNIFFreeAdapterEx(PVNIF_ADAPTER adapter)
         NdisFreeTimerObject(adapter->rcv_timer);
         adapter->rcv_timer = NULL;
     }
-#if defined NDIS60_MINIPORT
+#if NDIS_SUPPORT_NDIS6
     if (g_running_hypervisor == HYPERVISOR_KVM) {
         if (adapter->poll_timer) {
             NdisAcquireSpinLock(&adapter->adapter_flag_lock);
