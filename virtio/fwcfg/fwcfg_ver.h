@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2018-2020 SUSE LLC
+ * Copyright 2018-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,9 +28,9 @@
 #define _FWCFG_VER_H
 
 
-#define VER_FILEVERSION             1,0,0,03
-#define VER_FILEVERSION_STR         "1.0.0.03\0"
+#define VER_FILEVERSION             1,0,0,04
+#define VER_FILEVERSION_STR         "1.0.0.04\0"
 
-#define VER_LEGALCOPYRIGHT_STR  "Copyright \251 2018 SUSE All rights reserved.  Copyright \251 2018 Virtuozzo International GmbH"
+#define VER_LEGALCOPYRIGHT_STR  "Copyright \251 2018-2021 SUSE All rights reserved.  Copyright \251 2018 Virtuozzo International GmbH"
 
 #endif

@@ -299,6 +299,9 @@
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
+    <Link>
+      <CETCompat>true</CETCompat>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|x64'">
     <ClCompile>
@@ -333,6 +336,9 @@
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
+    <Link>
+      <CETCompat>true</CETCompat>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|x64'">
     <ClCompile>
