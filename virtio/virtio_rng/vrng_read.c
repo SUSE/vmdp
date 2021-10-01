@@ -79,8 +79,9 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
 
     DPRINTK(DPRTL_ON, ("--> %s: request %p\n", __func__, request));
 
-    entry = (read_buffer_entry_t *)ExAllocatePoolWithTag(NonPagedPoolNx,
-        sizeof(read_buffer_entry_t), VRNG_POOL_TAG);
+    entry = (read_buffer_entry_t *)EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                                 sizeof(read_buffer_entry_t),
+                                                 VRNG_POOL_TAG);
 
     if (entry == NULL) {
         PRINTK(("Failed to allocate a read entry."));
@@ -96,7 +97,7 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
     }
 
     len = min(len, PAGE_SIZE);
-    entry->buffer = ExAllocatePoolWithTag(NonPagedPoolNx, len, VRNG_POOL_TAG);
+    entry->buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, len, VRNG_POOL_TAG);
 
     if (entry->buffer == NULL) {
         PRINTK(("Failed to allocate a read buffer."));

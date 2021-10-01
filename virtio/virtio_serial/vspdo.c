@@ -594,9 +594,7 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         RPRINTK(DPRTL_PNP, ("BusQueryDeviceID/HardwareIDs.\n"));
         length = device_id.Length + sizeof(WCHAR) + sizeof(WCHAR); /* 2 NULLs */
 
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                       length,
-                                       VSERIAL_POOL_TAG);
+        buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, length, VSERIAL_POOL_TAG);
 
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -619,8 +617,9 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         if (status != STATUS_SUCCESS) {
             break;
         }
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length * sizeof(WCHAR),
-            VSERIAL_POOL_TAG);
+        buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                               length * sizeof(WCHAR),
+                               VSERIAL_POOL_TAG);
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             break;
@@ -661,9 +660,7 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
             model = VSERIAL_MODEL;
 
             length = (wcslen(L"vportXXpYY") + 2) * sizeof(WCHAR); /* 2 nulls */
-            buffer = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                           length,
-                                           VSERIAL_POOL_TAG);
+            buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, length, VSERIAL_POOL_TAG);
             if (buffer == NULL) {
                 status = STATUS_INSUFFICIENT_RESOURCES;
                 PRINTK(("PDOQueryDeviceText failed to allocate memory\n"));
@@ -681,9 +678,7 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         break;
     case DeviceTextLocationInformation:
         length = (wcslen(VSERIAL_TEXT_LOCATION_NAME_WSTR) + 2) * sizeof(WCHAR);
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                       length,
-                                       VSERIAL_POOL_TAG);
+        buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, length, VSERIAL_POOL_TAG);
         if (buffer == NULL) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             PRINTK(("PDOQueryDeviceText Location failed to alloc memory\n"));
@@ -741,9 +736,9 @@ PDOQueryDeviceRelations(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     case TargetDeviceRelation:
         RPRINTK(DPRTL_ON, ("  TargetDeviceRelation\n"));
         deviceRelations = (PDEVICE_RELATIONS)
-            ExAllocatePoolWithTag (NonPagedPoolNx,
-                                   sizeof(DEVICE_RELATIONS),
-                                   VSERIAL_POOL_TAG);
+            EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                          sizeof(DEVICE_RELATIONS),
+                          VSERIAL_POOL_TAG);
         if (!deviceRelations) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             break;
@@ -785,10 +780,9 @@ PDOQueryBusInformation(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     PAGED_CODE();
 
     RPRINTK(DPRTL_ON, ("--> %s\n", __func__));
-    busInfo = ExAllocatePoolWithTag (
-        NonPagedPoolNx,
-        sizeof(PNP_BUS_INFORMATION),
-        VSERIAL_POOL_TAG);
+    busInfo = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                            sizeof(PNP_BUS_INFORMATION),
+                            VSERIAL_POOL_TAG);
 
     if (busInfo == NULL) {
         return STATUS_INSUFFICIENT_RESOURCES;

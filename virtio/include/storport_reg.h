@@ -32,8 +32,10 @@
 #include <ntstrsafe.h>
 #include <win_vxprintk.h>
 
+#define MAX_REG_VAL_LEN 256
+
 NTSTATUS sp_registry_read(void *dev_ext, PUCHAR val_name, DWORD r_type,
-                          void *val, ULONG *len);
+                          void *val);
 
 NTSTATUS sp_get_reg_value(PWSTR key, PWSTR name, DWORD *value);
 NTSTATUS sp_set_reg_value(PWSTR key, PWSTR name, DWORD value);

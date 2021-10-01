@@ -109,9 +109,6 @@ DriverEntry(IN void *DriverObject, IN void *RegistryPath)
     case HYPERVISOR_XEN:
         irql = KeGetCurrentIrql();
         vxsb_print_port = XENBUS_PRINTK_PORT;
-        if (irql <= DISPATCH_LEVEL) {
-            PRINTK(("%s %s.\n", PVVX_LOADING_STR, PVVX_XEN_DRV_STR));
-        }
         if (irql == PASSIVE_LEVEL) {
             /*
              * If we get loaded before xenbus, then we are in a non-normal

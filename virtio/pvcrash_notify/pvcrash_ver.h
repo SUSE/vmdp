@@ -28,8 +28,8 @@
 #define _PVCRASH_VER_H
 
 
-#define VER_FILEVERSION             1,0,0,04
-#define VER_FILEVERSION_STR         "1.0.0.04\0"
+#define VER_FILEVERSION             1,0,0,05
+#define VER_FILEVERSION_STR         "1.0.0.05\0"
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2017-2021 SUSE All rights reserved.", "\0"
 

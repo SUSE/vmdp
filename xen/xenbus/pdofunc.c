@@ -431,7 +431,7 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         RPRINTK(DPRTL_PNP, ("BusQueryDeviceID.\n"));
         length = pdx->HardwareIDs.Length + 2 * sizeof(WCHAR);
 
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length, XENBUS_POOL_TAG);
+        buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, length, XENBUS_POOL_TAG);
 
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -459,8 +459,9 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         if (status != STATUS_SUCCESS) {
             break;
         }
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length * sizeof(WCHAR),
-            XENBUS_POOL_TAG);
+        buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                               length * sizeof(WCHAR),
+                               XENBUS_POOL_TAG);
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             break;
@@ -476,7 +477,7 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         RPRINTK(DPRTL_PNP, ("BusQueryHarwareIDs.\n"));
         length = pdx->HardwareIDs.Length + 2 * sizeof(WCHAR);
 
-        buffer = ExAllocatePoolWithTag(NonPagedPoolNx, length, XENBUS_POOL_TAG);
+        buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, length, XENBUS_POOL_TAG);
 
         if (!buffer) {
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -535,10 +536,9 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
             }
 
             length = (wcslen(VENDORNAME) + 2 + wcslen(model) + 1);
-            buffer = ExAllocatePoolWithTag
-                (NonPagedPoolNx,
-                 length * sizeof(WCHAR),
-                 XENBUS_POOL_TAG);
+            buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                   length * sizeof(WCHAR),
+                                   XENBUS_POOL_TAG);
             if (buffer == NULL) {
                 status = STATUS_INSUFFICIENT_RESOURCES;
                 break;
@@ -585,8 +585,9 @@ PDOQueryResources(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     resourceListSize = sizeof(CM_RESOURCE_LIST)
         + sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR);
 
-    resourceList = ExAllocatePoolWithTag (PagedPool,
-        resourceListSize, XENBUS_POOL_TAG);
+    resourceList = EX_ALLOC_POOL(VPOOL_PAGED,
+                                 resourceListSize,
+                                 XENBUS_POOL_TAG);
 
     if (resourceList == NULL) {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -655,10 +656,9 @@ PDOQueryResourceRequirements(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     resourceListSize = sizeof(IO_RESOURCE_REQUIREMENTS_LIST)
         + sizeof(IO_RESOURCE_LIST);
 
-    resourceList = ExAllocatePoolWithTag (
-        PagedPool,
-        resourceListSize,
-        XENBUS_POOL_TAG);
+    resourceList = EX_ALLOC_POOL(VPOOL_PAGED,
+                                 resourceListSize,
+                                 XENBUS_POOL_TAG);
 
     if (resourceList == NULL) {
         status = STATUS_INSUFFICIENT_RESOURCES;
@@ -720,9 +720,9 @@ PDOQueryDeviceRelations(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     switch (stack->Parameters.QueryDeviceRelations.Type) {
     case TargetDeviceRelation:
         deviceRelations = (PDEVICE_RELATIONS)
-            ExAllocatePoolWithTag (NonPagedPoolNx,
-                                   sizeof(DEVICE_RELATIONS),
-                                   XENBUS_POOL_TAG);
+            EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                          sizeof(DEVICE_RELATIONS),
+                          XENBUS_POOL_TAG);
         if (!deviceRelations) {
             status = STATUS_INSUFFICIENT_RESOURCES;
             break;
@@ -761,10 +761,9 @@ PDOQueryBusInformation(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 
     PAGED_CODE();
 
-    busInfo = ExAllocatePoolWithTag (
-      NonPagedPoolNx,
-      sizeof(PNP_BUS_INFORMATION),
-      XENBUS_POOL_TAG);
+    busInfo = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                            sizeof(PNP_BUS_INFORMATION),
+                            XENBUS_POOL_TAG);
 
     if (busInfo == NULL) {
         return STATUS_INSUFFICIENT_RESOURCES;

@@ -160,7 +160,7 @@ register_dpc_to_evtchn(ULONG evtchn,
             evtchns[evtchn].u.routine = dpcroutine;
             evtchns[evtchn].context = dpccontext;
         } else {
-            dpc = ExAllocatePoolWithTag(NonPagedPoolNx,
+            dpc = EX_ALLOC_POOL(VPOOL_NON_PAGED,
                 sizeof(KDPC), XENBUS_POOL_TAG);
             if (dpc == NULL) {
                 return STATUS_INSUFFICIENT_RESOURCES;

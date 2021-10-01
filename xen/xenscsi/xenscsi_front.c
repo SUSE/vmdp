@@ -48,7 +48,7 @@ kasprintf(size_t len, const char *fmt, ...)
     va_list ap;
     char *p;
 
-    p = ExAllocatePoolWithTag(NonPagedPoolNx, len + 1, XENSCSI_TAG_GENERAL);
+    p = EX_ALLOC_POOL(VPOOL_NON_PAGED, len + 1, XENSCSI_TAG_GENERAL);
     if (!p) {
         return NULL;
     }
@@ -182,7 +182,7 @@ vs_setup_ring(struct vscsi_front_info *info)
     do {
         info->ring_ref = GRANT_INVALID_REF;
 
-        sring = ExAllocatePoolWithTag(NonPagedPoolNx,
+        sring = EX_ALLOC_POOL(VPOOL_NON_PAGED,
             PAGE_SIZE, XENSCSI_TAG_GENERAL);
         if (!sring) {
             PRINTK(("vs_setup_ring: failed to allocate sring.\n"));
@@ -448,7 +448,7 @@ vs_add_device(vscsi_dev_t **sdev_array, LIST_ENTRY *sdev_lst,
         return NULL;
     }
 
-    sdev = ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(vscsi_dev_t),
+    sdev = EX_ALLOC_POOL(VPOOL_NON_PAGED, sizeof(vscsi_dev_t),
         XENSCSI_TAG_GENERAL);
 
     if (sdev) {

@@ -400,10 +400,9 @@ virtio_bln_dpc(PKDPC dpc, void *context, void *s1, void *s2)
         return;
     }
 
-    vwork_item = ExAllocatePoolWithTag(
-        NonPagedPoolNx,
-        sizeof(virtio_bln_work_item_t),
-        VIRTIO_BLN_POOL_TAG);
+    vwork_item = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                               sizeof(virtio_bln_work_item_t),
+                               VIRTIO_BLN_POOL_TAG);
 
     if (vwork_item) {
         vwork_item->work_item = IoAllocateWorkItem(fdx->Self);
@@ -588,10 +587,10 @@ wdm_device_virtio_init(PFDO_DEVICE_EXTENSION fdx)
                 status = STATUS_INSUFFICIENT_RESOURCES;
                 break;
             }
-            fdx->stats = ExAllocatePoolWithTag(
-                NonPagedPoolNx,
-                sizeof(virtio_bln_stat_t) * VIRTIO_BALLOON_S_NR,
-                VIRTIO_BLN_POOL_TAG);
+            fdx->stats = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                       sizeof(virtio_bln_stat_t)
+                                            * VIRTIO_BALLOON_S_NR,
+                                       VIRTIO_BLN_POOL_TAG);
             if (fdx->stats == NULL) {
                 PRINTK(("%s %s: balloon failed to alloc stat pool.\n",
                         VDEV_DRIVER_NAME, __func__));
@@ -604,10 +603,9 @@ wdm_device_virtio_init(PFDO_DEVICE_EXTENSION fdx)
             virtio_bln_update_stats(fdx);
         }
 
-        fdx->pfn_list = ExAllocatePoolWithTag(
-            NonPagedPoolNx,
-            PAGE_SIZE,
-            VIRTIO_BLN_POOL_TAG);
+        fdx->pfn_list = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                      PAGE_SIZE,
+                                      VIRTIO_BLN_POOL_TAG);
         if (fdx->pfn_list == NULL) {
             PRINTK(("%s %s: balloon failed to alloc pfn list.\n",
                     VDEV_DRIVER_NAME, __func__));

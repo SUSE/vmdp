@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2020 SUSE LLC
+ * Copyright 2020-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,7 +28,7 @@
 #define _VIRTIO_UTILS_H
 
 #include <win_stdint.h>
-#include <win_mmio_map.h>
+#include <win_exalloc.h>
 
 #ifndef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
@@ -36,12 +36,12 @@
 
 #define VIRTIO_POOL_TAG         ((ULONG)'OI_V')
 
-#define VIRTIO_ALLOC(_len)                                              \
-    ExAllocatePoolWithTagPriority(                                      \
-        NonPagedPoolNx,                                                 \
-        (_len),                                                         \
-        VIRTIO_POOL_TAG,                                                \
-        NormalPoolPriority);
+#define VIRTIO_ALLOC(_addr, _len)                                       \
+    EX_ALLOC_POOL_PRIORITY((_addr),                                     \
+                           VPOOL_NON_PAGED,                             \
+                           (_len),                                      \
+                           VIRTIO_POOL_TAG,                             \
+                           NormalPoolPriority);
 
 #define VIRTIO_FREE(_addr) ExFreePoolWithTag((_addr), VIRTIO_POOL_TAG)
 

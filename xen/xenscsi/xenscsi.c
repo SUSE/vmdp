@@ -168,7 +168,6 @@ XenScsiInitDevExt(
 #endif
     NTSTATUS status = 0;
     PACCESS_RANGE accessRange = &((*(config_info->AccessRanges))[0]);
-    ULONG len;
 
     KeInitializeDpc(&dev_ext->restart_dpc, XenScsiRestartDpc, dev_ext);
 
@@ -179,13 +178,11 @@ XenScsiInitDevExt(
     if (irql <= DISPATCH_LEVEL) {
         if (irql == PASSIVE_LEVEL) {
             dev_ext->op_mode = OP_MODE_NORMAL;
-            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
-                             &dbg_print_mask, &len);
+                             &dbg_print_mask);
 #ifdef DBG
-            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
-                             &conditional_times_to_print_limit, &len);
+                             &conditional_times_to_print_limit);
 #endif
         } else {
             PRINTK(("XenScsi: setting up for hibernate\n"));
@@ -1026,8 +1023,8 @@ XenScsiStartReadWrite(XENSCSI_DEVICE_EXTENSION *dev_ext,
                 ((uint32_t)srb_ext->sys_sgl->List[0].PhysicalAddress.QuadPart),
                 Srb->DataTransferLength,
                 KeGetCurrentIrql()));
-            srb_ext->va = ExAllocatePoolWithTag(
-                NonPagedPoolNx,
+            srb_ext->va = EX_ALLOC_POOL(
+                VPOOL_NON_PAGED,
                 (((size_t)Srb->DataTransferLength >> PAGE_SHIFT)
                     + PAGE_ROUND_UP) << PAGE_SHIFT,
                 XENSCSI_TAG_GENERAL);

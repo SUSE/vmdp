@@ -27,10 +27,6 @@
 #ifndef _WIN_MMIO_MAP_H
 #define _WIN_MMIO_MAP_H
 
-#if WINVER < 0x602
-#define NonPagedPoolNx NonPagedPool
-#endif
-
 #if WINVER >= 0xA00
 #define mm_map_io_space(_start, _len, _flags)                                \
     MmMapIoSpaceEx((_start),                                                 \

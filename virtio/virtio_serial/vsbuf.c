@@ -37,19 +37,17 @@ vserial_alloc_buffer(IN size_t buf_size)
 
     DPRINTK(DPRTL_TRC, ("--> %s\n", __func__));
 
-    buf = ExAllocatePoolWithTag(
-        NonPagedPoolNx,
-        sizeof(port_buffer_t),
-        VSERIAL_POOL_TAG);
+    buf = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                        sizeof(port_buffer_t),
+                        VSERIAL_POOL_TAG);
     if (buf == NULL) {
         RPRINTK(DPRTL_ON, ("%s: failed to alloc buf\n", __func__));
         return NULL;
     }
 
-    buf->va_buf = ExAllocatePoolWithTag(
-        NonPagedPoolNx,
-        buf_size,
-        VSERIAL_POOL_TAG);
+    buf->va_buf = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                buf_size,
+                                VSERIAL_POOL_TAG);
     if (buf->va_buf == NULL) {
         RPRINTK(DPRTL_ON, ("%s: failed to alloc va_buf\n", __func__));
         ExFreePoolWithTag(buf, VSERIAL_POOL_TAG);

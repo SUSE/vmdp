@@ -104,7 +104,7 @@ blkfront_probe(struct blkfront_info *info)
                              * info->max_segs_per_req) +
                              (sizeof(unsigned long)
                              * info->max_segs_per_req))));
-    buf = ExAllocatePoolWithTag(NonPagedPoolNx,
+    buf = EX_ALLOC_POOL(VPOOL_NON_PAGED,
         BLK_RING_SIZE * ((sizeof(void *) * info->max_segs_per_req) +
             (sizeof(unsigned long) * info->max_segs_per_req)),
         XENBLK_TAG_GENERAL);
@@ -457,9 +457,9 @@ xenblk_setup_sring(struct blkfront_info *info)
     unsigned int nr;
     int err = 0;
 
-    sring = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                  (size_t)info->ring_size * PAGE_SIZE,
-                                  XENBLK_TAG_GENERAL);
+    sring = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                          (size_t)info->ring_size * PAGE_SIZE,
+                          XENBLK_TAG_GENERAL);
     if (!sring) {
         xenbus_printf(XBT_NIL, info->nodename, "allocating shared ring", "%x",
             -ENOMEM);
@@ -505,9 +505,9 @@ xenblk_setup_indirect_refs(struct blkfront_info *info,
             old_ring_size = 0;
         }
         if (old_ring_size < ring_size) {
-            segs = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                         ring_size * sizeof(*segs),
-                                         XENBLK_TAG_GENERAL);
+            segs = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                 ring_size * sizeof(*segs),
+                                 XENBLK_TAG_GENERAL);
             RPRINTK(DPRTL_ON, ("  ring_size %u, sizeof(*segs) %u: %p\n",
                                ring_size, (unsigned int)sizeof(*segs), segs));
             if (segs == NULL) {
@@ -520,10 +520,10 @@ xenblk_setup_indirect_refs(struct blkfront_info *info,
         }
         for (i = old_ring_size; i < ring_size; ++i) {
             info->indirect_segs[i] =
-                ExAllocatePoolWithTag(NonPagedPoolNx,
-                                      BLKIF_INDIRECT_PAGES(
-                                          info->max_segs_per_req) * PAGE_SIZE,
-                                      XENBLK_TAG_GENERAL);
+                EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                              BLKIF_INDIRECT_PAGES(
+                                  info->max_segs_per_req) * PAGE_SIZE,
+                              XENBLK_TAG_GENERAL);
             if (info->indirect_segs[i] == NULL) {
                 return STATUS_UNSUCCESSFUL;
             }
@@ -534,14 +534,15 @@ xenblk_setup_indirect_refs(struct blkfront_info *info,
 
 static NTSTATUS xenblk_setup_shadow(struct blkfront_info *info)
 {
+    struct blk_shadow *shadow;
     unsigned long *frame;
     unsigned int i, ring_size, shadow_frames;
 
     ring_size = RING_SIZE(&info->ring);
     info->shadow_free = 0;
-    info->shadow = ExAllocatePoolWithTag(NonPagedPoolNx,
-        ring_size * sizeof(struct blk_shadow),
-        XENBLK_TAG_GENERAL);
+    info->shadow = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                 ring_size * sizeof(struct blk_shadow),
+                                 XENBLK_TAG_GENERAL);
     if (info->shadow == NULL) {
         return STATUS_UNSUCCESSFUL;
     }
@@ -551,19 +552,22 @@ static NTSTATUS xenblk_setup_shadow(struct blkfront_info *info)
     } else {
         shadow_frames = BLKIF_MAX_SEGMENTS_PER_REQUEST;
     }
+    shadow = info->shadow;
     for (i = 0; i < ring_size; i++) {
-        info->shadow[i].frame = ExAllocatePoolWithTag(NonPagedPoolNx,
+        shadow->frame = EX_ALLOC_POOL(VPOOL_NON_PAGED,
             (size_t)shadow_frames * sizeof(*frame),
             XENBLK_TAG_GENERAL);
-        if (info->shadow[i].frame == NULL) {
+        if (shadow->frame == NULL) {
             return STATUS_UNSUCCESSFUL;
         }
-        info->shadow[i].req.id = (uint64_t)i + 1;
-        info->shadow[i].req.nr_segments = 0;
-        info->shadow[i].request = NULL;
-        memset(info->shadow[i].frame, ~0, shadow_frames * sizeof(*frame));
+        shadow->req.id = (uint64_t)i + 1;
+        shadow->req.nr_segments = 0;
+        shadow->request = NULL;
+        memset(shadow->frame, ~0, shadow_frames * sizeof(*frame));
+        shadow++;
     }
-    info->shadow[i - 1].req.id = 0x0fffffff;
+    shadow--;
+    shadow->req.id = 0x0fffffff;
     return STATUS_SUCCESS;
 }
 

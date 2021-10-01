@@ -241,8 +241,8 @@ vserial_port_create_name(
         length = buf->len - buf->offset - sizeof(VIRTIO_CONSOLE_CONTROL);
         port->NameString.Length = (USHORT)length;
         port->NameString.MaximumLength = port->NameString.Length + 1;
-        port->NameString.Buffer = (PCHAR)ExAllocatePoolWithTag(
-           NonPagedPoolNx,
+        port->NameString.Buffer = (PCHAR)EX_ALLOC_POOL(
+           VPOOL_NON_PAGED,
            port->NameString.MaximumLength,
            VSERIAL_POOL_TAG);
         if (port->NameString.Buffer) {
@@ -523,7 +523,7 @@ vserial_port_pnp_notify(PPDO_DEVICE_EXTENSION port)
         + sizeof(port_status_change_t);
 
     notification = (PTARGET_DEVICE_CUSTOM_NOTIFICATION)
-        ExAllocatePoolWithTag(NonPagedPoolNx, requiredSize, VSERIAL_POOL_TAG);
+        EX_ALLOC_POOL(VPOOL_NON_PAGED, requiredSize, VSERIAL_POOL_TAG);
 
     if (notification == NULL) {
         PRINTK(("%s failed to alloc the notification\n", __func__));
@@ -748,7 +748,7 @@ vserial_port_write(PPDO_DEVICE_EXTENSION port, IN PIRP request)
     IoSetCancelRoutine(request, vserial_port_write_request_cancel);
     IoReleaseCancelSpinLock(irql);
 
-    buffer = ExAllocatePoolWithTag(NonPagedPoolNx, len, VSERIAL_POOL_TAG);
+    buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, len, VSERIAL_POOL_TAG);
 
     if (buffer == NULL) {
         PRINTK(("Failed to write allocate.\n"));
@@ -759,8 +759,9 @@ vserial_port_write(PPDO_DEVICE_EXTENSION port, IN PIRP request)
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
-    entry = (write_buffer_entry_t *)ExAllocatePoolWithTag(NonPagedPoolNx,
-        sizeof(write_buffer_entry_t), VSERIAL_POOL_TAG);
+    entry = (write_buffer_entry_t *)EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                                  sizeof(write_buffer_entry_t),
+                                                  VSERIAL_POOL_TAG);
 
     if (entry == NULL) {
         PRINTK(("Failed to allocate write buffer entry.\n"));

@@ -236,9 +236,9 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
             if (fdx->pnpstate == NotStarted) {
                 status = wdm_start_device(DeviceObject, raw, translated);
                 if (NT_SUCCESS(status)) {
-                    vwork_item = ExAllocatePoolWithTag(NonPagedPoolNx,
-                        sizeof(virtio_bln_work_item_t),
-                        VIRTIO_BLN_POOL_TAG);
+                    vwork_item = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                               sizeof(virtio_bln_work_item_t),
+                                               VIRTIO_BLN_POOL_TAG);
                     if (vwork_item) {
                         vwork_item->fdx = fdx;
                         vwork_item->work_item = NULL;

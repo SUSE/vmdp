@@ -204,7 +204,7 @@ fwcfg_get_kdbg(PFDO_DEVICE_EXTENSION fdx)
     NTSTATUS status = STATUS_SUCCESS;
 
     RPRINTK(DPRTL_ON, ("--> %s %s\n", VDEV_DRIVER_NAME, __func__));
-    minidump = ExAllocatePoolWithTag(NonPagedPoolNx, 0x40000, 'pmdm');
+    minidump = EX_ALLOC_POOL(VPOOL_NON_PAGED, 0x40000, 'pmdm');
     if (minidump == NULL) {
         RPRINTK(DPRTL_ON, ("<-- %s %s: status %x\n",
                            VDEV_DRIVER_NAME, __func__, status));
@@ -216,7 +216,7 @@ fwcfg_get_kdbg(PFDO_DEVICE_EXTENSION fdx)
     kdbg_offset = *(PULONG32)(minidump + MINIDUMP_OFFSET_KDBG_OFFSET);
     kdbg_size = *(PULONG32)(minidump + MINIDUMP_OFFSET_KDBG_SIZE);
 
-    fdx->kdbg = ExAllocatePoolWithTag(NonPagedPoolNx, kdbg_size, 'gbdk');
+    fdx->kdbg = EX_ALLOC_POOL(VPOOL_NON_PAGED, kdbg_size, 'gbdk');
     if (fdx->kdbg == NULL) {
         status = STATUS_MEMORY_NOT_ALLOCATED;
     } else {

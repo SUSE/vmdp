@@ -481,7 +481,7 @@ kasprintf(size_t len, const char *fmt, ...)
     va_list ap;
     char *p;
 
-    p = ExAllocatePoolWithTag(NonPagedPoolNx, len + 1, XENBUS_POOL_TAG);
+    p = EX_ALLOC_POOL(VPOOL_NON_PAGED, len + 1, XENBUS_POOL_TAG);
     if (!p) {
         return NULL;
     }
@@ -526,10 +526,9 @@ split(char *strings, unsigned int len, unsigned int *num)
     *num = strcnt;
 
     /* Transfer to one big alloc for easy freeing. */
-    ret = ExAllocatePoolWithTag(
-        NonPagedPoolNx,
-        strcnt * sizeof(char *) + len,
-        XENBUS_POOL_TAG);
+    ret = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                        strcnt * sizeof(char *) + len,
+                        XENBUS_POOL_TAG);
 
     if (!ret) {
         ExFreePool(strings);
@@ -764,9 +763,9 @@ xenbus_printf(struct xenbus_transaction t,
     NTSTATUS status;
     char *printf_buffer;
 
-    printf_buffer = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                          PRINTF_BUFFER_SIZE,
-                                          XENBUS_POOL_TAG);
+    printf_buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                  PRINTF_BUFFER_SIZE,
+                                  XENBUS_POOL_TAG);
     if (printf_buffer == NULL) {
         return -ENOMEM;
     }
@@ -1113,8 +1112,9 @@ xb_read_msg(void)
             return;
         }
 
-        msg = ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(*msg),
-            XENBUS_POOL_TAG);
+        msg = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                            sizeof(*msg),
+                            XENBUS_POOL_TAG);
         if (msg == NULL) {
             DPRINTK(DPRTL_WAIT, ("xb_read_msg: %x mem failure - OUT\n",
                                  KeGetCurrentProcessorNumber()));
@@ -1144,9 +1144,9 @@ xb_read_msg(void)
             ExFreePool(msg);
             return;
         }
-        body = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                     (uintptr_t)msg->hdr.len + 1,
-                                     XENBUS_POOL_TAG);
+        body = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                             (uintptr_t)msg->hdr.len + 1,
+                             XENBUS_POOL_TAG);
         if (body == NULL) {
             ExFreePool(msg);
             DPRINTK(DPRTL_WAIT, ("xb_read_msg: %x mem failure 3 - OUT\n",

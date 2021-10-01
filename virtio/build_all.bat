@@ -112,7 +112,7 @@ call loadmsbenv.bat
 set t_rebuild_flag=
 if "%pvbuildoption%"=="-cZ" set t_rebuild_flag=c
 
-for %%w in (8 81 10) do (
+for %%w in (8 8.1 10 10-2004) do (
     for %%r in (r d) do (
         for %%x in (3 6) do (
             title Windows %%w %%r %%x

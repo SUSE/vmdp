@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2021 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -25,8 +25,8 @@ REM (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 REM THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 REM
 
-set config_os=Win10
-set target_os=Win10
+set config_os=Win10-2004
+set target_os=Win10-2004
 set config_rd=Release
 set p_platform=x64
 set t_rebuild=
@@ -35,10 +35,13 @@ set sln=
 :parse_params
 if "%1"=="" goto build_it
 
-if %1==10 (
+if %1==10-2004 (
+    set config_os=Win10-2004
+    set target_os=Win10-2004
+) else if %1==10 (
     set config_os=Win10
     set target_os=Win10
-) else if %1==81 (
+) else if %1==8.1 (
     set config_os=Win8.1
     set target_os=Win8.1
 ) else if %1==8 (
@@ -76,7 +79,7 @@ if "%config_os%"=="generic" (
     set msb_config="%config_rd%"
     set ddk_target_os=
 ) else (
-    set msb_config="%config_os% %config_rd%"
+    set msb_config="%config_os%%config_rd%"
     set ddk_target_os=/p:DDK_TARGET_OS="%target_os%"
 )
 
@@ -92,9 +95,10 @@ msbuild %sln% /p:Configuration=%msb_config% /p:Platform=%p_platform% %ddk_target
 goto end
 
 :help
-echo "msb.bat [<sln>] [10|81|8|g] [r|d] [6|3] [c]"
+echo "msb.bat [<sln>] [10-2004|10|8.1|8|g] [r|d] [6|3] [c]"
+echo   10-2004 - Win10-2004
 echo   10 - Win10
-echo   81 - Win8.1
+echo   8.1 - Win8.1
 echo   8 - Win8
 echo   g - architecture generic build
 echo   r - Release
@@ -102,7 +106,7 @@ echo   d - Debug
 echo   6 - x64
 echo   3 - x86
 echo   c - rebuild clean
-echo   default: Win10 Release x64
+echo   default: Win10-2004 Release x64
 
 :end
 set config_os=

@@ -40,7 +40,6 @@ should_checksum_tx(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nb_list,
     uint16_t *flags)
 {
     PNDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO info;
-    NDIS_STATUS status;
 
     info =
         (PNDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO) (

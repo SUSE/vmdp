@@ -261,8 +261,9 @@ FDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
             (((uintptr_t)numNew + (uintptr_t)prevcount)
                 * sizeof(PDEVICE_OBJECT)) - 1;
 
-        relations = (PDEVICE_RELATIONS) ExAllocatePoolWithTag(
-            NonPagedPoolNx, length, XENBUS_POOL_TAG);
+        relations = (PDEVICE_RELATIONS)EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                                     length,
+                                                     XENBUS_POOL_TAG);
 
         if (relations == NULL) {
             ExReleaseFastMutex(&fdx->Mutex);
@@ -561,8 +562,9 @@ FDORemoveDevice(IN PDEVICE_OBJECT fdo)
         RtlZeroMemory(&fdx->ifname, sizeof(UNICODE_STRING));
     }
 
-    gfdx = (PFDO_DEVICE_EXTENSION) ExAllocatePoolWithTag(
-      NonPagedPoolNx, sizeof(FDO_DEVICE_EXTENSION), XENBUS_POOL_TAG);
+    gfdx = (PFDO_DEVICE_EXTENSION)EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                                sizeof(FDO_DEVICE_EXTENSION),
+                                                XENBUS_POOL_TAG);
     if (gfdx) {
         InitializeListHead(&gfdx->ListOfPDOs);
         xenbus_copy_fdx(gfdx, fdx);

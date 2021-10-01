@@ -104,26 +104,24 @@ XenDriverEntry (IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
     }
 
     if (InitializeHypercallPage() == STATUS_SUCCESS) {
-        ginfo = ExAllocatePoolWithTag (
-            NonPagedPoolNx,
-            max_disk_targets * sizeof(void *),
-            XENBUS_POOL_TAG);
+        ginfo = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                              max_disk_targets * sizeof(void *),
+                              XENBUS_POOL_TAG);
 
         if (ginfo == NULL) {
             return STATUS_UNSUCCESSFUL;
         }
-        gsinfo = ExAllocatePoolWithTag (
-            NonPagedPoolNx,
-            max_disk_targets * sizeof(void *),
-            XENBUS_POOL_TAG);
+        gsinfo = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                               max_disk_targets * sizeof(void *),
+                               XENBUS_POOL_TAG);
 
         if (gsinfo == NULL) {
             ExFreePool(ginfo);
             return STATUS_UNSUCCESSFUL;
         }
 
-        g_gnttab_list = ExAllocatePoolWithTag (
-            NonPagedPoolNx,
+        g_gnttab_list = EX_ALLOC_POOL (
+            VPOOL_NON_PAGED,
             gNR_GRANT_ENTRIES * sizeof(grant_ref_t),
             XENBUS_POOL_TAG);
 

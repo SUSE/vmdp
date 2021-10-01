@@ -40,6 +40,7 @@
 #include <asm/win_compat.h>
 #include <asm/win_hypervisor.h>
 #include <win_version.h>
+#include <win_exalloc.h>
 #include <win_xenbus.h>
 #include <xen/public/win_xen.h>
 #include <xen/public/version.h>

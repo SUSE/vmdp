@@ -534,7 +534,6 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
     void *pvoid;
     NTSTATUS status = 0;
     PUCHAR reg_buf;
-    ULONG len;
     DWORD use_packed_rings;
 
     VBIF_ZERO_VALUE(dev_ext->alloc_cnt_i);
@@ -550,17 +549,14 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
     if (irql <= DISPATCH_LEVEL) {
         if (irql == PASSIVE_LEVEL) {
             dev_ext->op_mode = OP_MODE_NORMAL;
-            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
-                             &dbg_print_mask, &len);
-            len = sizeof(uint32_t);
+                             &dbg_print_mask);
             sp_registry_read(dev_ext, PVCTRL_PACKED_RINGS_STR, REG_DWORD,
-                             &use_packed_rings, &len);
+                             &use_packed_rings);
             dev_ext->b_use_packed_rings = (BOOLEAN)use_packed_rings;
 #ifdef DBG
-            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
-                             &conditional_times_to_print_limit, &len);
+                             &conditional_times_to_print_limit);
 #endif
         } else {
             dev_ext->op_mode = OP_MODE_HIBERNATE;
@@ -574,9 +570,8 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
     }
 
     dev_ext->queue_depth = VSP_QUEUE_DEPTH_NOT_SET;
-    len = sizeof(uint32_t);
     sp_registry_read(dev_ext, PVCTRL_QDEPTH_STR, REG_DWORD,
-                     &dev_ext->queue_depth, &len);
+                     &dev_ext->queue_depth);
 #if defined VIRTIO_SCSI_DRIVER
     dev_ext->underruns = 0;
     dev_ext->inquiry_supported = FALSE;

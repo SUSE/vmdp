@@ -37,12 +37,14 @@ set config_os=
 if "%1"=="" goto build_it
 
 :l_loop
-if %1==10 (
-    set config_os=%config_os% Win10
-) else if %1==81 (
-    set config_os=%config_os% Win8.1
+if %1==10-2004 (
+    set config_os=%config_os% Win10-2004Release
+) else if %1==10 (
+    set config_os=%config_os% Win10Release
+) else if %1==8.1 (
+    set config_os=%config_os% Win8.1Release
 ) else if %1==8 (
-    set config_os=%config_os% Win8
+    set config_os=%config_os% Win8Release
 ) else if %1==full (
     set do_full_sdv=yes
 ) else if %1==virtio_balloon (
@@ -73,42 +75,54 @@ shift
 if not "%1"=="" goto l_loop
 
 if "%dvl_drv%"=="" goto help
-if "%config_os%"=="" set config_os=Win10 Win8.1 Win8
+if %config_os%=="" set config_os=Win10-2004Release Win10Release Win8.1Release Win8Release"
 
 :build_it
 
 if not exist dvl mkdir dvl
 
 for %%c in (%config_os%) do (
-    if not exist dvl\%%cRelease mkdir dvl\%%cRelease
-    if not exist dvl\%%cRelease\%cp_platform% mkdir dvl\%%cRelease\%cp_platform%
+    if not exist dvl\%%c mkdir dvl\%%c
+    if not exist dvl\%%c\%cp_platform% mkdir dvl\%%c\%cp_platform%
     for %%d in (%dvl_drv%) do (
         cd %%d
+
+        rmdir /s /q c:\codeql-home\databases\%%d
+        del /s c:\codeql-home\databases\%%d.sarif
+
+        title DVL %%d: %%c create database
+        c:\codeql-home\codeql\codeql.cmd database create -l=cpp -s=C:\vmdp\virtio\%%d -c "msbuild /t:rebuild "C:\vmdp\virtio\%%d\%%d.vcxproj" /p:Configuration=%%c /p:Platform=x64 /p:UseSharedCompilation=false" "C:\codeql-home\databases\%%d" -j 0
+
+        title DVL %%d: %%c analyze database
+        c:\codeql-home\codeql\codeql.cmd database analyze "C:\codeql-home\databases\%%d" windows_driver_recommended.qls --format=sarifv2.1.0 --output=C:\codeql-home\databases\%%d.sarif -j 0
+
+        copy /y C:\codeql-home\databases\%%d.sarif
+
         title DVL %%d: %%c %p_platform% full=%do_full_sdv% clean
-        msbuild /p:Configuration="%%c Release" /p:Platform=%p_platform% /target:clean
+        msbuild /p:Configuration=%%c /p:Platform=%p_platform% /target:clean
 
         if %do_full_sdv%==yes (
             title DVL %%d: %%c %p_platform% full=%do_full_sdv% sdv clean
-            msbuild /p:Configuration="%%c Release" /p:Platform=%p_platform% /target:sdv /p:inputs="/clean"
+            msbuild /p:Configuration=%%c /p:Platform=%p_platform% /target:sdv /p:inputs="/clean"
 
             title DVL %%d: %%c %p_platform% full=%do_full_sdv% sdv check default.sdv
-            msbuild /p:Configuration="%%c Release" /p:Platform=%p_platform% /target:sdv /p:inputs="/check:default.sdv"
+            msbuild /p:Configuration=%%c /p:Platform=%p_platform% /target:sdv /p:inputs="/check:default.sdv"
 
             del smvbuild.log
             del smvstats.txt
         )
 
         title DVL %%d: %%c %p_platform% full=%do_full_sdv% run code analysis once
-        msbuild /p:Configuration="%%c Release" /p:Platform=%p_platform% /P:RunCodeAnalysisOnce=True
+        msbuild /p:Configuration=%%c /p:Platform=%p_platform% /P:RunCodeAnalysisOnce=True
 
         title DVL %%d: %%c %p_platform% full=%do_full_sdv% target dvl
-        msbuild /p:Configuration="%%c Release" /p:Platform=%p_platform% /target:dvl
+        msbuild /p:Configuration=%%c /p:Platform=%p_platform% /target:dvl
 
         if %%d==virtio_scsi (
-            copy vtioscsi.dvl.xml ..\dvl\%%cRelease\%cp_platform%
+            copy /y vtioscsi.dvl.xml ..\dvl\%%c\%cp_platform%
             del vtioscsi.dvl.xml
         ) else (
-            copy %%d.dvl.xml ..\dvl\%%cRelease\%cp_platform%
+            copy /y %%d.dvl.xml ..\dvl\%%c\%cp_platform%
             del %%d.dvl.xml
         )
         cd ..
@@ -118,20 +132,22 @@ for %%c in (%config_os%) do (
 goto end
 
 :help
-echo "msdvl.bat [[10 | 81 | 8] [full] [<driver> | all | vmdp]]"
-echo   all - all platroms all drivers non-full
+echo "msdvl.bat [[10-2004 | 10 | 8.1 | 8] [full] [<driver> | all | vmdp]]"
+echo   all - all platforms all drivers non-full
+echo   10-2004 - Win10-2004
 echo   10 - Win10
-echo   81 - Win8.1
+echo   8.1 - Win8.1
 echo   8 - Win8
 echo   "<driver> - [virtio_balloon | virtio_blk | virtio_net | virtio_scsi | virtio_serial | virtio_rng | pvcrash | fwcfg]"
 echo   "vmdp - virtio_serial | virtio_rng | pvcrash | fwcfg"
-echo   "default: 10 81 8 <driver>"
+echo   "default: 10-2004 10 8.1 8 <driver>"
 echo "Must use the full option at least once"
 
 :end
 cd %mstart_dir%
 set mstart_dir=
 set config_os=
+set dvl_drv=
 set cp_platform=
 set p_platform=
 set do_full_sdv=

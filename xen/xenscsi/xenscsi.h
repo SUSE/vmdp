@@ -53,6 +53,7 @@
 #include <win_xenbus.h>
 #include <win_evtchn.h>
 #include <win_maddr.h>
+#include <win_exalloc.h>
 #include <win_cmp_strtol.h>
 #include <storport_reg.h>
 #include <sp_io_control.h>

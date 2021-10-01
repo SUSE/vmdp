@@ -15,6 +15,7 @@
 *.sdv
 *.db
 *DVL.XML
+*.sarif
 dist/
 dvl/
 sdv/

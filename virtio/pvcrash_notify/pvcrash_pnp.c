@@ -208,10 +208,10 @@ pvcrash_start_device(
                 pvcrash_on_dump_bugCheck,
                 KbCallbackDumpIo,
                 (PUCHAR)("pvcrash_nodify"));
-        }
-        if (res_bchk == FALSE) {
-            PRINTK(("%s: KeRegisterBugCheckReasonCallback failed\n",
-                    VDEV_DRIVER_NAME));
+            if (res_bchk == FALSE) {
+                PRINTK(("%s: KeRegisterBugCheckReasonCallback failed\n",
+                        VDEV_DRIVER_NAME));
+            }
         }
 
         powerState.DeviceState = PowerDeviceD0;

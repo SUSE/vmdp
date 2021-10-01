@@ -492,7 +492,7 @@ virtio_dev_modern_vq_setup(virtio_device_t *vdev,
         if (!NT_SUCCESS(status)) {
             return NULL;
         }
-        vq = VIRTIO_ALLOC(queue_size);
+        VIRTIO_ALLOC(vq, queue_size);
         if (vq == NULL) {
             return NULL;
         }

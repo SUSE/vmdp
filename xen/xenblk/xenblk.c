@@ -183,7 +183,6 @@ XenBlkInitDevExt(
 #endif
     NTSTATUS status = 0;
     PACCESS_RANGE accessRange = &((*(config_info->AccessRanges))[0]);
-    ULONG len;
 
 #ifndef XENBLK_STORPORT
     KeInitializeDpc(&dev_ext->rwdpc, XenBlkStartReadWriteDpc, dev_ext);
@@ -199,16 +198,13 @@ XenBlkInitDevExt(
         if (irql == PASSIVE_LEVEL) {
             dev_ext->qdepth = PVCTRL_MAX_BLK_QDEPTH;
             dev_ext->op_mode = OP_MODE_NORMAL;
-            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_QDEPTH_STR, REG_DWORD,
-                             &dev_ext->qdepth, &len);
-            len = sizeof(uint32_t);
+                             &dev_ext->qdepth);
             sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
-                             &dbg_print_mask, &len);
+                             &dbg_print_mask);
 #ifdef DBG
-            len = sizeof(uint32_t);
             sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
-                             &conditional_times_to_print_limit, &len);
+                             &conditional_times_to_print_limit);
 #endif
         } else {
             PRINTK(("Xenblk: setting up for hibernate\n"));
@@ -616,8 +612,9 @@ XenBlkClaim(XENBLK_DEVICE_EXTENSION *dev_ext)
         }
         RPRINTK(DPRTL_INIT, ("Xenblk: XenBlkClaim - allocate info %d.\n",
                              sizeof(struct blkfront_info)));
-        info = ExAllocatePoolWithTag(NonPagedPoolNx,
-            sizeof(struct blkfront_info), XENBLK_TAG_GENERAL);
+        info = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                             sizeof(struct blkfront_info),
+                             XENBLK_TAG_GENERAL);
         if (info == NULL) {
             PRINTK(("  failed to alloc info.\n"));
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -1481,7 +1478,7 @@ XenBlkStartReadWrite(XENBLK_DEVICE_EXTENSION *dev_ext,
             working_sgl_size = sizeof(STOR_SCATTER_GATHER_LIST)
                 + (sizeof(STOR_SCATTER_GATHER_ELEMENT) *
                     (va_size >> PAGE_SHIFT));
-            srb_ext->va = ExAllocatePoolWithTag(NonPagedPoolNx,
+            srb_ext->va = EX_ALLOC_POOL(VPOOL_NON_PAGED,
                 (size_t)va_size + (size_t)sa_size + (size_t)working_sgl_size,
                 XENBLK_TAG_GENERAL);
             if (srb_ext->va) {

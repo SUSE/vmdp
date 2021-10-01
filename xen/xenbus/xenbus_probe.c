@@ -383,7 +383,7 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
             RPRINTK(DPRTL_PROBE,
                     ("XenbusInitializePDO: allocating PDO, id: %s.\n",
                      nodename));
-            pdo = ExAllocatePoolWithTag(NonPagedPoolNx,
+            pdo = EX_ALLOC_POOL(VPOOL_NON_PAGED,
                 sizeof(DEVICE_OBJECT) + sizeof(PDO_DEVICE_EXTENSION),
                 XENBUS_POOL_TAG);
             if (pdo) {
@@ -425,7 +425,7 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
                 pdx = (PPDO_DEVICE_EXTENSION) pdo->DeviceExtension;
 
                 /* Now alloc the pdo that will represent this disk. */
-                pdo = ExAllocatePoolWithTag(NonPagedPoolNx,
+                pdo = EX_ALLOC_POOL(VPOOL_NON_PAGED,
                     sizeof(DEVICE_OBJECT) + sizeof(PDO_DEVICE_EXTENSION),
                     XENBUS_POOL_TAG);
                 if (pdo) {
@@ -566,8 +566,9 @@ xenbus_type_to_hwid(PPDO_DEVICE_EXTENSION pdx, XENBUS_DEVICE_TYPE xtype)
 
     /* <type>/<id> --> XEN\TYPE_<type>, typelen+10 */
     typelen = strlen("XEN\\TYPE_xxxxx") + 1;
-    hardware_id = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                        typelen, XENBUS_POOL_TAG);
+    hardware_id = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                typelen,
+                                XENBUS_POOL_TAG);
     if (hardware_id == NULL) {
         return STATUS_NO_MEMORY;
     }
@@ -604,8 +605,9 @@ xenbus_type_to_pci_hwid(PPDO_DEVICE_EXTENSION pdx, XENBUS_DEVICE_TYPE xtype)
     NTSTATUS status;
 
     typelen = strlen("PCI\\VEN_1AF4&DEV_100X&SUBSYS_000X1AF4&REV_00") + 1;
-    hardware_id = ExAllocatePoolWithTag(NonPagedPoolNx,
-                                        typelen, XENBUS_POOL_TAG);
+    hardware_id = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                typelen,
+                                XENBUS_POOL_TAG);
     if (hardware_id == NULL) {
         return STATUS_NO_MEMORY;
     }
@@ -652,16 +654,18 @@ xenbus_init_pdx(PDEVICE_OBJECT fdo, PDEVICE_OBJECT pdo,
     RPRINTK(DPRTL_PROBE, ("xenbus_init_pdx: pdo = %p, pdx = %p, obj = %p\n",
                           pdo, pdx, pdo->DriverObject));
 
-    pdx->Nodename = ExAllocatePoolWithTag(NonPagedPoolNx,
-        strlen(nodename) + 1, XENBUS_POOL_TAG);
+    pdx->Nodename = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                  strlen(nodename) + 1,
+                                  XENBUS_POOL_TAG);
     if (pdx->Nodename == NULL) {
         return STATUS_INSUFFICIENT_RESOURCES;
     }
     RtlStringCbCopyA(pdx->Nodename, strlen(nodename) + 1, nodename);
 
     if (subnode) {
-        pdx->subnode = ExAllocatePoolWithTag(NonPagedPoolNx,
-            strlen(subnode) + 1, XENBUS_POOL_TAG);
+        pdx->subnode = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                     strlen(subnode) + 1,
+                                     XENBUS_POOL_TAG);
         if (pdx->subnode == NULL) {
             ExFreePool(pdx->Nodename);
             return STATUS_INSUFFICIENT_RESOURCES;

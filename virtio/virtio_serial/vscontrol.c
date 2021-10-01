@@ -208,9 +208,9 @@ vserial_queue_passive_level_callback(
     NTSTATUS status = STATUS_SUCCESS;
     PWORKER_ITEM_CONTEXT context;
 
-    context = ExAllocatePoolWithTag(NonPagedPoolNx,
-       sizeof(WORKER_ITEM_CONTEXT),
-       VSERIAL_POOL_TAG);
+    context = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                            sizeof(WORKER_ITEM_CONTEXT),
+                            VSERIAL_POOL_TAG);
 
     if (NULL == context) {
         return STATUS_INSUFFICIENT_RESOURCES;

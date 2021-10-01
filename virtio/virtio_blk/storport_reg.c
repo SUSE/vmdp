@@ -28,15 +28,21 @@
 
 NTSTATUS
 sp_registry_read(void *dev_ext, PUCHAR val_name, DWORD r_type,
-                 void *val, ULONG *len)
+                 void *val)
 {
     NTSTATUS status;
     PUCHAR reg_buf;
     BOOLEAN ret;
+    ULONG len;
 
-    reg_buf = StorPortAllocateRegistryBuffer(dev_ext, len);
+    if (r_type == REG_DWORD) {
+        len = sizeof(DWORD);
+    } else {
+        len = MAX_REG_VAL_LEN;
+    }
+    reg_buf = StorPortAllocateRegistryBuffer(dev_ext, &len);
     if (reg_buf != NULL) {
-        ret = StorPortRegistryRead(dev_ext, val_name, 1, r_type, reg_buf, len);
+        ret = StorPortRegistryRead(dev_ext, val_name, 1, r_type, reg_buf, &len);
         if (ret) {
             switch (r_type) {
             case REG_DWORD:
@@ -64,7 +70,7 @@ sp_registry_read(void *dev_ext, PUCHAR val_name, DWORD r_type,
                 break;
             }
         } else {
-            if (*len == 0) {
+            if (len == 0) {
                 status = STATUS_UNSUCCESSFUL;
             } else {
                 status = STATUS_BUFFER_TOO_SMALL;

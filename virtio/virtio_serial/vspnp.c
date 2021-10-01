@@ -233,8 +233,8 @@ wdm_device_virtio_init(IN FDO_DEVICE_EXTENSION *fdx)
             VDEV_DRIVER_NAME, guest_features_list));
     virtio_device_set_guest_feature_list(&fdx->vdev, guest_features_list);
 
-    fdx->in_vqs = (virtio_queue_t **)ExAllocatePoolWithTag(
-       NonPagedPoolNx,
+    fdx->in_vqs = (virtio_queue_t **)EX_ALLOC_POOL(
+       VPOOL_NON_PAGED,
        fdx->console_config.max_nr_ports * sizeof(virtio_queue_t *),
        VSERIAL_POOL_TAG);
 
@@ -246,8 +246,8 @@ wdm_device_virtio_init(IN FDO_DEVICE_EXTENSION *fdx)
     memset(fdx->in_vqs, 0,
         fdx->console_config.max_nr_ports * sizeof(virtio_queue_t *));
 
-    fdx->out_vqs = (virtio_queue_t **)ExAllocatePoolWithTag(
-       NonPagedPoolNx,
+    fdx->out_vqs = (virtio_queue_t **)EX_ALLOC_POOL(
+       VPOOL_NON_PAGED,
        fdx->console_config.max_nr_ports * sizeof(virtio_queue_t *),
        VSERIAL_POOL_TAG);
 
@@ -620,8 +620,9 @@ FDO_Pnp(
         length = sizeof(DEVICE_RELATIONS) +
             (((size_t)numNew + (size_t)prevcount) * sizeof(PDEVICE_OBJECT)) - 1;
 
-        relations = (PDEVICE_RELATIONS) ExAllocatePoolWithTag(
-          NonPagedPoolNx, length, VSERIAL_POOL_TAG);
+        relations = (PDEVICE_RELATIONS)EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                                     length,
+                                                     VSERIAL_POOL_TAG);
 
         if (relations == NULL) {
             ExReleaseFastMutex(&fdx->Mutex);

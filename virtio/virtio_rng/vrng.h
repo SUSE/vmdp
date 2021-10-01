@@ -37,6 +37,7 @@
 #include <win_version.h>
 #include <win_stdint.h>
 #include <win_mmio_map.h>
+#include <win_exalloc.h>
 #include <virtio_dbg_print.h>
 #include <virtio_pci.h>
 #include <virtio_pci_wdm.h>

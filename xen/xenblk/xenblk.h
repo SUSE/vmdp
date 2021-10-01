@@ -58,6 +58,7 @@
 #include <win_xenbus.h>
 #include <win_evtchn.h>
 #include <win_maddr.h>
+#include <win_exalloc.h>
 #include <win_cmp_strtol.h>
 #include <storport_reg.h>
 #include <sp_io_control.h>
@@ -241,7 +242,7 @@ typedef struct _xenblk_srb_extension {
 #endif
 } xenblk_srb_extension;
 
-struct blk_shadow {
+typedef struct blk_shadow {
     union {
         blkif_request_t req;
         blkif_request_indirect_t ind;
@@ -253,7 +254,7 @@ struct blk_shadow {
 #ifdef DBG
     uint32_t seq;
 #endif
-};
+} blk_shadow_t;
 
 #ifdef XENBLK_DBG_SRB_REQ
 struct blk_req_ring_el {
@@ -338,7 +339,7 @@ struct blkfront_info {
 #endif
     struct xenbus_watch watch;
     struct gnttab_free_callback callback;
-    struct blk_shadow *shadow;
+    blk_shadow_t *shadow;
     grant_ref_t ring_refs[BLK_MAX_RING_PAGES];
     void *ring_pages[BLK_MAX_RING_PAGES];
     uint32_t id[BLK_RING_SIZE];

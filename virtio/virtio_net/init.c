@@ -1179,119 +1179,141 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
 
     adapter->num_paths = 1;
     adapter->num_rcv_queues = 1;
+    adapter->b_rss_supported = FALSE;
 #if NDIS_SUPPORT_NDIS620
-    NdisReadConfiguration(
-        &status,
-        &returned_value,
-        config_handle,
-        &reg_rss,
-        NdisParameterInteger);
-    if (status == NDIS_STATUS_SUCCESS) {
-        if (returned_value->ParameterData.IntegerData == 0) {
-            adapter->b_rss_supported = FALSE;
-        } else {
-            adapter->b_rss_supported = TRUE;
-        }
-    } else {
-        RPRINTK(DPRTL_INIT,
-                ("VNIF: NdisReadConfiguration RSS status %x\n", status));
-        adapter->b_rss_supported = FALSE;
-        status = NDIS_STATUS_SUCCESS;
-    }
-
-    if (adapter->b_rss_supported) {
-
-        /* Default to min of number of active CPUs and max. */
-        adapter->num_rcv_queues = min(
-            KeQueryActiveProcessorCountEx(ALL_PROCESSOR_GROUPS),
-            VNIF_MAX_NUM_RSS_QUEUES);
-
-        NdisReadConfiguration(&status,
-                              &returned_value,
-                              config_handle,
-                              &reg_num_rss_qs,
-                              NdisParameterInteger);
-
+    if (adapter->b_multi_queue == TRUE) {
+        NdisReadConfiguration(
+            &status,
+            &returned_value,
+            config_handle,
+            &reg_rss,
+            NdisParameterInteger);
         if (status == NDIS_STATUS_SUCCESS) {
-            max_multi_queues = returned_value->ParameterData.IntegerData;
-            if (max_multi_queues > VNIF_MAX_NUM_RSS_QUEUES) {
-                max_multi_queues = VNIF_MAX_NUM_RSS_QUEUES;
+            if (returned_value->ParameterData.IntegerData == 0) {
+                adapter->b_rss_supported = FALSE;
+            } else {
+                adapter->b_rss_supported = TRUE;
             }
-            RPRINTK(DPRTL_INIT,
-                ("VNIF: NdisReadConfiguration reg_num_rss_qs value: %d\n",
-                 max_multi_queues));
-            adapter->num_rcv_queues = max_multi_queues;
         } else {
             RPRINTK(DPRTL_INIT,
-               ("VNIF: NdisReadConfiguration failed to read reg_num_rss_qs\n"));
-            adapter->num_rcv_queues = min(adapter->num_rcv_queues,
-                                          adapter->num_hw_queues);
+                    ("VNIF: NdisReadConfiguration RSS status %x\n", status));
+            adapter->b_rss_supported = FALSE;
             status = NDIS_STATUS_SUCCESS;
         }
 
-        if (adapter->num_rcv_queues == 1) {
-            /* No need to enable RSS if there is only 1 receive queue. */
-            adapter->b_rss_supported = FALSE;
+        if (adapter->b_rss_supported == TRUE) {
 
-            /* Disable *RSS in the registry. */
+            /* Default to min of number of active CPUs and max. */
+            adapter->num_rcv_queues = min(
+                KeQueryActiveProcessorCountEx(ALL_PROCESSOR_GROUPS),
+                VNIF_MAX_NUM_RSS_QUEUES);
+
+            NdisReadConfiguration(&status,
+                                  &returned_value,
+                                  config_handle,
+                                  &reg_num_rss_qs,
+                                  NdisParameterInteger);
+
+            if (status == NDIS_STATUS_SUCCESS) {
+                max_multi_queues = returned_value->ParameterData.IntegerData;
+                if (max_multi_queues > VNIF_MAX_NUM_RSS_QUEUES) {
+                    max_multi_queues = VNIF_MAX_NUM_RSS_QUEUES;
+                }
+                RPRINTK(DPRTL_INIT,
+                    ("VNIF: NdisReadConfiguration reg_num_rss_qs val: %d:%d\n",
+                     returned_value->ParameterData.IntegerData,
+                     max_multi_queues));
+            } else {
+                RPRINTK(DPRTL_INIT,
+                ("VNIF: NdisReadConfiguration failed: reg_num_rss_qs\n"));
+                max_multi_queues = adapter->num_hw_queues;
+                status = NDIS_STATUS_SUCCESS;
+            }
+            /* Don't let num_rcv_queues be greater than cpus. */
+            adapter->num_rcv_queues = min(adapter->num_rcv_queues,
+                                          max_multi_queues);
+
+            /* Write back what we set it to. */
             reg_value.ParameterType = NdisParameterString;
             reg_value.ParameterData.StringData.Length = 0;
             reg_value.ParameterData.StringData.MaximumLength = sizeof(wbuffer);
             reg_value.ParameterData.StringData.Buffer = wbuffer;
-            RtlIntegerToUnicodeString(0,
+            RtlIntegerToUnicodeString(adapter->num_rcv_queues,
                                       10,
                                       &reg_value.ParameterData.StringData);
             reg_value.ParameterData.StringData.Length += sizeof(WCHAR);
-            NdisWriteConfiguration(
-                &status,
-                config_handle,
-                &reg_rss,
-                &reg_value);
-        } else {
-            adapter->num_rcv_queues++; /* Add 1 for the VNIF_NO_RECEIVE_QUEUE */
+            NdisWriteConfiguration(&status,
+                                   config_handle,
+                                   &reg_num_rss_qs,
+                                   &reg_value);
 
-            NdisReadConfiguration(
-                &status,
-                &returned_value,
-                config_handle,
-                &reg_rss_tcp_ipv6_ext_hdrs_name,
-                NdisParameterInteger);
-            if (status == NDIS_STATUS_SUCCESS
-                    && returned_value->ParameterData.IntegerData == 1) {
-                adapter->hw_tasks |= VNIF_RSS_TCP_IPV6_EXT_HDRS_SUPPORTED;
+            if (adapter->num_rcv_queues == 1) {
+                /* No need to enable RSS if there is only 1 receive queue. */
+                adapter->b_rss_supported = FALSE;
+
+                /* Disable *RSS in the registry. */
+                reg_value.ParameterType = NdisParameterString;
+                reg_value.ParameterData.StringData.Length = 0;
+                reg_value.ParameterData.StringData.MaximumLength = sizeof(wbuffer);
+                reg_value.ParameterData.StringData.Buffer = wbuffer;
+                RtlIntegerToUnicodeString(0,
+                                          10,
+                                          &reg_value.ParameterData.StringData);
+                reg_value.ParameterData.StringData.Length += sizeof(WCHAR);
+                NdisWriteConfiguration(
+                    &status,
+                    config_handle,
+                    &reg_rss,
+                    &reg_value);
+            } else {
+                /* Add 1 for the VNIF_NO_RECEIVE_QUEUE */
+                adapter->num_rcv_queues++;
+
+                NdisReadConfiguration(
+                    &status,
+                    &returned_value,
+                    config_handle,
+                    &reg_rss_tcp_ipv6_ext_hdrs_name,
+                    NdisParameterInteger);
+                if (status == NDIS_STATUS_SUCCESS
+                        && returned_value->ParameterData.IntegerData == 1) {
+                    adapter->hw_tasks |= VNIF_RSS_TCP_IPV6_EXT_HDRS_SUPPORTED;
+                }
             }
-        }
-    } else {
-        RPRINTK(DPRTL_ON,
+        } else {
+            RPRINTK(DPRTL_ON,
                 ("VNIF: NdisReadConfiguration reg_num_rss_qs not supported\n"));
-    }
-    RPRINTK(DPRTL_INIT,
-        ("VNIF: NdisReadConfiguration num_rss_qs set to %d\n",
-         adapter->num_rcv_queues));
-
-    NdisReadConfiguration(&status,
-                          &returned_value,
-                          config_handle,
-                          &reg_num_paths,
-                          NdisParameterInteger);
-
-    if (status == NDIS_STATUS_SUCCESS) {
-        RPRINTK(DPRTL_INIT,
-            ("VNIF: NdisReadConfiguration reg_num_paths value: %d\n",
-             returned_value->ParameterData.IntegerData));
-        if (returned_value->ParameterData.IntegerData == 0
-                && adapter->b_rss_supported) {
-            adapter->num_paths = adapter->num_hw_queues;
-        } else if (returned_value->ParameterData.IntegerData
-                > adapter->num_hw_queues) {
-            adapter->num_paths = adapter->num_hw_queues;
-        } else if (returned_value->ParameterData.IntegerData != 0) {
-            adapter->num_paths = returned_value->ParameterData.IntegerData;
         }
-    } else {
         RPRINTK(DPRTL_INIT,
-           ("VNIF: NdisReadConfiguration failed to read reg_num_paths\n"));
-        status = NDIS_STATUS_SUCCESS;
+            ("VNIF: NdisReadConfiguration num_rss_qs set to %d\n",
+             adapter->num_rcv_queues));
+
+        NdisReadConfiguration(&status,
+                              &returned_value,
+                              config_handle,
+                              &reg_num_paths,
+                              NdisParameterInteger);
+
+        /* Don't let num_paths be greater than num_hw_queues. */
+        if (status == NDIS_STATUS_SUCCESS) {
+            if (returned_value->ParameterData.IntegerData == 0
+                    && adapter->b_rss_supported) {
+                adapter->num_paths = adapter->num_hw_queues;
+            } else if (returned_value->ParameterData.IntegerData
+                    > adapter->num_hw_queues) {
+                adapter->num_paths = adapter->num_hw_queues;
+            } else if (returned_value->ParameterData.IntegerData != 0) {
+                adapter->num_paths = returned_value->ParameterData.IntegerData;
+            }
+            RPRINTK(DPRTL_INIT,
+                ("VNIF: NdisReadConfiguration reg_num_paths val: %d:%d\n",
+                 returned_value->ParameterData.IntegerData,
+                 adapter->num_paths));
+        } else {
+            RPRINTK(DPRTL_INIT,
+               ("VNIF: NdisReadConfiguration failed to read reg_num_paths\n"));
+            status = NDIS_STATUS_SUCCESS;
+        }
     }
 
     adapter->priority_vlan_support = 0;
