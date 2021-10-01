@@ -60,7 +60,7 @@ sp_registry_read(void *dev_ext, PUCHAR val_name, DWORD r_type,
                             val_name));
                     DPRINTK(DPRTL_ON,
                             ("  len %d, read 0x%x, using default of 0x%x\n",
-                            *len, *(DWORD *)reg_buf, *(DWORD *)val));
+                            len, *(DWORD *)reg_buf, *(DWORD *)val));
                 }
                 DPRINTK(DPRTL_ON, ("\t%s: 0x%x\n", val_name, *(DWORD *)val));
                 break;
@@ -77,7 +77,7 @@ sp_registry_read(void *dev_ext, PUCHAR val_name, DWORD r_type,
             }
             DPRINTK(DPRTL_ON,
                    ("StorPortRegistryRead %s: unsuccessful, len %d\n",
-                    val_name, *len));
+                    val_name, len));
         }
         StorPortFreeRegistryBuffer(dev_ext, reg_buf);
     } else {
