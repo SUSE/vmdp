@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2007-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2021 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -119,8 +119,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define VER_FILEDESCRIPTION_STR     "Bus Driver for Windows 10 on Xen"
 #define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10 (32-bit) on Xen"
 #else
-#define VER_FILEDESCRIPTION_STR     "Bus Driver for Windows 10/Server 2012 Xen"
-#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10/Server 2012 (64-bit) on Xen"
+#define VER_FILEDESCRIPTION_STR     "Bus Driver for Windows 10/Serve Xen"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10/Server (64-bit) on Xen"
+#endif
+
+/* Windows 10-2004 */
+#elif defined TARGET_OS_Win10_2004
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "Bus Driver for Windows 10-2004 on Xen"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10-2004 (32-bit) on Xen"
+#else
+#define VER_FILEDESCRIPTION_STR     "Bus Driver for Windows 10-2004/Serve Xen"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10-2004/Server (64-bit) on Xen"
 #endif
 
 #else

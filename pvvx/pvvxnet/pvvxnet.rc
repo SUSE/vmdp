@@ -122,6 +122,16 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10/Server (64-bit)"
 #endif
 
+/* Windows 10-2004 */
+#elif defined TARGET_OS_Win10_2004
+#ifdef ARCH_x86
+#define VER_FILEDESCRIPTION_STR     "Net Driver for Windows 10-2004"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10-2004 (32-bit)"
+#else
+#define VER_FILEDESCRIPTION_STR     "Net Driver for Windows 10-2004/Server"
+#define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10-2004/Server (64-bit)"
+#endif
+
 #else
 #define VER_FILEDESCRIPTION_STR     "Net Driver for Windows"
 #ifdef ARCH_x86

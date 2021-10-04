@@ -277,7 +277,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'">
     <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
       <PreprocessorDefinitions>PVCRASH_NOTIFY;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -320,7 +320,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'">
     <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
       <PreprocessorDefinitions>PVCRASH_NOTIFY;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -369,7 +369,7 @@
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <CETCompat>true</CETCompat>
@@ -417,7 +417,7 @@
       <PreprocessorDefinitions>PVCRASH_NOTIFY;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
       <CETCompat>true</CETCompat>
