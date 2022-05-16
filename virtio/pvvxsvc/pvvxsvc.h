@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,12 +50,6 @@
     TEXT("Monitors Xen shutdown/reboot requests. Launches specified processes.")
 #define SYSTEM_CCS_SERVICES_KEY_WSTR            \
     L"SYSTEM\\CurrentControlSet\\Services"
-#define PVVXSVC_SYS_CCS_SERVICES_KEY_WSTR       \
-    L"SYSTEM\\CurrentControlSet\\Services\\pvvxsvc"
-#define XENSVC_SYS_CCS_SERVICES_P_KEY_WSTR      \
-    L"SYSTEM\\CurrentControlSet\\Services\\pvvxsvc\\Parameters"
-#define PVVXSVC_SYS_CCS_SERVICES_P_KEY_WSTR     \
-    L"SYSTEM\\CurrentControlSet\\Services\\pvvxsvc\\Parameters"
 
 #define XENBLK_SYS "\\xenblk.sys"
 #define XENBLK_SETUP "\\xenblk.setup"
