@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2018-2020 SUSE LLC
+ * Copyright 2018-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -361,7 +361,7 @@ fwcfg_dispatch_device_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     switch (stack->Parameters.DeviceIoControl.IoControlCode) {
     default:
         RPRINTK(DPRTL_ON, ("%s: Unknown IOCTL 0x%x\n",
-                stack->Parameters.DeviceIoControl.IoControlCode));
+                __func__, stack->Parameters.DeviceIoControl.IoControlCode));
         status = STATUS_INVALID_PARAMETER;
         break;
     }
