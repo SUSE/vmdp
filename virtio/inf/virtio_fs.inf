@@ -1,0 +1,93 @@
+;
+; SPDX-License-Identifier: BSD-2-Clause
+;
+; Copyright 2022 SUSE LLC
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+; 1. Redistributions of source code must retain the above copyright
+;    notice, this list of conditions and the following disclaimer.
+; 2. Redistributions in binary form must reproduce the above copyright
+;    notice, this list of conditions and the following disclaimer in the
+;    documentation and/or other materials provided with the distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;
+
+[Version]
+Signature   = "$Windows NT$"
+ClassGUID   = {4d36e97d-e325-11ce-bfc1-08002be10318}
+Class       = System
+Provider    = %SUSE%
+DriverVer   = 04/20/2022,1.0.0.00
+CatalogFile = virtio_fs.cat
+
+[DestinationDirs]
+virtio_fs.CopyFiles = 12
+
+[SourceDisksNames]
+1 = %DiskId%,,,""
+
+[SourceDisksFiles]
+virtio_fs.sys = 1,,
+
+[Manufacturer]
+%SUSE% = virtio_fs,NT$ARCH$
+
+[virtio_fs.NT$ARCH$]
+%virtio_fs.DeviceDesc% = virtio_fs_Install, PCI\VEN_1AF4&DEV_105A&SUBSYS_11001AF4&REV_01, PCI\VEN_1AF4&DEV_105A
+
+[virtio_fs.CopyFiles]
+virtio_fs.sys,,,2
+
+[virtio_fs_Install]
+CopyFiles=virtio_fs.CopyFiles
+
+[virtio_fs_Install.Services]
+AddService = virtio_fs, 0x00000002 , virtio_fs_Service
+
+[virtio_fs_Install.HW]
+AddReg         = virtio_fs_msi
+
+[virtio_fs_Service]
+DisplayName    = %virtio_fs.Service.DispName%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_DEMAND_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+ServiceBinary  = %12%\virtio_fs.sys
+LoadOrderGroup = Extended Base
+AddReg         = virtio_fs_Reg
+
+[virtio_fs_Reg]
+HKR, "Parameters", "BusType", %REG_DWORD%, 0x00000001
+HKR, "Parameters\PnpInterface", "5", %REG_DWORD%, 0x00000001
+
+[virtio_fs_msi]
+HKR, Interrupt Management,,0x00000010
+HKR, Interrupt Management\MessageSignaledInterruptProperties,,0x00000010
+HKR, Interrupt Management\MessageSignaledInterruptProperties,MSISupported,0x00010001,1
+HKR, Interrupt Management\MessageSignaledInterruptProperties,MessageNumberLimit,0x00010001,2
+
+[Strings]
+; Localizable Strings
+SUSE = "SUSE"
+DiskId = "SUSE Drivers for Windows"
+virtio_fs.DeviceDesc  = "VirtIO FS Device"
+virtio_fs.Service.DispName = "VirtIO FS Service"
+
+; Non-Localizable Strings
+REG_DWORD             = 0x00010001
+REG_EXPAND_SZ         = 0x00020000
+SERVICE_KERNEL_DRIVER = 1
+SERVICE_DEMAND_START  = 3
+SERVICE_ERROR_NORMAL  = 1

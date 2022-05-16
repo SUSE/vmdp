@@ -34,7 +34,7 @@ if %2==d set config_rd=Debug
 if %3==6 set p_platform=x64
 if %3==3 set p_platform=x86
 
-set drv=fwcfg pvcrash_notify pvvxsvc virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng
+set drv=fwcfg pvcrash_notify pvvxsvc virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng virtio_fs
 
 for %%d in (%drv%) do (
     if exist %%d\Win%1%config_rd%\%p_platform%\%%d.tlog\unsuccessfulbuild echo "Win%1%2 %3" >> %%d.err

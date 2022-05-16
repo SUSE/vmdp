@@ -1,8 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (C) 2007-2015 Novell, Inc.
- * Copyright 2015-2022 SUSE LLC
+ * Copyright 2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,15 +24,41 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _WIN_VERSION_H
-#define _WIN_VERSION_H
+#ifndef _VFS_POWER_H
+#define _VFS_POWER_H
 
-#define PV_PRODUCTVERSION           2,5,4
-#define PV_PRODUCTVERSION_STR       "2.5.4\0"
-#define PV_PRODUCTVERSION_MJMN      205
-#define PV_PRODUCTVERSION_NUMBER    20504
-#define SETUP_CAPTION_STR           "SUSE VMDP v2.5.4 - User License Agreement"
+#include "vfs.h"
 
-#define VIRT_COMPANYNAME_STR        "SUSE"
+#define MAGIC_NUMBER -1
+
+typedef enum {
+    IRP_NEEDS_FORWARDING = 1,
+    IRP_ALREADY_FORWARDED
+
+} IRP_DIRECTION;
+
+typedef struct _POWER_COMPLETION_CONTEXT {
+    PDEVICE_OBJECT  DeviceObject;
+    PIRP            SIrp;
+} POWER_COMPLETION_CONTEXT, *PPOWER_COMPLETION_CONTEXT;
+
+
+static NTSTATUS
+PciDrvDispatchPowerDefault(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+
+static NTSTATUS
+PciDrvDispatchSetPowerState(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+
+static PCHAR
+DbgPowerMinorFunctionString(__in UCHAR MinorFunction);
+
+static PCHAR
+DbgSystemPowerString(__in SYSTEM_POWER_STATE Type);
+
+static PCHAR
+DbgDevicePowerString(__in DEVICE_POWER_STATE Type);
+
 
 #endif
+
+

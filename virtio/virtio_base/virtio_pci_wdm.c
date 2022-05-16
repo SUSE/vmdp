@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,6 +30,8 @@
 #include "vserial.h"
 #elif defined VIRTIO_DEVICE_RNG
 #include "vrng.h"
+#elif defined VIRTIO_DEVICE_FS
+#include "vfs.h"
 #else
 #endif
 
@@ -364,7 +366,6 @@ wdm_fdo_stop_device(IN PDEVICE_OBJECT fdo)
         }
     }
 
-    fdx->pnpstate = Stopped;
     RPRINTK(DPRTL_ON, ("<-- %s %s\n", VDEV_DRIVER_NAME, __func__));
 }
 

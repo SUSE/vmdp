@@ -1,8 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (C) 2007-2015 Novell, Inc.
- * Copyright 2015-2022 SUSE LLC
+ * Copyright 2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,15 +24,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _WIN_VERSION_H
-#define _WIN_VERSION_H
+#ifndef _VFS_VER_H
+#define _VFS_VER_H
 
-#define PV_PRODUCTVERSION           2,5,4
-#define PV_PRODUCTVERSION_STR       "2.5.4\0"
-#define PV_PRODUCTVERSION_MJMN      205
-#define PV_PRODUCTVERSION_NUMBER    20504
-#define SETUP_CAPTION_STR           "SUSE VMDP v2.5.4 - User License Agreement"
 
-#define VIRT_COMPANYNAME_STR        "SUSE"
+#define VER_FILEVERSION             1,0,0,0
+#define VER_FILEVERSION_STR         "1.0.0.0\0"
+
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2022 SUSE All rights reserved.", "\0"
 
 #endif

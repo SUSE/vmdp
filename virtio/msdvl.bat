@@ -34,7 +34,7 @@ set do_full_sdv=no
 set dvl_drv=
 set config_os=
 
-if "%1"=="" goto build_it
+if "%1"=="" goto help
 
 :l_loop
 if %1==10-2004 (
@@ -63,10 +63,12 @@ if %1==10-2004 (
     set dvl_drv=%dvl_drv% pvcrash_notify
 ) else if %1==fwcfg (
     set dvl_drv=%dvl_drv% fwcfg
+) else if %1==virtio_fs (
+    set dvl_drv=%dvl_drv% virtio_fs
 ) else if %1==vmdp (
-    set dvl_drv=virtio_serial virtio_rng pvcrash_notify fwcfg
+    set dvl_drv=virtio_serial virtio_rng pvcrash_notify fwcfg virtio_fs
 ) else if %1==all (
-    set dvl_drv=virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng pvcrash_notify fwcfg
+    set dvl_drv=virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng pvcrash_notify fwcfg virtio_fs
 ) else (
     echo Unknown paramtere: %1
     goto help
@@ -75,9 +77,7 @@ shift
 if not "%1"=="" goto l_loop
 
 if "%dvl_drv%"=="" goto help
-if %config_os%=="" set config_os=Win10-2004Release Win10Release Win8.1Release Win8Release"
-
-:build_it
+if "%config_os%"=="" set config_os=Win10-2004Release Win10Release Win8.1Release Win8Release
 
 if not exist dvl mkdir dvl
 
@@ -138,7 +138,7 @@ echo   10-2004 - Win10-2004
 echo   10 - Win10
 echo   8.1 - Win8.1
 echo   8 - Win8
-echo   "<driver> - [virtio_balloon | virtio_blk | virtio_net | virtio_scsi | virtio_serial | virtio_rng | pvcrash | fwcfg]"
+echo   "<driver> - [virtio_balloon | virtio_blk | virtio_net | virtio_scsi | virtio_serial | virtio_rng | virtio_fs | pvcrash | fwcfg]"
 echo   "vmdp - virtio_serial | virtio_rng | pvcrash | fwcfg"
 echo   "default: 10-2004 10 8.1 8 <driver>"
 echo "Must use the full option at least once"

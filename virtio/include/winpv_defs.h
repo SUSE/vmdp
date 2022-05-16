@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2008-2015 Novell, Inc.
- * Copyright 2015-2020 SUSE LLC
+ * Copyright 2015-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -88,6 +88,10 @@
 
 #define SERVICE_REMOVE                  "remove"
 #define SERVICE_INSTALL                 "install"
+#define SC_SVC_CREATE                   "create"
+#define SC_SVC_DELETE                   "delete"
+#define SC_SVC_START                    "start"
+#define SC_SVC_STOP                     "stop"
 #define USE_PV_DRIVERS_WSTR             L"use_pv_drivers"
 #define XENBUS_TIMEOUT_WSTR             L"timeout"
 #define XENBUS_PVCTRL_FLAGS_WSTR        L"pvctrl_flags"

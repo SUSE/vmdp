@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2018-2020 SUSE LLC
+ * Copyright 2018-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,7 +35,8 @@
 #define PVCTRL_DBG_PRINT_MASK_STR      "dbg_print_mask"
 #define PVCTRL_CDBG_PRINT_MASK_STR     "cdbg_print_mask"
 #define PVCTRL_CDBG_PRINT_LIMIT_STR    "cdbg_print_limit"
-#define PVCTRL_DBG_PRINT_MASK_WSTR      L"dbg_print_mask"
+#define PVCTRL_DBG_PRINT_MASK_WSTR     L"dbg_print_mask"
+#define PVCTRL_VFS_DUMP_BUF_LIMIT_WSTR L"vfs_dump_buf_limit"
 #define XENBUS_PRINTK_PORT              0xe9
 #define VIRTIO_DEBUG_PORT               ((PUCHAR)0x3F8)
 
