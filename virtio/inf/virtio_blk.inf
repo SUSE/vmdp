@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright (c) 2011-2013 Novell, Inc.
-; Copyright 2013-2020 SUSE LLC
+; Copyright 2013-2022 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -47,9 +47,15 @@ virtio_blk.sys = 1,,
 
 [VirtioBlk.NTx86]
 %VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001&SUBSYS_00021AF4&REV_00
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1042
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1042&SUBSYS_11001AF4&REV_01
 
 [VirtioBlk.NTamd64]
 %VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001&SUBSYS_00021AF4&REV_00
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1042
+%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1042&SUBSYS_11001AF4&REV_01
 
 [VirtioBlk.CopyFiles]
 virtio_blk.sys,,,2

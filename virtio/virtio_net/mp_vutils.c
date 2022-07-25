@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2017 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -282,8 +282,12 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
             hdr->gso_size,
             hdr->csum_start,
             hdr->csum_offset));
-        PRINTK(("     pl %d ip %d tl %d sgc %d sg0 %d sg1 %d\n",
-            gso_info.LsoV1TransmitComplete.TcpPayload,
+#if NDIS_SUPPORT_NDIS6
+        PRINTK(("     pl %d ", gso_info.LsoV1TransmitComplete.TcpPayload));
+#else
+        PRINTK(("     pl %d ", gso_info));
+#endif
+       PRINTK(("     ip %d tl %d sgc %d sg0 %d sg1 %d\n",
             tcb->ip_hdr_len,
             tcb->tcp_hdr_len,
             sg_cnt,

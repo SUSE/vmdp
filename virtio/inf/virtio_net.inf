@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright (c) 2011-2013 Novell, Inc.
-; Copyright 2013-2020 SUSE LLC
+; Copyright 2013-2022 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -176,6 +176,33 @@ HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "1",        0, %TX%
 HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "2",        0, %RX%
 HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "3",        0, %RX_TX%
 
+HKR, Ndi\params\FragmentedReceives,       ParamDesc,  0, %FragmentedReceives%
+HKR, Ndi\params\FragmentedReceives,       default,    0, "1"
+HKR, Ndi\params\FragmentedReceives,       type,       0, "enum"
+HKR, Ndi\params\FragmentedReceives\enum,  "0",        0, %Disable%
+HKR, Ndi\params\FragmentedReceives\enum,  "1",        0, %Enable%
+;HKR, Ndi\params\FragmentedReceives\enum,  "2",        0, %EnableLarge%
+
+HKR, Ndi\params\IndirectDescriptors,        ParamDesc, 0, %IndirectDesc%
+HKR, Ndi\params\IndirectDescriptors,        default,   0, "1"
+HKR, Ndi\params\IndirectDescriptors,        type,      0, "enum"
+HKR, Ndi\params\IndirectDescriptors\enum,   "0",       0, %Disable%
+HKR, Ndi\params\IndirectDescriptors\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\PackedRings,        ParamDesc, 0, %UsePackedRings%
+HKR, Ndi\params\PackedRings,        default,   0, "0"
+HKR, Ndi\params\PackedRings,        type,      0, "enum"
+HKR, Ndi\params\PackedRings\enum,   "0",       0, %Disable%
+HKR, Ndi\params\PackedRings\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\TxSgCnt,        ParamDesc, 0, "%TxSgCnt%"
+HKR, Ndi\params\TxSgCnt,        default,   0, "25"
+HKR, Ndi\params\TxSgCnt,        min,       0, "20"
+HKR, Ndi\params\TxSgCnt,        max,       0, "36"
+HKR, Ndi\params\TxSgCnt,        step,      0, "1"
+HKR, Ndi\params\TxSgCnt,        base,      0, "10"
+HKR, Ndi\params\TxSgCnt,        type,      0, "int"
+
 [virtio_net_params.reg5]
 HKR, Ndi\params\LsoV1IPv4,         ParamDesc,  0, %LSO%
 HKR, Ndi\params\LsoV1IPv4,         default,    0, "0"
@@ -184,11 +211,11 @@ HKR, Ndi\params\LsoV1IPv4\enum,    "0",        0, %Disable%
 HKR, Ndi\params\LsoV1IPv4\enum,    "1",        0, %Enable%
 
 HKR, Ndi\params\LsoDataSize,       ParamDesc,  0, %LSO_DATA_SIZE%
-HKR, Ndi\params\LsoDataSize,       default,    0, "61440"
+HKR, Ndi\params\LsoDataSize,       default,    0, "31744"
 HKR, Ndi\params\LsoDataSize,       type,       0, "enum"
 HKR, Ndi\params\LsoDataSize\enum,  "8192",     0, 8192
 HKR, Ndi\params\LsoDataSize\enum,  "16384",    0, 16384
-HKR, Ndi\params\LsoDataSize\enum,  "32768",    0, 32768
+HKR, Ndi\params\LsoDataSize\enum,  "31744",    0, 31744
 HKR, Ndi\params\LsoDataSize\enum,  "61440",    0, 61440
 
 [virtio_net_params.reg6]
@@ -305,6 +332,9 @@ StatInterval    = "Statistics Timer Interval (seconds)"
 ResourceTimeout = "Return Resource Timeout (seconds)"
 DBG_PRINTK_MASK = "Debug print mask (for debug driver)"
 REL_PRINTK_MASK = "Debug print mask (for release driver)"
-ResourceTimeout = "Return Resource Timeout (seconds)"
+FragmentedReceives = "Fragmented Receives"
 PMC = "Power Management Capabilities"
 W2K12 = "Win2012"
+IndirectDesc = "Indirect Descriptors (virtio)"
+UsePackedRings = "Packed Rings (virtio)"
+TxSgCnt = "Maximum TX scatter gather elements (virtio)"

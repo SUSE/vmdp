@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2011-2021 SUSE LLC
+ * Copyright 2011-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -384,7 +384,9 @@ virtio_blk_get_lba(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
 BOOLEAN
 virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
 {
+#ifdef IS_STORPORT
     STARTIO_PERFORMANCE_PARAMETERS param;
+#endif
     PHYSICAL_ADDRESS pa;
     vbif_srb_ext_t *srb_ext;
     KLOCK_QUEUE_HANDLE lh;
@@ -397,6 +399,9 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
 
     srb_ext = (vbif_srb_ext_t *)srb->SrbExtension;
 
+    DPRINTK(DPRTL_TRC, ("%s: %s.\n", VIRTIO_SP_DRIVER_NAME, __func__));
+
+#ifdef IS_STORPORT
     if (dev_ext->num_queues > 1) {
         param.Size = sizeof(STARTIO_PERFORMANCE_PARAMETERS);
         status = StorPortGetStartIoPerfParams(dev_ext, srb, &param);
@@ -408,6 +413,9 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     } else {
         qidx = 0;
     }
+#else
+    qidx = 0;
+#endif
 
     srb_ext->vbr.out_hdr.sector = 0;
     srb_ext->vbr.out_hdr.ioprio = 0;
@@ -466,6 +474,7 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
                 __LINE__);
         }
 #endif
+        DPRINTK(DPRTL_TRC, ("%s: %s out.\n", VIRTIO_SP_DRIVER_NAME, __func__));
         return TRUE;
     }
 

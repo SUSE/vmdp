@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -108,13 +108,12 @@ KvmDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
     hwInitializationData.NumberOfAccessRanges = SP_NUMBER_OF_ACCESS_RANGES;
     hwInitializationData.AdapterInterfaceType = SP_BUS_INTERFACE_TYPE;
 
-
-    hwInitializationData.HwStartIo = sp_start_io;
-    hwInitializationData.HwBuildIo = sp_build_io;
-    hwInitializationData.MapBuffers = STOR_MAP_NON_READ_WRITE_BUFFERS;
+    hwInitializationData_HwStartIo(hwInitializationData);
+    hwInitializationData_HwBuildIo(hwInitializationData);
+    hwInitializationData_MapBuffers(hwInitializationData);
 
     RPRINTK(DPRTL_ON, ("\tcalling StorPoprtInitialize\n"));
-    status = StorPortInitialize(DriverObject,
+    status = SP_INITIALIZE(DriverObject,
                                 RegistryPath,
                                 &hwInitializationData,
                                 NULL);
@@ -253,7 +252,7 @@ sp_passive_init(virtio_sp_dev_ext_t *dev_ext)
                                   sp_dpc_complete_cmd);
         }
 #endif
-        StorPortResume(dev_ext);
+        SP_RESUME(dev_ext);
     }
     dev_ext->state = WORKING;
 
@@ -412,7 +411,9 @@ sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2)
 BOOLEAN
 virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
 {
+#ifdef IS_STORPORT
     STARTIO_PERFORMANCE_PARAMETERS param;
+#endif
     PHYSICAL_ADDRESS pa;
     virtio_sp_srb_ext_t *srb_ext;
     KLOCK_QUEUE_HANDLE lh;
@@ -430,6 +431,7 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
 
     srb_ext = (virtio_sp_srb_ext_t *)srb->SrbExtension;
 
+#ifdef IS_STORPORT
     if (dev_ext->num_queues > 1) {
         param.Size = sizeof(STARTIO_PERFORMANCE_PARAMETERS);
         status = StorPortGetStartIoPerfParams(dev_ext, srb, &param);
@@ -441,6 +443,9 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     } else {
         qidx = VIRTIO_SCSI_QUEUE_REQUEST;
     }
+#else
+    qidx = VIRTIO_SCSI_QUEUE_REQUEST;
+#endif
 
     KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->request_lock, &lh);
     if (dev_ext->indirect) {
@@ -498,6 +503,37 @@ virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
 #else
     return StorPortSynchronizeAccess(dev_ext, virtio_scsi_do_cmd, srb);
 #endif
+}
+#else
+sp_sgl_t *
+sp_build_sgl(virtio_sp_dev_ext_t *dev_ext,
+    SCSI_REQUEST_BLOCK *srb)
+{
+    sp_sgl_t      *scsi_sgl;
+    uint8_t *data_buf;
+    ULONG len;
+    ULONG el;
+    ULONG bytes_left;
+
+    scsi_sgl = &dev_ext->scsi_sgl;
+    bytes_left = srb->DataTransferLength;
+    data_buf = (uint8_t *)srb->DataBuffer;
+
+    el = 0;
+    while (bytes_left) {
+        scsi_sgl->List[el].PhysicalAddress =
+            SP_GET_PHYSICAL_ADDRESS(dev_ext, srb, data_buf, &len);
+            scsi_sgl->List[el].Length = len;
+        bytes_left -= len;
+        data_buf += len;
+        el++;
+    }
+    scsi_sgl->NumberOfElements = el;
+    if (scsi_sgl->NumberOfElements > VIRTIO_SP_MAX_SGL_ELEMENTS  + 3) {
+        PRINTK(("vbif_build_sgl: sgl el %d, len %d.\n",
+            scsi_sgl->NumberOfElements, srb->DataTransferLength));
+    }
+    return scsi_sgl;
 }
 #endif
 
@@ -603,7 +639,7 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
     pPciConf = (PPCI_COMMON_CONFIG)dev_ext->pci_cfg_buf;
     pPciComHeader = (PPCI_COMMON_HEADER)dev_ext->pci_cfg_buf;
 
-    pci_cfg_len = StorPortGetBusData(dev_ext,
+    pci_cfg_len = SP_GET_BUS_DATA(dev_ext,
                                      PCIConfiguration,
                                      config_info->SystemIoBusNumber,
                                      (ULONG)config_info->SlotNumber,
@@ -632,7 +668,7 @@ virtio_sp_virtio_dev_init(virtio_sp_dev_ext_t *dev_ext,
             dev_ext->bar[iBar].pa = accessRange->RangeStart;
             dev_ext->bar[iBar].len = accessRange->RangeLength;
             dev_ext->bar[iBar].bPortSpace = !accessRange->RangeInMemory;
-            dev_ext->bar[iBar].va = StorPortGetDeviceBase(dev_ext,
+            dev_ext->bar[iBar].va = SP_GET_DEVICE_BASE(dev_ext,
                 config_info->AdapterInterfaceType,
                 config_info->SystemIoBusNumber,
                 accessRange->RangeStart,
@@ -769,7 +805,9 @@ virtio_sp_init_config_info(virtio_sp_dev_ext_t *dev_ext,
         RPRINTK(DPRTL_ON, ("\tsetting SCSI_DMA64_MINIPORT_SUPPORTED\n"));
         config_info->Dma64BitAddresses          = SCSI_DMA64_MINIPORT_SUPPORTED;
     }
+#ifdef IS_STORPORT
     config_info->SynchronizationModel           = StorSynchronizeFullDuplex;
+#endif
 #ifdef CAN_USE_MSI
     RPRINTK(DPRTL_ON, ("sp_find_adapter: msi_supported\n"));
     config_info->HwMSInterruptRoutine = sp_msinterrupt_routine;
@@ -824,8 +862,10 @@ virtio_sp_dump_config_info(virtio_sp_dev_ext_t *dev_ext,
             config_info->WmiDataProvider));
     RPRINTK(DPRTL_ON, ("\tAlignmentMask: %d\n", config_info->AlignmentMask));
     RPRINTK(DPRTL_ON, ("\tMapBuffers: %d\n", config_info->MapBuffers));
+#ifdef IS_STORPORT
     RPRINTK(DPRTL_ON, ("\tSynchronizationModel: %d\n",
             config_info->SynchronizationModel));
+#endif
     RPRINTK(DPRTL_ON, ("\tNumberOfBuses: %d\n", config_info->NumberOfBuses));
     RPRINTK(DPRTL_ON, ("\tMaximumNumberOfTargets: %d\n",
             config_info->MaximumNumberOfTargets));
@@ -943,7 +983,7 @@ virtio_sp_get_uncached_size_offsets(virtio_sp_dev_ext_t *dev_ext,
                            VIRTIO_SP_DRIVER_NAME, __func__,
                            num, rsize, total_vring_size, qsize, total_vq_size));
     }
-    ring_va = (ULONG_PTR)StorPortGetUncachedExtension(dev_ext, config_info,
+    ring_va = (ULONG_PTR)SP_GET_UNCACHED_EXTENSION(dev_ext, config_info,
              (VIRTIO_PCI_VRING_ALIGN
                  + total_vring_size
                  + total_vq_size
@@ -951,11 +991,14 @@ virtio_sp_get_uncached_size_offsets(virtio_sp_dev_ext_t *dev_ext,
                  + total_event_node_size
                  + sizeof(void *) * max_queues
                  + sizeof(virtio_queue_t *) * max_queues
-                 + sizeof(STOR_DPC) * max_queues));
+#ifdef USE_STORPORT_DPC
+                 + sizeof(STOR_DPC) * max_queues
+#endif
+             ));
     if (ring_va == (ULONG_PTR)NULL) {
         PRINTK(("%s %s: failed to get get_uncached_extension\n",
                 VIRTIO_SP_DRIVER_NAME, __func__));
-        StorPortLogError(
+        SP_LOG_ERROR(
             dev_ext, NULL, 0, 0, 0, SP_INTERNAL_ADAPTER_ERROR, __LINE__);
         return SP_RETURN_ERROR;
     }
@@ -1109,7 +1152,7 @@ virtio_sp_find_vq(virtio_sp_dev_ext_t *dev_ext)
                            vq, i, dev_ext->vq[i], dev_ext->vr, dev_ext->vq));
     }
     if (!vq) {
-        StorPortLogError(
+        SP_LOG_ERROR(
             dev_ext, NULL, 0, 0, 0, SP_INTERNAL_ADAPTER_ERROR, __LINE__);
         PRINTK(("%s %s: failed to find virtio queue\n",
                 VIRTIO_SP_DRIVER_NAME, __func__));
@@ -1186,6 +1229,7 @@ virtio_sp_restart(virtio_sp_dev_ext_t *dev_ext)
 static ULONG g_max_len;
 static ULONG g_max_sgs;
 
+#ifdef IS_STORPORT
 void
 virtio_sp_verify_sgl(virtio_sp_dev_ext_t *dev_ext,
                      PSCSI_REQUEST_BLOCK srb,
@@ -1240,5 +1284,7 @@ virtio_sp_verify_sgl(virtio_sp_dev_ext_t *dev_ext,
         }
     }
 }
+#endif
+
 #endif
 

@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2011-2020 SUSE LLC
+; Copyright 2011-2022 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -46,11 +46,16 @@ virtio_balloon.sys = 1,,
 
 [VirtioBalloon.NTx86]
 %VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002
-%VirtioBalloon.DeviceDescLong% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
+%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
+%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1045
+%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
+
 
 [VirtioBalloon.NTamd64]
 %VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002
-%VirtioBalloon.DeviceDescLong% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
+%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
+%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1045
+%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
 
 [VirtioBalloon.CopyFiles]
 virtio_balloon.sys,,,2
@@ -80,7 +85,6 @@ HKR,,TypesSupported,%REG_DWORD%,7
 [VirtioBalloon_Reg]
 HKR, "Parameters", "BusType", %REG_DWORD%, 0x00000001
 HKR, "Parameters\PnpInterface", "5", %REG_DWORD%, 0x00000001
-HKR, "Parameters\Device", "pvctrl_flags", %REG_DWORD%, 0x00000001
 
 [Strings]
 ; Localizable Strings

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -167,7 +167,7 @@ typedef struct _vnif_xen_s {
 #define vnif_rcv_stats_dump(_adapter, _path_id)
 #endif
 
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
 #else
 #define DriverEntryEx MPV_DriverEntryEx
 

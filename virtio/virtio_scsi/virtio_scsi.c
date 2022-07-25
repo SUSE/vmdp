@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -445,9 +445,9 @@ sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
     srb_ext->sg[1].len = sizeof(cmd->resp.tmf);
     srb_ext->in = 1;
 
-    StorPortPause(dev_ext, 60);
-    if (!StorPortSynchronizeAccess(dev_ext, virtio_scsi_do_tmf, srb)) {
-        StorPortResume(dev_ext);
+    SP_PAUSE(dev_ext, 60);
+    if (!SP_SYNCHRONIZE_ACCESS(dev_ext, virtio_scsi_do_tmf, srb)) {
+        SP_RESUME(dev_ext);
         return FALSE;
     }
     dev_ext->tmf_infly = TRUE;

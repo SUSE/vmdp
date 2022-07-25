@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2022 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -70,7 +70,7 @@ set start_username=%USERNAME%
 
 rem Build 32 bit
 cd %build_dir%
-for %%w in (WLH WIN7) do (
+for %%w in (WXP WLH WIN7) do (
     for %%r in (fre chk) do (
         set DDKBUILDENV=
         call \WinDDK\7600.16385.1\bin\setenv.bat \WinDDK\7600.16385.1\ %%w %%r no_oacr

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008-2017 Red Hat, Inc.
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,8 +49,6 @@
 #include <virtio_queue_ops.h>
 #include <storport_reg.h>
 #include <sp_io_control.h>
-#include <sp_defs.h>
-
 #define VBIF_DESIGNATOR_STR "Virtio Block Device"
 #define VIRTIO_SP_DRIVER_NAME "VBLK"
 
@@ -86,6 +84,8 @@
 
 #define MAX_PHYS_SEGMENTS       64
 #define VIRTIO_MAX_SG           (3 + MAX_PHYS_SEGMENTS)
+
+#include <sp_defs.h>
 
 #define VBIF_IN_FLY_THRESHOLD   3
 
@@ -208,6 +208,7 @@ typedef struct _vbif_srb_extension {
     virtio_buffer_descriptor_t sg[VIRTIO_MAX_SG];
     struct vring_desc vr_desc[VIRTIO_MAX_SG];
     BOOLEAN         force_unit_access;
+    BOOLEAN         force_unit_access_flush;
 #ifndef IS_STORPORT
     BOOLEAN         notify_next;
 #endif
@@ -254,16 +255,6 @@ typedef struct _virtio_sp_dev_ext {
 } virtio_sp_dev_ext_t;
 
 #include <virtio_sp_common.h>
-
-#ifdef IS_STORPORT
-/***************************** STOR PORT *******************************/
-#define vbif_do_flush virtio_blk_stor_do_flush
-#else
-/***************************** SCSI MINIPORT *******************************/
-#define vbif_do_read_write virtio_blk_do_read_write
-#define vbif_do_flush virtio_blk_do_flush
-
-#endif
 
 BOOLEAN virtio_blk_do_poll(virtio_sp_dev_ext_t *dev_ext, void *no_used);
 void virtio_blk_get_blk_config(virtio_sp_dev_ext_t *dev_ext);

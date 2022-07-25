@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008-2017 Red Hat, Inc.
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -67,7 +67,7 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
     did_work = 0;
 
     DPRINTK(DPRTL_DPC, ("%s: IN txrx_ind 0x%x path_id %d\n",
-                          __func__, txrx_ind, path_id));
+                        __func__, txrx_ind, path_id));
 
     if (adapter == NULL) {
         PRINTK(("%s: adapter is null.\n", __func__));
@@ -128,6 +128,7 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
 #endif
 
     VNIF_DEC_REF(adapter);
+
     DPRINTK(DPRTL_DPC, ("%s: OUT txrx_ind 0x%x path_id %d\n",
                           __func__, txrx_ind, path_id));
 }
@@ -947,7 +948,8 @@ vnif_drop_rcb(PVNIF_ADAPTER adapter, RCB *rcb, int status)
     }
 
     PRINTK(("%s: receive errors = %d, dropped = %d, status = %x, idx %x.\n",
-            __func__, adapter->ifInErrors, adapter->in_no_buffers, status,
+            __func__,
+            adapter->ifInErrors, adapter->in_no_buffers, status,
             rcb->index));
     vnif_return_rcb(adapter, rcb);
 }
@@ -1409,7 +1411,6 @@ VNIFReceivePacketsPostStats(PVNIF_ADAPTER adapter, UINT path_id,
         DPRINTK(DPRTL_ON,
             ("%s: halting, indicating %d packets.\n", __func__, cnt));
     }
-
     NdisDprReleaseSpinLock(&adapter->stats_lock);
 }
 

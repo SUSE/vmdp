@@ -10,7 +10,9 @@ INCLUDES = ..\include;..\include\virtio
 
 USER_C_FLAGS = " /FAcs /Fa..\obj\ "
 
-!if "$(DDK_TARGET_OS)"=="WinNET"
+!if "$(DDK_TARGET_OS)"=="WinXP"
+C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinXP
+!else if "$(DDK_TARGET_OS)"=="WinNET"
 C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinNET
 !else if "$(DDK_TARGET_OS)"=="WinLH"
 C_DEFINES = $(C_DEFINES) -DTARGET_OS_WinLH -DTARGET_OS_GTE_WinLH

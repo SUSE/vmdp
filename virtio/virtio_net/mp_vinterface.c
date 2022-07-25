@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -163,7 +163,7 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
     uint16_t linkStatus;
     uint8_t duplex;
 
-    RPRINTK(DPRTL_ON, ("VNIFFindAdapter: IN\n"));
+    RPRINTK(DPRTL_ON, ("%s: IN\n", __func__));
     status = NDIS_STATUS_SUCCESS;
     do {
         /*
@@ -178,27 +178,26 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
 
         vnif_virtio_dev_reset(adapter);
 
-        adapter->u.v.features = VIRTIO_DEVICE_GET_FEATURES(
-            &adapter->u.v.vdev);
+        adapter->u.v.features = VIRTIO_DEVICE_GET_FEATURES(&adapter->u.v.vdev);
         PRINTK(("%s: host features 0x%llx\n",
-                VNIF_DRIVER_NAME, adapter->u.v.features));
+                __func__, adapter->u.v.features));
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_CSUM)) {
-            RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: backend supports csum.\n"));
+            RPRINTK(DPRTL_INIT, ("%s: backend supports csum.\n", __func__));
             adapter->hw_tasks |=
                 VNIF_CHKSUM_TXRX_SUPPORTED | VNIF_CHKSUM_TXRX_IPV6_SUPPORTED;
         }
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_HOST_TSO4)) {
-            RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: backend LSO.\n"));
+            RPRINTK(DPRTL_INIT, ("%s: backend LSO.\n", __func__));
             adapter->hw_tasks |= VNIF_LSO_SUPPORTED;
         }
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_HOST_TSO6)) {
-            RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: backend LSO.\n"));
+            RPRINTK(DPRTL_INIT, ("%s: backend LSO.\n", __func__));
             adapter->hw_tasks |= VNIF_LSO_V2_IPV6_SUPPORTED;
         }
 
@@ -206,35 +205,35 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
                                       VIRTIO_NET_F_MRG_RXBUF)) {
             adapter->buffer_offset = sizeof(virtio_net_hdr_mrg_t);
             RPRINTK(DPRTL_INIT, ("%s: Using mergable buffers, offset %d\n",
-                                 VNIF_DRIVER_NAME,
+                                 __func__,
                                  adapter->buffer_offset));
         } else {
-            PRINTK(("%s: Not using mergable buffers.\n", VNIF_DRIVER_NAME));
+            PRINTK(("%s: Not using mergable buffers.\n", __func__ ));
         }
 
         VIRTIO_DEVICE_GET_CONFIG(&adapter->u.v.vdev,
             ETH_LENGTH_OF_ADDRESS,
             &linkStatus,
             sizeof(linkStatus));
-        RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: link status %x.\n", linkStatus));
+        RPRINTK(DPRTL_INIT, ("%s: link status %x.\n", __func__, linkStatus));
 
         adapter->duplex_state = MediaDuplexStateFull;
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_MTU)) {
-            RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: backend supports MTU.\n"));
+            RPRINTK(DPRTL_INIT, ("%s: backend supports MTU.\n", __func__));
             VIRTIO_DEVICE_GET_CONFIG(&adapter->u.v.vdev,
                 offsetof(virtio_net_config_t, mtu),
                 &adapter->mtu,
                 sizeof(uint16_t));
-            RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: backend MTU %d.\n",
-                                 adapter->mtu));
+            RPRINTK(DPRTL_INIT, ("%s: backend MTU %d.\n",
+                                 __func__, adapter->mtu));
         }
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_SPEED_DUPLEX)) {
             RPRINTK(DPRTL_INIT,
-                    ("VNIFFindAdapter: backend supports speed duplex.\n"));
+                    ("%s: backend supports speed duplex.\n", __func__));
             VIRTIO_DEVICE_GET_CONFIG(&adapter->u.v.vdev,
                 offsetof(virtio_net_config_t, speed),
                 &link_speed,
@@ -250,14 +249,16 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
             if (duplex == VIRTIO_NET_DUPLEX_HALF) {
                 adapter->duplex_state = MediaDuplexStateHalf;
             }
-            RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: speed %d, duplex %d.\n",
-                                 link_speed, duplex));
+            RPRINTK(DPRTL_INIT, ("%s: speed %d, duplex %d.\n",
+                                 __func__, link_speed, duplex));
         }
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_CTRL_VQ)) {
             adapter->u.v.b_control_queue = TRUE;
         }
+        RPRINTK(DPRTL_INIT, ("%s: control queue %d.\n",
+                             __func__, adapter->u.v.b_control_queue));
 
         if (adapter->u.v.b_control_queue == TRUE
                 && virtio_is_feature_enabled(adapter->u.v.features,
@@ -271,7 +272,8 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
             adapter->num_hw_queues = 1;
         }
         RPRINTK(DPRTL_INIT,
-                ("VNIFFindAdapter: control_q %d, multi_q %d num_hw_q %d.\n",
+                ("%s: control_q %d, multi_q %d num_hw_q %d.\n",
+                 __func__,
                  adapter->u.v.b_control_queue,
                  adapter->b_multi_queue,
                  adapter->num_hw_queues));
@@ -280,20 +282,20 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
                                       VIRTIO_RING_F_INDIRECT_DESC)) {
             adapter->b_indirect = TRUE;
         }
-        RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: indirect descriptors %d.\n",
-                             adapter->b_indirect));
+        RPRINTK(DPRTL_INIT, ("%s: indirect descriptors %d.\n",
+                             __func__, adapter->b_indirect));
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_F_RING_PACKED)) {
             adapter->b_use_packed_rings = TRUE;
         }
-        RPRINTK(DPRTL_INIT, ("VNIFFindAdapter: use packed rings %d.\n",
-                             adapter->b_use_packed_rings));
+        RPRINTK(DPRTL_INIT, ("%s: use packed rings %d.\n",
+                             __func__, adapter->b_use_packed_rings));
 
         /* MAC */
         status = VNIFSetupPermanentAddress(adapter);
         if (status != NDIS_STATUS_SUCCESS) {
-            PRINTK(("VNIF: set NIC MAC fail.\n"));
+            PRINTK(("%s VNIFSetupPermanentAddress fail.\n", __func__));
             break;
         }
     } while (FALSE);
@@ -301,8 +303,8 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
     if (status != NDIS_STATUS_SUCCESS) {
         VNIFFreeAdapterInterface(adapter);
     }
-    RPRINTK(DPRTL_ON, ("VNIFFindAdapter: OUT %p, %s, status %x\n",
-        adapter, adapter->node_name, status));
+    RPRINTK(DPRTL_ON, ("%s: OUT %p, %s, status %x\n",
+        __func__, adapter, adapter->node_name, status));
     return status;
 }
 
@@ -316,6 +318,7 @@ vnif_init_rcb_pool(PVNIF_ADAPTER adapter)
     UINT i;
 
     RPRINTK(DPRTL_ON, ("%s: irql = %d - IN\n", __func__, KeGetCurrentIrql()));
+
     for (path_id = 0; path_id < adapter->num_paths; path_id++) {
         NdisAcquireSpinLock(&adapter->path[path_id].rx_path_lock);
 
@@ -332,7 +335,8 @@ vnif_init_rcb_pool(PVNIF_ADAPTER adapter)
         NdisReleaseSpinLock(&adapter->path[path_id].rx_path_lock);
 
         RPRINTK(DPRTL_ON,
-          ("%s: using %d receive buffers. OUT\n", __func__, adapter->num_rcb));
+                ("%s: using %d receive buffers. OUT\n",
+                 __func__, adapter->num_rcb));
     }
     return NDIS_STATUS_SUCCESS;
 }
@@ -385,17 +389,23 @@ vnif_set_guest_features(PVNIF_ADAPTER adapter)
                 && virtio_is_feature_enabled(adapter->u.v.features,
                                              VIRTIO_F_RING_PACKED)) {
             virtio_feature_enable(guest_features, VIRTIO_F_RING_PACKED);
+            RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_F_RING_PACKED\n",
+                                 __func__));
         }
     }
 
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_RING_F_EVENT_IDX)) {
         virtio_feature_enable(guest_features, VIRTIO_RING_F_EVENT_IDX);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_RING_F_EVENT_IDX\n",
+                             __func__));
     }
 
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_RING_F_INDIRECT_DESC)) {
         virtio_feature_enable(guest_features, VIRTIO_RING_F_INDIRECT_DESC);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_RING_F_INDIRECT_DESC\n",
+                             __func__));
     }
 
     if ((adapter->cur_rx_tasks & (VNIF_CHKSUM_IPV4_TCP
@@ -419,51 +429,70 @@ vnif_set_guest_features(PVNIF_ADAPTER adapter)
     if (adapter->buffer_offset) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_MRG_RXBUF);
     }
+
     if (adapter->b_multi_queue) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_MQ);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_MQ\n",
+                             __func__));
     }
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_CTRL_VQ)) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_VQ);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_CTRL_VQ\n",
+                             __func__));
 
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_CTRL_RX)) {
             virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_RX);
+            RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_CTRL_RX\n",
+                                 __func__));
         }
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_CTRL_RX_EXTRA)) {
             virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_RX_EXTRA);
+            RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_CTRL_RX_EXTRA\n",
+                                 __func__));
         }
         if (virtio_is_feature_enabled(adapter->u.v.features,
                                       VIRTIO_NET_F_CTRL_VLAN)) {
             if (adapter->priority_vlan_support & P8021_VLAN_TAG) {
                 virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_VLAN);
+                RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_CTRL_VLAN\n",
+                                     __func__));
             }
         }
     }
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_MTU)) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_MTU);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_MTU\n", __func__));
     }
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_MAC)) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_MAC);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_MAC\n", __func__));
     }
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_CTRL_MAC_ADDR)) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_CTRL_MAC_ADDR);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_CTRL_MAC_ADDR\n",
+                             __func__));
     }
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_STATUS)) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_STATUS);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_STATUS\n",
+                             __func__));
     }
     if (virtio_is_feature_enabled(adapter->u.v.features,
                                   VIRTIO_NET_F_GUEST_ANNOUNCE)) {
         virtio_feature_enable(guest_features, VIRTIO_NET_F_GUEST_ANNOUNCE);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_NET_F_GUEST_ANNOUNCE\n",
+                             __func__));
     }
+
     PRINTK(("Virtio_net: setting guest features 0x%llx\n", guest_features));
-    virtio_device_set_guest_feature_list(&adapter->u.v.vdev,
-                                         guest_features);
+    virtio_device_set_guest_feature_list(&adapter->u.v.vdev, guest_features);
 }
 
 static NDIS_STATUS
@@ -475,11 +504,12 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
     status = NDIS_STATUS_SUCCESS;
 
     for (i = 0; i < adapter->num_paths; ++i) {
-        RPRINTK(DPRTL_INIT,
-                ("%s: virtio_q_setup [%d] rx[%d] m %d tx[%d] m %d\n",
+        RPRINTK(DPRTL_INIT, (
+                 "%s: virtio_q_setup [%d] rx[%d] m %d tx[%d] m %d\n",
                  __func__, i,
                  i * 2, adapter->path[i].u.vq.rx_msg,
                  (i * 2) + 1, adapter->path[i].u.vq.tx_msg));
+
         adapter->path[i].u.vq.rx = VIRTIO_DEVICE_QUEUE_SETUP(
             &adapter->u.v.vdev,
             i * 2,
@@ -644,7 +674,6 @@ vnifv_setup_rxtx(PVNIF_ADAPTER adapter)
 
     vnif_init_rcb_pool(adapter);
     vnif_init_tx(adapter);
-
     return status;
 }
 
@@ -699,7 +728,7 @@ VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
     RPRINTK(DPRTL_ON, ("VNIFSetupAdapterInterface: In\n"));
     status = NDIS_STATUS_SUCCESS;
 
-    if (adapter->lso_data_size > VIRTIO_LSO_MAX_DATA_SIZE)  {
+    if (adapter->lso_data_size > VIRTIO_LSO_MAX_DATA_SIZE) {
         adapter->lso_data_size = VIRTIO_LSO_MAX_DATA_SIZE;
     }
 
@@ -1102,6 +1131,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
         if (adapter->nBusySend) {
             vnif_complete_lost_sends(adapter);
         }
+
         VNIFFreeAdapterInterface(adapter);
 
         status = VNIFFindAdapter(adapter);

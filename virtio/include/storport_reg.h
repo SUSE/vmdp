@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2016-2020 SUSE LLC
+ * Copyright 2016-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 #ifndef _STORPORT_REG_H_
 #define _STORPORT_REG_H_
 
+#ifdef IS_STORPORT
 #include <ntddk.h>
 #include <storport.h>
 #include <ntstrsafe.h>
@@ -36,7 +37,11 @@
 
 NTSTATUS sp_registry_read(void *dev_ext, PUCHAR val_name, DWORD r_type,
                           void *val);
-
 NTSTATUS sp_get_reg_value(PWSTR key, PWSTR name, DWORD *value);
 NTSTATUS sp_set_reg_value(PWSTR key, PWSTR name, DWORD value);
+#else
+#define sp_registry_read(_dev_ext, _val_name, _r_type, _val)
+#define sp_get_reg_value(_key, _name, _value)
+#define sp_set_reg_value(_key, _name, _value)
+#endif
 #endif

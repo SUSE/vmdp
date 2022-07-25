@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2015 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,6 +26,7 @@
  */
 
 #include "miniport.h"
+#include <virtio_queue_ops.h>
 
 static VOID MPHandleInterrupt(IN NDIS_HANDLE MiniportAdapterContext);
 
@@ -120,14 +121,17 @@ MPHandleInterrupt(IN NDIS_HANDLE MiniportAdapterContext)
     if (int_status & VIRTIO_NET_DEV_INT_CTRL) {
         vnif_report_link_status(adapter);
     }
-    vnif_txrx_interrupt_dpc(adapter,
-                            VNF_ADAPTER_TX_DPC_IN_PROGRESS,
-                            0,
-                            NDIS_INDICATE_ALL_NBLS);
-    vnif_txrx_interrupt_dpc(adapter,
-                            VNF_ADAPTER_RX_DPC_IN_PROGRESS,
-                            0,
-                            NDIS_INDICATE_ALL_NBLS);
+    do {
+        vnif_txrx_interrupt_dpc(adapter,
+                                VNF_ADAPTER_TX_DPC_IN_PROGRESS,
+                                0,
+                                NDIS_INDICATE_ALL_NBLS);
+        vnif_txrx_interrupt_dpc(adapter,
+                                VNF_ADAPTER_RX_DPC_IN_PROGRESS,
+                                0,
+                                NDIS_INDICATE_ALL_NBLS);
+    } while (VNIF_RING_HAS_UNCONSUMED_RESPONSES(adapter->path[0].tx)
+        || VNIF_RING_HAS_UNCONSUMED_RESPONSES(adapter->path[0].rx));
     vq_enable_interrupt(adapter->path[0].rx);
     vq_enable_interrupt(adapter->path[0].tx);
 }

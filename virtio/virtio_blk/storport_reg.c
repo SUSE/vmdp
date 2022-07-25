@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2016-2020 SUSE LLC
+ * Copyright 2016-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,6 +23,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#ifdef IS_STORPORT
 
 #include <storport_reg.h>
 
@@ -176,3 +178,5 @@ sp_set_reg_value(PWSTR key, PWSTR name, DWORD value)
     DPRINTK(DPRTL_ON, ("%s - OUT\n", __func__));
     return status;
 }
+
+#endif

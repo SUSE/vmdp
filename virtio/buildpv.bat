@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2022 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -33,19 +33,28 @@ del build*.log
 
 if not exist obj mkdir obj
 
+if "%DDK_TARGET_OS%" == "WinXP"  goto WinXP
+if "%DDK_TARGET_OS%" == "WinNET" goto WinNET
 if "%DDK_TARGET_OS%" == "WinLH"  goto WinLH
 if "%DDK_TARGET_OS%" == "Win7"   goto Win7_lable
 goto supported_builds
 
+:WinXP
+:WinNET
+set MP_SRC_FILES=src_files5
+set virt_drivers=virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng pvvxsvc
+goto c_option
+
 :WinLH
 set MP_SRC_FILES=src_files6
-goto option
+set virt_drivers=virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng pvcrash_notify fwcfg pvvxsvc
+goto c_option
 
 :Win7_lable
 set MP_SRC_FILES=src_files6_rss
-goto option
+set virt_drivers=virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng pvcrash_notify fwcfg virtio_fs pvvxsvc
+goto c_option
 
-:option
 :c_option
 if "%1"=="" goto buildit
 if "%1"=="-c" goto set_c_option
@@ -57,7 +66,7 @@ set c_opt=%1
 shift
 
 :buildit
-for %%f in (virtio_blk virtio_net virtio_balloon virtio_scsi virtio_serial virtio_rng pvcrash_notify fwcfg pvvxsvc) do (
+for %%f in (%virt_drivers%) do (
     cd %%f
     build %c_opt%
     if exist *.err (
@@ -82,3 +91,4 @@ echo "syntax: buildpv [-cZ | -c]"
 
 :end
 set c_opt=
+set virt_drivers=

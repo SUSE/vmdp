@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -110,6 +110,7 @@ static NDIS_STRING reg_tx_sg_cnt = NDIS_STRING_CONST("TxSgCnt");
 void
 vnif_get_runtime_ndis_ver(UCHAR *major, UCHAR *minor)
 {
+#if NDIS_SUPPORT_NDIS6
     UINT runtime_ver;
 
     runtime_ver = NdisGetVersion();
@@ -122,6 +123,10 @@ vnif_get_runtime_ndis_ver(UCHAR *major, UCHAR *minor)
     } else if (*minor > NDIS_MINIPORT_MINOR_VERSION) {
         *minor = NDIS_MINIPORT_MINOR_VERSION;
     }
+#else
+    *major = VNIF_NDIS_MAJOR_VERSION;
+    *minor = VNIF_NDIS_MINOR_VERSION;
+#endif
 }
 
 static NDIS_STATUS

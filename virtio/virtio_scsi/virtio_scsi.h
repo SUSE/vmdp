@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2017 Red Hat, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,7 +47,6 @@
 #include <virtio_queue_ops.h>
 #include <storport_reg.h>
 #include <sp_io_control.h>
-#include <sp_defs.h>
 #include "virtio_scsix.h"
 
 #define VBIF_DESIGNATOR_STR "Virtio Block Device"
@@ -80,6 +79,9 @@
 #define MAX_PHYS_SEGMENTS_SCSI  64
 #define VIRTIO_MAX_SG           (3 + MAX_PHYS_SEGMENTS_SCSI)
 #endif
+
+#include <sp_defs.h>
+
 #define IO_PORT_LENGTH          0x40
 
 #define OP_MODE_NORMAL          0x01

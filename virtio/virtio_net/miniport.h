@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -77,8 +77,16 @@
 #define VNIF_SEND_PRINT_CNT 0
 #endif
 
+#if defined(NDIS51_MINIPORT)
+#define VNIF_NDIS_MAJOR_VERSION 5
+#define VNIF_NDIS_MINOR_VERSION 1
+#elif defined(NDIS50_MINIPORT)
+#define VNIF_NDIS_MAJOR_VERSION 5
+#define VNIF_NDIS_MINOR_VERSION 0
+#endif
+
 #define ETH_ADDRESS_SIZE            6
-#define ETH_HEADER_SIZE             14
+# define ETH_HEADER_SIZE             14
 #define ETH_MAX_DATA_SIZE           1500
 #define ETH_MAX_PACKET_SIZE         (ETH_HEADER_SIZE + ETH_MAX_DATA_SIZE)
 #define ETH_MIN_PACKET_SIZE         60
@@ -88,7 +96,7 @@
 #define VNIF_MAX_RCV_SIZE           65536 /* 64k */
 
 #define VIRTIO_LSO_MAX_DATA_SIZE    61440 /* 64k - 4k */
-#if defined(NDIS_SUPPORT_NDIS6)
+#if NDIS_SUPPORT_NDIS6
 #define XEN_LSO_MAX_DATA_SIZE       61440 /* 64k - 4k */
 #else
 #define XEN_LSO_MAX_DATA_SIZE       31744 /* 31k */
@@ -296,6 +304,7 @@
     (((_A)->adapter_flags & (VNIF_SHOULD_EXIT_DPC_MASK))                \
         || ((_p) < (_A)->num_paths && ((_A)->path[(_p)].Flags & (_txrx))))
 
+
 #define VNIF_RING_HAS_WORK(_A, _txrx, _p)                               \
     ((_txrx) == VNF_ADAPTER_TX_DPC_IN_PROGRESS ?                        \
         VNIF_RING_HAS_UNCONSUMED_RESPONSES((_A)->path[(_p)].tx) :       \
@@ -333,7 +342,7 @@
 #define VNIFIncrementStat(_val, _inc) {                                 \
     if (adapter->pv_stats) {                                            \
         NdisAcquireSpinLock(&adapter->stats_lock);                      \
-        (_val) += (_inc);                                               \
+        (_val) += (_inc);                      \
         NdisReleaseSpinLock(&adapter->stats_lock);                      \
     }                                                                   \
 }
@@ -371,7 +380,7 @@
 #ifdef DBG
 #define vnif_rcb_verify(_adapter, _rcb, _path_id)                       \
 {                                                                       \
-    if ((_rcb)->path_id != (_path_id)) {                                \
+    if ((_rcb)->path_id != (_path_id)) {                                                                       \
         PRINTK(("%s *** vnif_get_rx rcb path_id %d != path_id\n",       \
                 __func__, (_rcb)->path_id, (_path_id)));                \
     }                                                                   \
@@ -413,8 +422,9 @@
 NTSTATUS
 MPDriverEntry(PVOID DriverObject, PVOID RegistryPath);
 
-#ifdef NDIS_SUPPORT_NDIS6
 void vnif_get_runtime_ndis_ver(UCHAR *major, UCHAR *minor);
+
+#if NDIS_SUPPORT_NDIS6
 
 NDIS_STATUS DriverEntry6(PVOID DriverObject, PVOID RegistryPath);
 #define DRIVER_ENTRY DriverEntry6
@@ -625,7 +635,6 @@ typedef ULONG VNIF_GSO_INFO;
 
 #endif
 
-
 #if NDIS_SUPPORT_NDIS620
 #define vnif_schedule_msi_dpc(a, mid, pid, qdpc)                        \
 {                                                                       \
@@ -642,10 +651,6 @@ typedef ULONG VNIF_GSO_INFO;
 #else
 #define vnif_schedule_msi_dpc(a, mid, pid, qdpc) *(qdpc) = TRUE
 #endif
-
-
-
-
 
 #ifdef VNIF_TRACK_TX
 typedef struct txlist_ent_s {
@@ -665,7 +670,7 @@ typedef struct txlist_s {
 #endif
 
 typedef struct vnif_pv_stats_s {
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
     NDIS_HANDLE     stat_timer;
 #else
     NDIS_TIMER      stat_timer;
@@ -709,7 +714,7 @@ typedef struct vnif_path_s {
     rcb_ring_pool_t     rcb_rp;
     LIST_ENTRY          tcb_free_list;
     struct vring_desc   *tx_desc;
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
     QUEUE_HEADER        send_wait_queue;
     PNET_BUFFER_LIST    sending_nbl;
 #endif
@@ -768,7 +773,7 @@ typedef struct _VNIF_ADAPTER {
     uint32_t            max_frame_sz;
     NDIS_DEVICE_POWER_STATE power_state;
     NDIS_HANDLE         NdisMiniportDmaHandle;
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
     PNDIS_OID_REQUEST   NdisRequest;
     NDIS_HANDLE         ResetTimer;
     NDIS_HANDLE         rcv_timer;
@@ -791,7 +796,7 @@ typedef struct _VNIF_ADAPTER {
     NDIS_OID            oid;
 
     /* Variables to track resources for the send operation */
-#ifndef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6 == 0
     LIST_ENTRY          SendWaitList;
 #endif
     TCB                 **TCBArray;
@@ -808,7 +813,7 @@ typedef struct _VNIF_ADAPTER {
     LONG                nResetTimerCount;
 
     /* Variables to track resources for the Receive operation */
-#ifndef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6 == 0
     NDIS_ENCAPSULATION_FORMAT EncapsulationFormat;
 #endif
     LONG                nBusyRecv;
@@ -836,7 +841,7 @@ typedef struct _VNIF_ADAPTER {
     ULONG64             ifInErrors;             /* GEN_RCV_ERROR */
     ULONG64             ifOutErrors;            /* GEN_XMIT_ERROR */
     ULONG64             ifOutDiscards;          /* GEN_XMIT_DISCARDS */
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
     ULONG64             ifHCInUcastPkts;        /* GEN_DIRECTED_FRAMES_RCV */
     ULONG64             ifHCInMulticastPkts;    /* GEN_MULTICAST_FRAMES_RCV */
     ULONG64             ifHCInBroadcastPkts;    /* GEN_BROADCAST_FRAMES_RCV */
@@ -992,7 +997,7 @@ extern NDIS_HANDLE NdisMiniportDriverHandle;
 extern void (*VNIF_ALLOCATE_SHARED_MEMORY)(struct _VNIF_ADAPTER *adapter,
     void **va, PHYSICAL_ADDRESS *pa, uint32_t len, NDIS_HANDLE hndl);
 
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
 extern NDIS_OID VNIFSupportedOids[];
 extern uint32_t SupportedOidListLength;
 
@@ -1233,7 +1238,6 @@ void VNIFReturnRcbStats(PVNIF_ADAPTER adapter, RCB *rcb);
 NDIS_TIMER_FUNCTION VNIFPvStatTimerDpc;
 void vnif_dpc(PKDPC dpc, PVNIF_ADAPTER adapter, void *s1, void *s2);
 void VNIFIndicateLinkStatus(PVNIF_ADAPTER adapter, uint32_t status);
-
 void vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter, ULONG txrx_ind,
                              UINT path_id, UINT max_nbls_to_indicate);
 void vnif_call_txrx_interrupt_dpc(PVNIF_ADAPTER adapter);

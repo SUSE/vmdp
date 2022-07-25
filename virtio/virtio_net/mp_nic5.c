@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,7 @@
 
 #include "miniport.h"
 
-static void xennet_check_tx_throttle(PVNIF_ADAPTER adapter);
+static void vnif_check_tx_throttle(PVNIF_ADAPTER adapter);
 static void MPReturnPacketWithLock(PVNIF_ADAPTER adapter, PNDIS_PACKET packet);
 
 static int
@@ -546,7 +546,8 @@ MPSendPackets(
                 NDIS_STATUS_FAILURE);
         }
     } else {
-        DPRINTK(DPRTL_ON, ("VNIFSendPackets not ready %x.\n", adapter->Flags));
+        DPRINTK(DPRTL_ON, ("VNIFSendPackets not ready %x.\n",
+                           adapter->adapter_flags));
         NdisReleaseSpinLock(&adapter->path[0].tx_path_lock);
         status = VNIF_GET_STATUS_FROM_FLAGS(adapter);
         for (i = 0; i < NumberOfPackets; i++) {
@@ -909,7 +910,8 @@ VNIFReceivePackets(IN PVNIF_ADAPTER adapter, UINT path_id, UINT nbls)
                             ("Receiveing rcb %x.\n", rcb->index));
                         if (adapter->num_rcb > NET_RX_RING_SIZE) {
                             DPRINTK(DPRTL_TRC,
-                                ("VRcvPkts: xennet_add_rcb_to_ring.\n"));
+                                ("%s: vnif_add_rcb_to_ring_from_list.\n",
+                                 __func__));
                             rcb_added_to_ring +=
                                 vnif_add_rcb_to_ring_from_list(adapter,
                                                                path_id);
@@ -976,7 +978,7 @@ VNIFReceivePackets(IN PVNIF_ADAPTER adapter, UINT path_id, UINT nbls)
             for (j = 0; j < free_now_cnt; j++) {
                 MPReturnPacketWithLock(adapter, free_now_packet_array[j]);
             }
-            xennet_check_tx_throttle(adapter);
+            vnif_check_tx_throttle(adapter);
             NdisDprReleaseSpinLock(&adapter->path[path_id].rx_path_lock);
         }
     }
@@ -986,22 +988,25 @@ VNIFReceivePackets(IN PVNIF_ADAPTER adapter, UINT path_id, UINT nbls)
 }
 
 static void
-xennet_check_tx_throttle(PVNIF_ADAPTER adapter)
+vnif_check_tx_throttle(PVNIF_ADAPTER adapter)
 {
+    DPRINTK(DPRTL_TRC, ("  %s: in\n", __func__));
     if ((uint32_t)adapter->nBusyRecv <= adapter->tx_throttle_stop) {
         if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_SEND_SLOWDOWN)) {
             VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_SEND_SLOWDOWN);
             DPRINTK(DPRTL_ON,
-                ("MPReturnPacket: nBusyRecv %d, clearing send slowdown\n",
-                adapter->nBusyRecv));
+                    ("  %s: nBusyRecv %d, clearing send slowdown\n",
+                     __func__, adapter->nBusyRecv));
             if (VNIF_IS_READY(adapter)) {
                 /* See if we can send any packets that we may have queued. */
                 if (!IsListEmpty(&adapter->SendWaitList)) {
+                    DPRINTK(DPRTL_TRC, ("    MPSendPackets.\n"));
                     MPSendPackets(adapter, NULL, 0);
                 }
             }
         }
     }
+    DPRINTK(DPRTL_TRC, ("  %s: out\n", __func__));
 }
 
 static void
@@ -1009,14 +1014,14 @@ MPReturnPacketWithLock(PVNIF_ADAPTER adapter, PNDIS_PACKET packet)
 {
     RCB *rcb;
 
-    DPRINTK(DPRTL_TRC, ("MPReturnPacketWithLock.\n"));
+    DPRINTK(DPRTL_TRC, ("  %s: in\n", __func__));
 
     rcb = *((PRCB *)packet->MiniportReserved);
     VNIFReturnRcbStats(adapter, rcb);
     vnif_return_rcb(adapter, rcb);
     VNIFInterlockedDecrement(adapter->nBusyRecv);
 
-    DPRINTK(DPRTL_TRC, ("MPReturnPacketWithLock: end.\n"));
+    DPRINTK(DPRTL_TRC, ("  %s: out\n", __func__));
 }
 
 VOID
@@ -1026,15 +1031,15 @@ MPReturnPacket(
 {
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER)MiniportAdapterContext;
 
-    DPRINTK(DPRTL_IO, ("MPReturnPacket.\n"));
+    DPRINTK(DPRTL_IO, ("%s: in\n", __func__));
     NdisDprAcquireSpinLock(&adapter->path[0].rx_path_lock);
 
     MPReturnPacketWithLock(adapter, packet);
-    xennet_check_tx_throttle(adapter);
+    vnif_check_tx_throttle(adapter);
 
-    VNIF_RX_RING_KICK_ALWAYS(adapter->path[0].rx);
+    VNIF_RX_RING_KICK_ALWAYS(&adapter->path[0]);
     NdisDprReleaseSpinLock(&adapter->path[0].rx_path_lock);
-    DPRINTK(DPRTL_TRC, ("MPReturnPacket: end.\n"));
+    DPRINTK(DPRTL_IO, ("%s: out\n", __func__));
 }
 
 VOID
@@ -1097,7 +1102,7 @@ vnif_complete_lost_sends(VNIF_ADAPTER *adapter)
         pkt = tcb->orig_send_packet;
         tcb->orig_send_packet = NULL;
 
-        PRINTK(("xennet_complete_lost_sends: packet %p.\n", pkt));
+        PRINTK(("%s: packet %p.\n", __func__, pkt));
         NdisMSendComplete(
             adapter->AdapterHandle,
             pkt,

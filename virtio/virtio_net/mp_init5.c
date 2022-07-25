@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -464,7 +464,7 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
     uint32_t i;
     uint32_t p;
 
-    DPRINTK(DPRTL_ON, ("VNIF: VNIFNdisSetupNdisAdapter - IN\n"));
+    DPRINTK(DPRTL_ON, ("VNIF: %s - IN\n", __func__));
     do {
         /* Pre-allocate packet pool and buffer pool for recveive. */
         NdisAllocatePacketPool(
@@ -496,7 +496,7 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
         for (p = 0; p < adapter->num_paths; p++) {
             VNIF_ALLOCATE_MEMORY(
                 (void *)adapter->path[p].rcb_rp.rcb_array,
-                sizeof(RCB *) * adapter->num_paths,
+                sizeof(RCB *) * adapter->num_rcb,
                 VNIF_POOL_TAG,
                 NdisMiniportDriverHandle,
                 NormalPoolPriority);
@@ -505,7 +505,7 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
                 break;
             }
             NdisZeroMemory(adapter->path[p].rcb_rp.rcb_array,
-                           sizeof(RCB *) * adapter->num_paths);
+                           sizeof(RCB *) * adapter->num_rcb);
 
             for (i = 0; i < adapter->num_rcb; i++) {
                 VNIF_ALLOCATE_MEMORY(
@@ -575,7 +575,7 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
 
     } while (FALSE);
 
-    DPRINTK(DPRTL_ON, ("VNIF: VNIFNdisSetupNdisAdapter - OUT\n"));
+    DPRINTK(DPRTL_ON, ("VNIF: %s - OUT\n", __func__));
     return status;
 }
 

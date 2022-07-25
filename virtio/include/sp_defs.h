@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2011-2015 Novell, Inc.
- * Copyright 2015-2020 SUSE LLC
+ * Copyright 2015-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -74,6 +74,7 @@ typedef struct {
 
 #ifdef IS_STORPORT
 /***************************** STOR PORT *******************************/
+#define SP_INITIALIZE StorPortInitialize
 #define SP_BUILDIO_BOOL FALSE
 #define SP_PAUSE StorPortPause
 #define SP_RESUME StorPortResume
@@ -85,8 +86,9 @@ typedef struct {
 #define SP_STALL_EXECUTION StorPortStallExecution
 #define SP_BUSY StorPortBusy
 #define SP_NEXT_REQUEST(_next, _dev_ext)
+#define SP_GET_BUS_DATA StorPortGetBusData
 #define SP_GET_PHYSICAL_ADDRESS StorPortGetPhysicalAddress
-#define Sp_GET_DEVICE_BASE StorPortGetDeviceBase
+#define SP_GET_DEVICE_BASE StorPortGetDeviceBase
 #define SP_ISSUE_DPC StorPortIssueDpc
 #define SP_SYNCHRONIZE_ACCESS StorPortSynchronizeAccess
 #define SP_SHOULD_NOTIFY_NEXT(_dev_ext, _srb, _srb_ext, _num_free)
@@ -123,16 +125,18 @@ typedef struct {
 
 #else
 /***************************** SCSI MINIPORT *******************************/
+#define SP_INITIALIZE ScsiPortInitialize
 #define SP_BUILDIO_BOOL TRUE
-#define VBIF_LOCK_HANDLE XEN_LOCK_HANDLE
+#define SP_LOCK_HANDLE KLOCK_QUEUE_HANDLE
 #define SP_GET_UNCACHED_EXTENSION ScsiPortGetUncachedExtension
 #define SP_LOG_ERROR ScsiPortLogError
 #define SP_PAUSE(_dev_ext, _pause_val)
 #define SP_RESUME(dev_ext)
 #define SP_STALL_EXECUTION ScsiPortStallExecution
 #define SP_NOTIFICATION ScsiPortNotification
-#define SP_busy(_dev_ext, _val)
+#define SP_BUSY(_dev_ext, _val)
 #define SP_NEXT_REQUEST ScsiPortNotification
+#define SP_GET_BUS_DATA ScsiPortGetBusData
 #define SP_GET_PHYSICAL_ADDRESS ScsiPortGetPhysicalAddress
 #define SP_GET_DEVICE_BASE ScsiPortGetDeviceBase
 #define SP_SET_QUEUE_DEPTH(_dev, _srb)
@@ -159,37 +163,6 @@ typedef struct {
 }
 
 #define StorPortEnablePassiveInitialization(_dev, _foo)
-
-static FORCEINLINE sp_sgl_t *
-sp_build_sgl(virtio_sp_dev_ext_t *dev_ext,
-    SCSI_REQUEST_BLOCK *srb)
-{
-    sp_sgl_t      *scsi_sgl;
-    uint8_t *data_buf;
-    ULONG len;
-    ULONG el;
-    ULONG bytes_left;
-
-    scsi_sgl = &dev_ext->scsi_sgl;
-    bytes_left = srb->DataTransferLength;
-    data_buf = (uint8_t *)srb->DataBuffer;
-
-    el = 0;
-    while (bytes_left) {
-        scsi_sgl->List[el].PhysicalAddress =
-            SP_GET_PHYSICAL_ADDRESS(dev_ext, srb, data_buf, &len);
-            scsi_sgl->List[el].Length = len;
-        bytes_left -= len;
-        data_buf += len;
-        el++;
-    }
-    scsi_sgl->NumberOfElements = el;
-    if (scsi_sgl->NumberOfElements > VIRTIO_SP_MAX_SGL_ELEMENTS  + 3) {
-        PRINTK(("vbif_build_sgl: sgl el %d, len %d.\n",
-            scsi_sgl->NumberOfElements, srb->DataTransferLength));
-    }
-    return scsi_sgl;
-}
 
 #endif
 

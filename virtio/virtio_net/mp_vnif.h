@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2021 SUSE LLC
+ * Copyright 2019-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -71,7 +71,7 @@ typedef struct _vnif_virtio_s {
     virtio_bar_t        vbar[PCI_TYPE0_ADDRESSES];
     uint64_t            features;
 
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
     PIO_INTERRUPT_MESSAGE_INFO  msi_info_tbl;
     NDIS_HANDLE         interrupt_handle;
 #else
@@ -99,7 +99,7 @@ typedef struct _sync_ctx {
 } sync_ctx_t;
 
 /* *************** mp_vnic5/6.c ************ */
-#ifndef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6 == 0
 void MPV_DriverEntryEx(NDIS_MINIPORT_CHARACTERISTICS *mp_char);
 NDIS_STATUS VNIFV_GetHWResources(struct _VNIF_ADAPTER *adapter);
 #define vnifv_msi_config(_adapter) NDIS_STATUS_SUCCESS
@@ -136,7 +136,7 @@ void vnifv_send_multicast_list(struct _VNIF_ADAPTER *adapter);
 void vnifv_send_vlan_filter(struct _VNIF_ADAPTER *adapter, UCHAR add_del);
 
 /* *************** mp_vutils.c ************ */
-#ifdef NDIS_SUPPORT_NDIS6
+#if NDIS_SUPPORT_NDIS6
 MINIPORT_DISABLE_INTERRUPT MPDisableInterrupt;
 MINIPORT_ENABLE_INTERRUPT MPEnableInterrupt;
 #else

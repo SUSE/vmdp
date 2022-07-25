@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -135,15 +135,28 @@ void virtio_sp_poll(IN virtio_sp_dev_ext_t *dev_ext);
 #ifdef DBG
 extern ULONG g_int_to_send;
 
+#ifdef IS_STORPORT
 void virtio_sp_verify_sgl(virtio_sp_dev_ext_t *dev_ext,
     PSCSI_REQUEST_BLOCK srb,
     STOR_SCATTER_GATHER_LIST *sgl);
 #else
 #define virtio_sp_verify_sgl(_dev_ext, _srb, _sgl)
 #endif
+#else
+#define virtio_sp_verify_sgl(_dev_ext, _srb, _sgl)
+#endif
 
 #ifdef IS_STORPORT
 /***************************** STOR PORT *******************************/
+#define hwInitializationData_HwStartIo(_hwInitializationData)               \
+    (_hwInitializationData).HwStartIo = sp_start_io
+
+#define hwInitializationData_HwBuildIo(_hwInitializationData)               \
+    (_hwInitializationData).HwBuildIo = sp_build_io
+
+#define hwInitializationData_MapBuffers(_hwInitializationData)              \
+    (_hwInitializationData).MapBuffers = STOR_MAP_NON_READ_WRITE_BUFFERS
+
 BOOLEAN virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
     SCSI_REQUEST_BLOCK *srb);
 #define virtio_sp_do_cmd virtio_sp_scsi_do_cmd
@@ -176,10 +189,26 @@ void sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
 
 #else
 /***************************** SCSI MINIPORT *******************************/
+#define hwInitializationData_HwStartIo(_hwInitializationData)               \
+    (_hwInitializationData).HwStartIo = sp_build_io
+
+#define hwInitializationData_HwBuildIo(_hwInitializationData)
+
+#define hwInitializationData_MapBuffers(_hwInitializationData)              \
+    (_hwInitializationData).MapBuffers = TRUE
+
+#define SPortInitialize(_status,                                            \
+                        _DriverObject,                                      \
+                        _RegistryPath,                                      \
+                        _hwInitializationData,                              \
+                        _NULL)                                              \
+
 #define virtio_sp_do_cmd virtio_scsi_do_cmd
 
 #define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
     (_cc) |= virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id), TRUE)
+
+sp_sgl_t * sp_build_sgl(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb);
 
 
 #endif
