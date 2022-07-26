@@ -52,7 +52,7 @@ goto c_option
 
 :Win7_lable
 set MP_SRC_FILES=src_files6_rss
-set virt_drivers=virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng pvcrash_notify fwcfg virtio_fs pvvxsvc
+set virt_drivers=virtio_balloon virtio_blk virtio_net virtio_scsi virtio_serial virtio_rng pvcrash_notify fwcfg pvvxsvc
 goto c_option
 
 :c_option
