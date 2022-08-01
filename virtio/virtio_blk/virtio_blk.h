@@ -208,7 +208,6 @@ typedef struct _vbif_srb_extension {
     virtio_buffer_descriptor_t sg[VIRTIO_MAX_SG];
     struct vring_desc vr_desc[VIRTIO_MAX_SG];
     BOOLEAN         force_unit_access;
-    BOOLEAN         force_unit_access_flush;
 #ifndef IS_STORPORT
     BOOLEAN         notify_next;
 #endif

@@ -468,8 +468,15 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
             virtio_sp_complete_cmd(dev_ext, 1, 0, FALSE);
         }
         if (status != SRB_STATUS_SUCCESS) {
+            PRINTK(("%s %s: [%d] srb %x srbst 0x%x st 0x%x op_mode %x\n",
+                     VIRTIO_SP_DRIVER_NAME, __func__, i,
+                    srb, srb->SrbStatus, status, dev_ext->op_mode));
+            PRINTK(("  type %d fua %d func %x cdb %x\n",
+                    srb_ext->vbr.out_hdr.type,
+                    srb_ext->force_unit_access,
+                    srb->Function,
+                    srb->Cdb[0]));
             srb->SrbStatus = SRB_STATUS_ERROR;
-            PRINTK(("%s %s: 0x%x\n",  VIRTIO_SP_DRIVER_NAME, __func__, status));
             SP_LOG_ERROR(dev_ext, NULL, 0, 0, 0, SP_INTERNAL_ADAPTER_ERROR,
                 __LINE__);
         }

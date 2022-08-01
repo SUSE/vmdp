@@ -224,7 +224,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
             return TRUE;
 #else
             /* srb->SrbStatus is set in the flush: error or success. */
-            DPRINTK(DPRTL_ON, ("%s: SYNCHRONIZE_CACHE: %d\n",
+            DPRINTK(DPRTL_TRC, ("%s: SYNCHRONIZE_CACHE: %d\n",
                                VIRTIO_SP_DRIVER_NAME,
                                flush_status));
             break;
@@ -273,7 +273,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         return TRUE;
 #else
         /* srb->SrbStatus is set in the flush: error or success. */
-        DPRINTK(DPRTL_ON, ("%s: FLUSH/SHUTDOWN: %d\n",
+        DPRINTK(DPRTL_TRC, ("%s: FLUSH/SHUTDOWN: %d\n",
                            VIRTIO_SP_DRIVER_NAME,
                            flush_status));
         break;
@@ -452,7 +452,6 @@ sp_build_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
             dev_ext, NULL, &srb_ext->vbr.status, &len);
         srb_ext->sg[el].phys_addr = pa.QuadPart;
         srb_ext->sg[el].len = sizeof(srb_ext->vbr.status);
-        srb_ext->force_unit_access_flush = FALSE;
         srb_ext->force_unit_access = virtio_is_feature_enabled(
             dev_ext->features, VIRTIO_BLK_F_WCACHE)
                 ? (cdb->CDB10.ForceUnitAccess == 1)
@@ -533,32 +532,19 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
 
             if (vbr->out_hdr.type == VIRTIO_BLK_T_FLUSH) {
                 dev_ext->op_mode &= ~OP_MODE_FLUSH;
-                DPRINTK(DPRTL_TRC, ("%s %s: flush, force_unit_access %d\n",
-                        VIRTIO_SP_DRIVER_NAME, __func__,
-                        srb_ext->force_unit_access));
             }
-
+#ifdef IS_STORPORT
             if (srb_ext->force_unit_access == TRUE) {
                 srb_ext->force_unit_access = FALSE;
-                srb_ext->force_unit_access_flush = TRUE;
                 srb->SrbStatus = SRB_STATUS_PENDING;
                 if (virtio_blk_do_flush(dev_ext, srb) == FALSE) {
                     srb->SrbStatus = SRB_STATUS_ERROR;
                     SP_COMPLETE_SRB(dev_ext, srb);
                 }
-            } else {
-#ifdef IS_STORPORT
-                SP_COMPLETE_SRB(dev_ext, srb);
-#else
-                if (vbr->out_hdr.type == VIRTIO_BLK_T_FLUSH) {
-                    if (srb_ext->force_unit_access_flush == TRUE) {
-                        srb_ext->force_unit_access_flush = FALSE;
-                        SP_COMPLETE_SRB(dev_ext, srb);
-                    }
-                } else {
-                    SP_COMPLETE_SRB(dev_ext, srb);
-                }
+            }
 #endif
+            else {
+                SP_COMPLETE_SRB(dev_ext, srb);
             }
         }
     } else if (reason == 3 || msg_id + 1 == VIRTIO_BLK_MSIX_CONFIG_VECTOR) {
