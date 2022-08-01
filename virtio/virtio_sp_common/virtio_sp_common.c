@@ -70,6 +70,14 @@ KvmDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
     NTSTATUS status;
     uint32_t i;
     KIRQL irql;
+#ifndef IS_STORPORT
+    uint8_t vendorId[4] = {'1', 'A', 'F', '4'};
+#ifdef VIRTIO_BLK_DRIVER
+    uint8_t deviceId[4] = {'1', '0', '0', '1'};
+#else
+    uint8_t deviceId[4] = {'1', '0', '0', '4'};
+#endif
+#endif
 
     irql = KeGetCurrentIrql();
 
@@ -111,6 +119,13 @@ KvmDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
     hwInitializationData_HwStartIo(hwInitializationData);
     hwInitializationData_HwBuildIo(hwInitializationData);
     hwInitializationData_MapBuffers(hwInitializationData);
+#ifndef IS_STORPORT
+    hwInitializationData.MapBuffers = TRUE;
+    hwInitializationData.VendorIdLength = sizeof(vendorId);
+    hwInitializationData.VendorId = vendorId;
+    hwInitializationData.DeviceIdLength = sizeof(deviceId);
+    hwInitializationData.DeviceId = deviceId;
+#endif
 
     RPRINTK(DPRTL_ON, ("\tcalling StorPoprtInitialize\n"));
     status = SP_INITIALIZE(DriverObject,
@@ -207,6 +222,7 @@ sp_initialize(virtio_sp_dev_ext_t *dev_ext)
     }
 
     if (dev_ext->state != WORKING) {
+#ifdef IS_STORPORT
         dev_ext->state = INITIALIZING;
         if (dev_ext->op_mode & OP_MODE_NORMAL) {
             /* Scsi passive initialization starts from sp_adapter_control. */
@@ -220,6 +236,9 @@ sp_initialize(virtio_sp_dev_ext_t *dev_ext)
             PRINTK(("%s %s: hibernate/crashdump end.\n",
                     VIRTIO_SP_DRIVER_NAME, __func__));
         }
+#else
+        dev_ext->state = WORKING;
+#endif
     }
 
     VBIF_CLEAR_FLAG(dev_ext->sp_locks, (BLK_IZE_L | BLK_INT_L));
