@@ -427,6 +427,36 @@ sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2)
 }
 #endif
 
+#ifndef IS_STORPORT
+BOOLEAN
+sp_enable_int_callback(virtio_sp_dev_ext_t *dev_ext)
+{
+    DPRINTK(DPRTL_INT, ("%s: in\n", __func__));
+    while (vq_has_unconsumed_responses(
+            dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])) {
+        DPRINTK(DPRTL_INT, ("%s: virtio_sp_complete_cmd\n", __func__));
+        virtio_sp_complete_cmd(dev_ext, 1, VIRTIO_SCSI_QUEUE_REQUEST, FALSE);
+    }
+    DPRINTK(DPRTL_INT, ("%s: out\n", __func__));
+    SP_NOTIFICATION(CallDisableInterrupts, dev_ext, sp_disable_int_callback);
+    return TRUE;
+}
+
+BOOLEAN
+sp_disable_int_callback(virtio_sp_dev_ext_t *dev_ext)
+{
+    DPRINTK(DPRTL_INT, ("%s: in\n", __func__));
+    virtio_sp_enable_interrupt(dev_ext, dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST]);
+    if (vq_has_unconsumed_responses(
+            dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])) {
+        DPRINTK(DPRTL_INT, ("%s: vq_has_unconsumed_responses\n", __func__));
+        virtio_sp_complete_cmd(dev_ext, 1, VIRTIO_SCSI_QUEUE_REQUEST, FALSE);
+    }
+    DPRINTK(DPRTL_INT, ("%s: out\n", __func__));
+    return TRUE;
+}
+#endif
+
 BOOLEAN
 virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
 {
@@ -486,8 +516,8 @@ virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     if (num_free >= 0) {
         vq_kick(dev_ext->vq[qidx]);
         SP_SHOULD_NOTIFY_NEXT(dev_ext, srb, srb_ext, num_free);
-        DPRINTK(DPRTL_TRC, ("%s %s: out TRUE, added %d\n",
-                            VIRTIO_SP_DRIVER_NAME,  __func__, ++g_addb));
+        DPRINTK(DPRTL_TRC, ("%s %s: out TRUE - srb %x added %d\n",
+                            VIRTIO_SP_DRIVER_NAME,  __func__, srb, ++g_addb));
         VBIF_CLEAR_FLAG(dev_ext->sp_locks, (BLK_ADD_L));
         KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
         return TRUE;

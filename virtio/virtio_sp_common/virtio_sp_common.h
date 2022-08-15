@@ -122,6 +122,10 @@ BOOLEAN virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                                ULONG reason,
                                ULONG  msg_id,
                                BOOLEAN from_int);
+#ifndef IS_STORPORT
+BOOLEAN sp_enable_int_callback(virtio_sp_dev_ext_t *dev_ext);
+BOOLEAN sp_disable_int_callback(virtio_sp_dev_ext_t *dev_ext);
+#endif
 
 BOOLEAN virtio_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
     SCSI_REQUEST_BLOCK *srb);
@@ -206,7 +210,27 @@ void sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
 #define virtio_sp_do_cmd virtio_scsi_do_cmd
 
 #define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
-    (_cc) |= virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id), TRUE)
+{                                                                           \
+    if ((_dev_ext)->op_mode & OP_MODE_NORMAL) {                             \
+        if ((_reason) == 1) {                                               \
+            vq_disable_interrupt(dev_ext->vq[(_msg_id)]);                   \
+            SP_NOTIFICATION(CallEnableInterrupts,                           \
+                           (_dev_ext),                                      \
+                           sp_enable_int_callback);                         \
+            (_cc) |= TRUE;                                                  \
+        } else {                                                            \
+            (_cc) |= virtio_sp_complete_cmd((_dev_ext),                     \
+                                           (_reason),                       \
+                                           (_msg_id),                       \
+                                           TRUE);                           \
+        }                                                                   \
+    } else {                                                                \
+        (_cc) |= virtio_sp_complete_cmd((_dev_ext),                         \
+                                       (_reason),                           \
+                                       (_msg_id),                           \
+                                       TRUE);                               \
+    }                                                                       \
+}
 
 sp_sgl_t * sp_build_sgl(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb);
 
