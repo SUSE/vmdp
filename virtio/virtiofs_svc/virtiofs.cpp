@@ -29,7 +29,7 @@
 
 #pragma warning(push)
 // '<anonymous-tag>' : structure was padded due to alignment specifier
-#pragma warning(disable: 4324) 
+#pragma warning(disable: 4324)
 // nonstandard extension used : nameless struct / union
 #pragma warning(disable: 4201)
 // potentially uninitialized local variable 'Size' used
@@ -116,14 +116,16 @@ struct VIRTFS
     VIRTFS_NOTIFICATION DevHandleNotification{};
 
     std::wstring MountPoint{ L"*" };
+    std::wstring Tag{};
 
     UINT32  MaxPages{ 0 };
     // A write request buffer size must not exceed this value.
     UINT32  MaxWrite{ 0 };
 
     // Uid/Gid used to describe files' owner on the guest side.
-    UINT32  LocalUid{ 0 };
-    UINT32  LocalGid{ 0 };
+    // Equals to well-known SID 'Everyone' by default.
+    UINT32  LocalUid{ 0x10100 };
+    UINT32  LocalGid{ 0x10100 };
 
     // Uid/Gid used to describe files' owner on the host side.
     UINT32  OwnerUid{ 0 };
@@ -142,9 +144,22 @@ struct VIRTFS
 };
 
 VIRTFS::VIRTFS(ULONG DebugFlags, const std::wstring& MountPoint)
-    : DebugFlags{ DebugFlags }, MountPoint{ MountPoint }
+    : DebugFlags{ DebugFlags }, MountPoint{ MountPoint }, Tag{ Tag }
 {
 }
+
+template <typename EF>
+class scope_exit
+{
+    EF exit_func;
+
+public:
+    scope_exit(EF&& exit_func) : exit_func{ exit_func } {};
+    ~scope_exit()
+    {
+        exit_func();
+    }
+};
 
 static NTSTATUS SetBasicInfo(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     UINT32 FileAttributes, UINT64 CreationTime, UINT64 LastAccessTime,
@@ -156,10 +171,12 @@ static NTSTATUS SetFileSize(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
 static VOID FixReparsePointAttributes(VIRTFS *VirtFs, uint64_t nodeid,
     UINT32 *PFileAttributes);
 
+static VOID GetVolumeName(HANDLE Device, PWSTR VolumeName, DWORD VolumeNameSize);
+
 static NTSTATUS VirtFsLookupFileName(VIRTFS *VirtFs, PWSTR FileName,
     FUSE_LOOKUP_OUT *LookupOut);
 
-static DWORD FindDeviceInterface(PHANDLE Device);
+static DWORD FindDeviceInterface(PHANDLE Device, const std::wstring& Tag);
 
 static DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
     PVOID Context, CM_NOTIFY_ACTION Action, PCM_NOTIFY_EVENT_DATA EventData,
@@ -304,7 +321,7 @@ static DWORD VirtFsDevInterfaceArrival(VIRTFS *VirtFs, HCMNOTIFICATION Notify)
     // Wait for unregister work to end, if any.
     WaitForThreadpoolWorkCallbacks(Notification->UnregWork, FALSE);
 
-    Error = FindDeviceInterface(&VirtFs->Device);
+    Error = FindDeviceInterface(&VirtFs->Device, VirtFs->Tag);
     if (Error != ERROR_SUCCESS)
     {
         return Error;
@@ -364,7 +381,6 @@ DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
     DWORD EventDataSize)
 {
     VIRTFS *VirtFs = (VIRTFS *)Context;
-    DWORD Result = ERROR_SUCCESS;
 
     UNREFERENCED_PARAMETER(EventData);
     UNREFERENCED_PARAMETER(EventDataSize);
@@ -373,7 +389,7 @@ DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
     {
         case CM_NOTIFY_ACTION_DEVICEINTERFACEARRIVAL:
         case CM_NOTIFY_ACTION_DEVICEQUERYREMOVEFAILED:
-            Result = VirtFsDevInterfaceArrival(VirtFs, Notify);
+            VirtFsDevInterfaceArrival(VirtFs, Notify);
             break;
         case CM_NOTIFY_ACTION_DEVICEQUERYREMOVE:
         case CM_NOTIFY_ACTION_DEVICEREMOVECOMPLETE:
@@ -383,7 +399,7 @@ DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
             break;
     }
 
-    return Result;
+    return ERROR_SUCCESS;
 }
 
 static DWORD VirtFsRegDevInterfaceNotification(VIRTFS *VirtFs)
@@ -408,35 +424,28 @@ static DWORD VirtFsRegDevInterfaceNotification(VIRTFS *VirtFs)
     return CM_MapCrToWin32Err(ConfigRet, ERROR_NOT_SUPPORTED);
 }
 
-static DWORD FindDeviceInterface(PHANDLE Device)
+static DWORD FindDeviceInterface(PHANDLE Device, DWORD MemberIndex)
 {
-    WCHAR DevicePath[MAX_PATH];
     HDEVINFO DevInfo;
     SECURITY_ATTRIBUTES SecurityAttributes;
     SP_DEVICE_INTERFACE_DATA DevIfaceData;
     PSP_DEVICE_INTERFACE_DETAIL_DATA DevIfaceDetail = NULL;
     ULONG Length, RequiredLength = 0;
-    BOOL Result;
-    DWORD Error;
 
     DevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_VIRT_FS, NULL, NULL,
         (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
-
     if (DevInfo == INVALID_HANDLE_VALUE)
     {
         return GetLastError();
     }
+    scope_exit devinfo_se([DevInfo] { SetupDiDestroyDeviceInfoList(DevInfo); });
 
     DevIfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
-    Result = SetupDiEnumDeviceInterfaces(DevInfo, 0,
-        &GUID_DEVINTERFACE_VIRT_FS, 0, &DevIfaceData);
-
-    if (Result == FALSE)
+    if (!SetupDiEnumDeviceInterfaces(DevInfo, 0,
+        &GUID_DEVINTERFACE_VIRT_FS, MemberIndex, &DevIfaceData))
     {
-        Error = GetLastError();
-        SetupDiDestroyDeviceInfoList(DevInfo);
-        return Error;
+        return GetLastError();
     }
 
     SetupDiGetDeviceInterfaceDetail(DevInfo, &DevIfaceData, NULL, 0,
@@ -446,38 +455,25 @@ static DWORD FindDeviceInterface(PHANDLE Device)
             RequiredLength);
     if (DevIfaceDetail == NULL)
     {
-        Error = GetLastError();
-        SetupDiDestroyDeviceInfoList(DevInfo);
-        return Error;
+        return GetLastError();
     }
+    scope_exit devifacedetail_se([DevIfaceDetail] { LocalFree(DevIfaceDetail); });
 
     DevIfaceDetail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
     Length = RequiredLength;
 
-    Result = SetupDiGetDeviceInterfaceDetail(DevInfo, &DevIfaceData,
-        DevIfaceDetail, Length, &RequiredLength, NULL);
-
-    if (Result == FALSE)
+    if (!SetupDiGetDeviceInterfaceDetail(DevInfo, &DevIfaceData,
+        DevIfaceDetail, Length, &RequiredLength, NULL))
     {
-        Error = GetLastError();
-        LocalFree(DevIfaceDetail);
-        SetupDiDestroyDeviceInfoList(DevInfo);
-        return Error;
+        return GetLastError();
     }
-
-    wcscpy_s(DevicePath, sizeof(DevicePath) / sizeof(WCHAR),
-        DevIfaceDetail->DevicePath);
-
-    LocalFree(DevIfaceDetail);
-    SetupDiDestroyDeviceInfoList(DevInfo);
 
     SecurityAttributes.nLength = sizeof(SecurityAttributes);
     SecurityAttributes.lpSecurityDescriptor = NULL;
     SecurityAttributes.bInheritHandle = FALSE;
 
-    *Device = CreateFile(DevicePath, GENERIC_READ | GENERIC_WRITE,
+    *Device = CreateFile(DevIfaceDetail->DevicePath, GENERIC_READ | GENERIC_WRITE,
         0, &SecurityAttributes, OPEN_EXISTING, 0L, NULL);
-
     if (*Device == INVALID_HANDLE_VALUE)
     {
         return GetLastError();
@@ -486,38 +482,32 @@ static DWORD FindDeviceInterface(PHANDLE Device)
     return ERROR_SUCCESS;
 }
 
-static VOID UpdateLocalUidGid(VIRTFS *VirtFs, DWORD SessionId)
+static DWORD FindDeviceInterface(PHANDLE Device, const std::wstring& Tag)
 {
-    PWSTR UserName = NULL;
-    LPUSER_INFO_3 UserInfo = NULL;
-    DWORD BytesReturned;
-    NET_API_STATUS Status;
-    BOOL Result;
-
-    Result = WTSQuerySessionInformation(WTS_CURRENT_SERVER_HANDLE, SessionId,
-        WTSUserName, &UserName, &BytesReturned);
-
-    if (Result == TRUE)
+    if (Tag.empty())
     {
-        Status = NetUserGetInfo(NULL, UserName, 3, (LPBYTE *)&UserInfo);
-
-        if (Status == NERR_Success)
-        {
-            // Use an account from local machine's user DB as the file's
-            // owner (0x30000 + RID).
-            VirtFs->LocalUid = UserInfo->usri3_user_id + 0x30000;
-            VirtFs->LocalGid = UserInfo->usri3_primary_group_id + 0x30000;
-        }
-
-        if (UserInfo != NULL)
-        {
-            NetApiBufferFree(UserInfo);
-        }
+        return FindDeviceInterface(Device, 0);
     }
 
-    if (UserName != NULL)
+    for (DWORD MemberIndex = 0; ; MemberIndex++)
     {
-        WTSFreeMemory(UserName);
+        DWORD Error = FindDeviceInterface(Device, MemberIndex);
+        if (Error != ERROR_SUCCESS)
+        {
+            return Error;
+        }
+
+        WCHAR VolumeName[MAX_FILE_SYSTEM_NAME + 1];
+        GetVolumeName(*Device, VolumeName, sizeof(VolumeName));
+
+        if (Tag == VolumeName)
+        {
+            return ERROR_SUCCESS;
+        }
+        else
+        {
+            CloseHandle(*Device);
+        }
     }
 }
 
@@ -2536,7 +2526,6 @@ NTSTATUS VIRTFS::SubmitDestroyRequest()
 NTSTATUS VIRTFS::Start()
 {
     NTSTATUS Status;
-    DWORD SessionId;
     FILETIME FileTime;
     FSP_FSCTL_VOLUME_PARAMS VolumeParams;
 
@@ -2544,12 +2533,6 @@ NTSTATUS VIRTFS::Start()
     if (!NT_SUCCESS(Status))
     {
         return Status;
-    }
-
-    SessionId = WTSGetActiveConsoleSessionId();
-    if (SessionId != 0xFFFFFFFF)
-    {
-        UpdateLocalUidGid(this, SessionId);
     }
 
     GetSystemTimeAsFileTime(&FileTime);
@@ -2610,15 +2593,14 @@ out_del_fs:
 }
 
 static NTSTATUS ParseArgs(ULONG argc, PWSTR *argv,
-    ULONG& DebugFlags, std::wstring& DebugLogFile, std::wstring& MountPoint)
+    ULONG& DebugFlags, std::wstring& DebugLogFile, std::wstring& MountPoint,
+    std::wstring& Tag)
 {
-#define argtos(v) if (arge > ++argp) v = *argp; else goto usage
+#define argtos(v) if (arge > ++argp && *argp) v.assign(*argp); else goto usage
 #define argtol(v) if (arge > ++argp) v = wcstol_deflt(*argp, v); \
     else goto usage
 
     wchar_t **argp, **arge;
-    PWSTR DebugLogFileStr = NULL;
-    PWSTR MountPointStr = NULL;
 
     for (argp = argv + 1, arge = argv + argc; arge > argp; argp++)
     {
@@ -2635,10 +2617,13 @@ static NTSTATUS ParseArgs(ULONG argc, PWSTR *argv,
                 argtol(DebugFlags);
                 break;
             case L'D':
-                argtos(DebugLogFileStr);
+                argtos(DebugLogFile);
                 break;
             case L'm':
-                argtos(MountPointStr);
+                argtos(MountPoint);
+                break;
+            case L't':
+                argtos(Tag);
                 break;
             default:
                 goto usage;
@@ -2648,16 +2633,6 @@ static NTSTATUS ParseArgs(ULONG argc, PWSTR *argv,
     if (arge > argp)
     {
         goto usage;
-    }
-
-    if (DebugLogFileStr != NULL)
-    {
-        DebugLogFile.assign(DebugLogFileStr);
-    }
-
-    if (MountPointStr != NULL)
-    {
-        MountPoint.assign(MountPointStr);
     }
 
     return STATUS_SUCCESS;
@@ -2672,7 +2647,8 @@ usage:
         "options:\n"
         "    -d DebugFlags       [-1: enable all debug logs]\n"
         "    -D DebugLogFile     [file path; use - for stderr]\n"
-        "    -m MountPoint       [X:|* (required if no UNC prefix)]\n";
+        "    -m MountPoint       [X:|* (required if no UNC prefix)]\n"
+        "    -t Tag              [mount tag; max 36 symbols]\n";
 
     FspServiceLog(EVENTLOG_ERROR_TYPE, usage, FS_SERVICE_NAME);
 
@@ -2768,15 +2744,16 @@ static NTSTATUS DebugLogSet(const std::wstring& DebugLogFile)
 static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
 {
     std::wstring DebugLogFile{};
-    ULONG DebugFlags = 0;
+    ULONG DebugFlags{ 0 };
     std::wstring MountPoint{ L"*" };
+    std::wstring Tag{};
     VIRTFS *VirtFs;
-    NTSTATUS Status = STATUS_SUCCESS;
+    NTSTATUS Status{ STATUS_SUCCESS };
     DWORD Error;
 
     if (argc > 1)
     {
-        Status = ParseArgs(argc, argv, DebugFlags, DebugLogFile, MountPoint);
+        Status = ParseArgs(argc, argv, DebugFlags, DebugLogFile, MountPoint, Tag);
     }
     else
     {
@@ -2829,7 +2806,7 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
         goto out_close_event;
     }
 
-    Error = FindDeviceInterface(&VirtFs->Device);
+    Error = FindDeviceInterface(&VirtFs->Device, Tag);
     if (Error != ERROR_SUCCESS)
     {
         // Wait for device to be found by arrival notification callback.
@@ -2894,20 +2871,13 @@ static NTSTATUS SvcStop(FSP_SERVICE *Service)
 static NTSTATUS SvcControl(FSP_SERVICE *Service, ULONG Control,
     ULONG EventType, PVOID EventData)
 {
-    VIRTFS *VirtFs = (VIRTFS *)Service->UserContext;
-    PWTSSESSION_NOTIFICATION SessionNotification;
+    UNREFERENCED_PARAMETER(Service);
+    UNREFERENCED_PARAMETER(EventType);
+    UNREFERENCED_PARAMETER(EventData);
 
     switch (Control)
     {
         case SERVICE_CONTROL_DEVICEEVENT:
-            break;
-
-        case SERVICE_CONTROL_SESSIONCHANGE:
-            SessionNotification = (PWTSSESSION_NOTIFICATION)EventData;
-            if (EventType == WTS_SESSION_LOGON)
-            {
-                UpdateLocalUidGid(VirtFs, SessionNotification->dwSessionId);
-            }
             break;
 
         default:
@@ -2942,8 +2912,7 @@ int wmain(int argc, wchar_t **argv)
         return FspWin32FromNtStatus(Result);
     }
     FspServiceAllowConsoleMode(Service);
-    FspServiceAcceptControl(Service, SERVICE_ACCEPT_SESSIONCHANGE |
-        SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
+    FspServiceAcceptControl(Service, SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN);
     Result = FspServiceLoop(Service);
     ExitCode = FspServiceGetExitCode(Service);
     FspServiceDelete(Service);
