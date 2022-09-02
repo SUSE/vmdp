@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,6 +28,7 @@
 #define _PVCRASH_H
 
 #include <ntddk.h>
+#include <initguid.h>
 
 #define NTSTRSAFE_NO_DEPRECATE
 #define NTSTRSAFE_LIB
@@ -35,6 +36,7 @@
 #include <win_stdint.h>
 #include <win_mmio_map.h>
 #include <virtio_dbg_print.h>
+#include "pvcrash_guid.h"
 #include "pvcrash_ver.h"
 
 #define VDEV_DRIVER_NAME "PVCrash"
@@ -87,10 +89,11 @@ typedef struct _FDO_DEVICE_EXTENSION {
     ULONG IoRange;
     PDEVICE_OBJECT Pdo;
     PDEVICE_OBJECT LowerDevice;
+    UNICODE_STRING ifname;
     SYSTEM_POWER_STATE power_state;
     DEVICE_POWER_STATE dpower_state;
     BOOLEAN mapped_port;
-    BOOLEAN support_crash_loaded;
+    UCHAR supported_crash_features;
 } FDO_DEVICE_EXTENSION, *PFDO_DEVICE_EXTENSION;
 
 
@@ -108,10 +111,15 @@ typedef struct _FDO_DEVICE_EXTENSION {
 NTSTATUS pvcrash_fdo_power(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 NTSTATUS pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp);
 VOID pvcrash_notify_bugcheck(IN PVOID buffer, IN ULONG len);
+VOID pvcrash_notify_mem_bugcheck(IN PVOID buffer, IN ULONG len);
 VOID pvcrash_on_dump_bugCheck(KBUGCHECK_CALLBACK_REASON reason,
                               PKBUGCHECK_REASON_CALLBACK_RECORD record,
                               PVOID data,
                               ULONG length);
+VOID pvcrash_on_dump_mem_bugCheck(KBUGCHECK_CALLBACK_REASON reason,
+                                  PKBUGCHECK_REASON_CALLBACK_RECORD record,
+                                  PVOID data,
+                                  ULONG length);
 
 #ifdef USES_DDK_BUILD
 #define PVCRASH_MDL_PAGE_PRIORITY NormalPagePriority
@@ -127,6 +135,8 @@ KeInitializeCrashDumpHeader(
 #endif
 
 extern PVOID g_pvcrash_port_addr;
+extern PVOID g_pvcrash_mem_addr;
 extern BOOLEAN g_emit_crash_loaded_event;
+extern BOOLEAN g_emit_crash_mem_loaded_event;
 
 #endif

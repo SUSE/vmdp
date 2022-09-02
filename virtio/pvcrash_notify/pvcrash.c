@@ -3,7 +3,7 @@
  *
  * Written By: Gal Hammer <ghammer@redhat.com>
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -71,7 +71,9 @@ uint32_t dbg_print_mask = DPRTL_OFF;
 #endif
 
 PVOID g_pvcrash_port_addr;
+PVOID g_pvcrash_mem_addr;
 BOOLEAN g_emit_crash_loaded_event;
+BOOLEAN g_emit_mem_crash_loaded_event;
 
 static NTSTATUS pvcrash_get_startup_params(void);
 
@@ -105,6 +107,11 @@ DriverEntry (
     DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] =
         pvcrash_dispatch_device_control;
     DriverObject->MajorFunction[IRP_MJ_PNP] = pvcrash_dispatch_pnp;
+
+    g_pvcrash_port_addr = NULL;
+    g_pvcrash_mem_addr = NULL;
+    g_emit_crash_loaded_event = FALSE;
+    g_emit_mem_crash_loaded_event = FALSE;
 
     return STATUS_SUCCESS;
 }
@@ -183,13 +190,13 @@ pvcrash_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
     status = IoCreateDevice(
         DriverObject,
         sizeof(FDO_DEVICE_EXTENSION),
-        &device_name,               /* Need a name for IoCreateSymbolicLink */
+        NULL,
         FILE_DEVICE_ACPI,
         FILE_DEVICE_SECURE_OPEN,
         FALSE,                      /* exclusive */
         &fdo);
     if (!NT_SUCCESS(status)) {
-        PRINTK(("%s: IoCreateDevice failed 0x%x\n", VDEV_DRIVER_NAME, status));
+        PRINTK(("<-- %s: IoCreateDevice failed 0x%x\n", __func__, status));
         return status;
     }
 
@@ -200,9 +207,21 @@ pvcrash_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
                        DriverObject, pdo, fdo));
     RPRINTK(DPRTL_ON, ("    fdx = %p, obj = %p\n", fdx, fdo->DriverObject));
 
+    status = IoRegisterDeviceInterface(pdo,
+                                       (LPGUID)&GUID_PVCRASH_NOTIFY,
+                                       NULL,
+                                       &fdx->ifname);
+    if (!NT_SUCCESS(status)) {
+        PRINTK(("%s: IoRegisterDeviceInterface failed (%x)",
+            __func__, status));
+        IoDeleteDevice(fdo);
+        return status;
+    }
+
     fdx->LowerDevice = IoAttachDeviceToDeviceStack(fdo, pdo);
     if (fdx->LowerDevice == NULL) {
         IoDeleteDevice(fdo);
+        RPRINTK(DPRTL_ON, ("<-- %s: STATUS_NO_SUCH_DEVICE\n", __func__));
         return STATUS_NO_SUCH_DEVICE;
     }
 
@@ -218,9 +237,6 @@ pvcrash_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
     fdo->Flags |=  DO_POWER_PAGABLE;
     fdo->Flags |= DO_BUFFERED_IO;
     fdo->Flags &= ~DO_DEVICE_INITIALIZING;
-
-    g_pvcrash_port_addr = NULL;
-    g_emit_crash_loaded_event = FALSE;
 
     RPRINTK(DPRTL_ON, ("<-- %s\n", __func__));
     return STATUS_SUCCESS;
@@ -393,6 +409,7 @@ pvcrash_dispatch_device_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         break;
     default:
         RPRINTK(DPRTL_ON, ("%s: Unknown IOCTL 0x%x\n",
+                VDEV_DRIVER_NAME,
                 stack->Parameters.DeviceIoControl.IoControlCode));
         status = STATUS_INVALID_PARAMETER;
         break;
@@ -403,18 +420,16 @@ pvcrash_dispatch_device_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
+/* Port based */
 VOID
 pvcrash_notify_bugcheck(IN PVOID buffer, IN ULONG len)
 {
-    PUCHAR port_addr;
-
-    port_addr = (PUCHAR)buffer;
     PRINTK(("--> %s: Write %x to port %p length %d\n",
-            __func__, PVPANIC_PANICKED, port_addr, len));
+            __func__, PVPANIC_PANICKED, buffer, len));
     if ((buffer != NULL)
             && (len == sizeof(PVOID))
             && g_emit_crash_loaded_event == FALSE) {
-        WRITE_PORT_UCHAR(port_addr, (UCHAR)(PVPANIC_PANICKED));
+        WRITE_PORT_UCHAR((PUCHAR)buffer, (UCHAR)(PVPANIC_PANICKED));
     }
     PRINTK(("<-- %s\n", __func__));
 }
@@ -446,6 +461,51 @@ pvcrash_on_dump_bugCheck(KBUGCHECK_CALLBACK_REASON reason,
 
     /* Deregister BugCheckReasonCallback after PVPANIC_CRASHLOADED trigger. */
     if (g_emit_crash_loaded_event == TRUE) {
+        KeDeregisterBugCheckReasonCallback(record);
+    }
+
+    PRINTK(("<-- %s\n", __func__));
+}
+
+/* Mem based */
+VOID
+pvcrash_notify_mem_bugcheck(IN PVOID buffer, IN ULONG len)
+{
+    PRINTK(("--> %s: Write %x to port %p length %d\n",
+            __func__, PVPANIC_PANICKED, buffer, len));
+    if ((buffer != NULL)
+            && (len == sizeof(PVOID))
+            && g_emit_mem_crash_loaded_event == FALSE) {
+        *(PUCHAR)buffer = (UCHAR)(PVPANIC_PANICKED);
+    }
+    PRINTK(("<-- %s\n", __func__));
+}
+
+VOID
+pvcrash_on_dump_mem_bugCheck(KBUGCHECK_CALLBACK_REASON reason,
+                             PKBUGCHECK_REASON_CALLBACK_RECORD record,
+                             PVOID data,
+                             ULONG length)
+{
+    UNREFERENCED_PARAMETER(data);
+    UNREFERENCED_PARAMETER(length);
+
+    PRINTK(("--> %s: Write %x to mem %p crash_loaded_event %d\n",
+            __func__,
+            PVPANIC_CRASHLOADED,
+            g_pvcrash_mem_addr,
+            g_emit_mem_crash_loaded_event));
+
+    /* Trigger the PVPANIC_CRASHLOADED event before the crash dump. */
+    if ((g_pvcrash_mem_addr != NULL)
+            && (reason == KbCallbackDumpIo)
+            && g_emit_mem_crash_loaded_event == FALSE) {
+        *(PUCHAR)g_pvcrash_mem_addr = (UCHAR)(PVPANIC_CRASHLOADED);
+        g_emit_mem_crash_loaded_event = TRUE;
+    }
+
+    /* Deregister BugCheckReasonCallback after PVPANIC_CRASHLOADED trigger. */
+    if (g_emit_mem_crash_loaded_event == TRUE) {
         KeDeregisterBugCheckReasonCallback(record);
     }
 

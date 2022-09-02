@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2014-2020 SUSE LLC
+; Copyright 2014-2022 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -46,9 +46,13 @@ pvcrash_notify.sys = 1,,
 
 [pvcrash_notify.NTx86]
 %pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, ACPI\QEMU0001
+%pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011&SUBSYS_11001AF4&REV_01
+%pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011
 
 [pvcrash_notify.NTamd64]
 %pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, ACPI\QEMU0001
+%pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011&SUBSYS_11001AF4&REV_01
+%pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011
 
 [pvcrash_notify.CopyFiles]
 pvcrash_notify.sys,,,2

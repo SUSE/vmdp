@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2022 SUSE LLC
+ * Copyright 2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,13 +24,11 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PVCRASH_VER_H
-#define _PVCRASH_VER_H
+#ifndef _PVCRASH_GUID_H
+#define _PVCRASH_GUID_H
 
-
-#define VER_FILEVERSION             1,0,0,07
-#define VER_FILEVERSION_STR         "1.0.0.07\0"
-
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2017-2022 SUSE All rights reserved.", "\0"
+/* {1efe82a9-0677-4fe3-b181-a59e7f88c473} */
+DEFINE_GUID(GUID_PVCRASH_NOTIFY,
+0x1efe82a9, 0x0677, 0x4fe3, 0xb1, 0x81, 0xa5, 0x9e, 0x7f, 0x88, 0xc4, 0x73);
 
 #endif

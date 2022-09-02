@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,7 +27,9 @@
 #include "pvcrash.h"
 
 static KBUGCHECK_CALLBACK_RECORD bugcheck_cbr;
+static KBUGCHECK_CALLBACK_RECORD bugcheck_mem_cbr;
 static KBUGCHECK_REASON_CALLBACK_RECORD dump_cbr;
+static KBUGCHECK_REASON_CALLBACK_RECORD dump_mem_cbr;
 
 static NTSTATUS
 pvcrash_io_completion(
@@ -87,7 +89,6 @@ pvcrash_prepare_hardware(
     ULONG nres, i;
     ULONG len;
     NTSTATUS status;
-    UCHAR features;
     BOOLEAN port_space;
 
     status = STATUS_SUCCESS;
@@ -125,17 +126,19 @@ pvcrash_prepare_hardware(
             fdx->IoBaseAddress = va;
             fdx->IoRange = len;
             fdx->mapped_port = !port_space;
-            g_pvcrash_port_addr = fdx->IoBaseAddress;
 
-            features = READ_PORT_UCHAR((PUCHAR)(fdx->IoBaseAddress));
-            if ((features & (PVPANIC_PANICKED | PVPANIC_CRASHLOADED))
-                    == (PVPANIC_PANICKED | PVPANIC_CRASHLOADED)) {
-                fdx->support_crash_loaded = TRUE;
+            if (fdx->mapped_port) {
+                g_pvcrash_mem_addr = fdx->IoBaseAddress;
+                fdx->supported_crash_features = *(PUCHAR)(fdx->IoBaseAddress);
+            } else {
+                g_pvcrash_port_addr = fdx->IoBaseAddress;
+                fdx->supported_crash_features = READ_PORT_UCHAR(
+                    (PUCHAR)(fdx->IoBaseAddress));
             }
 
             RPRINTK(DPRTL_INIT,
                     ("    i %d: port pa %llx va %p len %d features 0x%x\n",
-                    i, pa.QuadPart, va, len, features));
+                    i, pa.QuadPart, va, len, fdx->supported_crash_features));
             break;
 
         default:
@@ -149,6 +152,86 @@ pvcrash_prepare_hardware(
     return status;
 }
 
+static void
+pvcrash_register_callbacks(FDO_DEVICE_EXTENSION *fdx)
+{
+    PKBUGCHECK_CALLBACK_ROUTINE bugcheck_callback;
+    PKBUGCHECK_REASON_CALLBACK_ROUTINE bugcheck_reason_callback;
+    KBUGCHECK_CALLBACK_RECORD *bugchk_cbr;
+    KBUGCHECK_REASON_CALLBACK_RECORD *reason_cbr;
+    BOOLEAN res;
+    BOOLEAN res_bchk;
+
+    if (fdx->mapped_port) {
+        bugchk_cbr = &bugcheck_mem_cbr;
+        reason_cbr = &dump_mem_cbr;
+        KeInitializeCallbackRecord(&bugcheck_mem_cbr);
+        KeInitializeCallbackRecord(&dump_mem_cbr);
+        bugcheck_callback = pvcrash_notify_mem_bugcheck;
+        bugcheck_reason_callback = pvcrash_on_dump_mem_bugCheck;
+    } else {
+        bugchk_cbr = &bugcheck_cbr;
+        reason_cbr = &dump_cbr;
+        KeInitializeCallbackRecord(&bugcheck_cbr);
+        KeInitializeCallbackRecord(&dump_cbr);
+        bugcheck_callback = pvcrash_notify_bugcheck;
+        bugcheck_reason_callback = pvcrash_on_dump_bugCheck;
+    }
+
+    if (fdx->supported_crash_features & PVPANIC_PANICKED) {
+        res = KeRegisterBugCheckCallback(bugchk_cbr,
+                                         bugcheck_callback ,
+                                         fdx->IoBaseAddress,
+                                         sizeof(PVOID),
+                                         (PUCHAR)("pvcrash_nodify"));
+        if (res == FALSE) {
+            PRINTK(("%s: KeRegisterBugCheckCallback failed\n",
+                    VDEV_DRIVER_NAME));
+        }
+    }
+
+    if (fdx->supported_crash_features & PVPANIC_CRASHLOADED) {
+        res_bchk = KeRegisterBugCheckReasonCallback(
+            reason_cbr,
+            bugcheck_reason_callback ,
+            KbCallbackDumpIo,
+            (PUCHAR)("pvcrash_nodify"));
+        if (res_bchk == FALSE) {
+            PRINTK(("%s: KeRegisterBugCheckReasonCallback failed\n",
+                    VDEV_DRIVER_NAME));
+        }
+    }
+}
+
+static void
+pvcrash_deregister_callbacks(FDO_DEVICE_EXTENSION *fdx)
+{
+    KBUGCHECK_CALLBACK_RECORD *bugchk_cbr;
+    KBUGCHECK_REASON_CALLBACK_RECORD *reason_cbr;
+
+    if (fdx->mapped_port) {
+        bugchk_cbr = &bugcheck_mem_cbr;
+        reason_cbr = &dump_mem_cbr;
+    } else {
+        bugchk_cbr = &bugcheck_cbr;
+        reason_cbr = &dump_cbr;
+    }
+    if (fdx->supported_crash_features & PVPANIC_PANICKED) {
+        RPRINTK(DPRTL_ON, ("    KeDeregisterBugCheckCallback irql %d fdx %p\n",
+            KeGetCurrentIrql(), fdx));
+        KeDeregisterBugCheckCallback(bugchk_cbr);
+    }
+
+    if (fdx->supported_crash_features & PVPANIC_CRASHLOADED) {
+        RPRINTK(DPRTL_ON, ("    KeDeregisterBugCheckReasonCallback\n"));
+        KeDeregisterBugCheckReasonCallback(reason_cbr);
+    }
+
+    if (fdx->mapped_port && fdx->IoBaseAddress != NULL) {
+        RPRINTK(DPRTL_ON, ("    MmUnmapIoSpace %p\n", fdx->IoBaseAddress));
+        MmUnmapIoSpace(fdx->IoBaseAddress, fdx->IoRange);
+    }
+}
 
 static NTSTATUS
 pvcrash_start_device(
@@ -159,28 +242,16 @@ pvcrash_start_device(
     NTSTATUS status;
     PFDO_DEVICE_EXTENSION fdx;
     POWER_STATE powerState;
-    DECLARE_UNICODE_STRING_SIZE(symbolic_link_name, 128);
-    DECLARE_UNICODE_STRING_SIZE(device_name, 128);
-    BOOLEAN res;
-    BOOLEAN res_bchk;
 
     fdx = (PFDO_DEVICE_EXTENSION)fdo->DeviceExtension;
     RPRINTK(DPRTL_ON, ("--> %s %s: (irql %d) fdo = %p\n",
                        VDEV_DRIVER_NAME, __func__, KeGetCurrentIrql(), fdo));
 
     do {
-        status = RtlUnicodeStringPrintf(&symbolic_link_name,
-           L"%ws", PVPANIC_DOS_DEVICE_NAME);
-        status = RtlUnicodeStringPrintf(&device_name,
-           L"%ws", PVCRASH_DEVICE_NAME);
-        RPRINTK(DPRTL_ON, ("    IoCreateSymbolicLink with:\n"));
-        RPRINTK(DPRTL_ON, ("      %ws\n      %ws\n",
-            symbolic_link_name.Buffer, device_name.Buffer));
-
-        status = IoCreateSymbolicLink(&symbolic_link_name, &device_name);
+        status = IoSetDeviceInterfaceState(&fdx->ifname, TRUE);
         if (!NT_SUCCESS(status)) {
-            PRINTK(("%s: IoCreateSymbolicLink %ws failed 0x%x\n",
-                VDEV_DRIVER_NAME, symbolic_link_name.Buffer, status));
+            PRINTK(("%s: IosetDeviceInterfaceState failed: %x\n",
+                    VDEV_DRIVER_NAME, status));
             break;
         }
 
@@ -190,29 +261,8 @@ pvcrash_start_device(
                     VDEV_DRIVER_NAME, status));
             break;
         }
-        KeInitializeCallbackRecord(&bugcheck_cbr);
-        res = KeRegisterBugCheckCallback(&bugcheck_cbr,
-                                         pvcrash_notify_bugcheck,
-                                         fdx->IoBaseAddress,
-                                         sizeof(PVOID),
-                                         (PUCHAR)("pvcrash_nodify"));
-        if (res == FALSE) {
-            PRINTK(("%s: KeRegisterBugCheckCallback failed\n",
-                    VDEV_DRIVER_NAME));
-        }
 
-        KeInitializeCallbackRecord(&dump_cbr);
-        if (fdx->support_crash_loaded) {
-            res_bchk = KeRegisterBugCheckReasonCallback(
-                &dump_cbr,
-                pvcrash_on_dump_bugCheck,
-                KbCallbackDumpIo,
-                (PUCHAR)("pvcrash_nodify"));
-            if (res_bchk == FALSE) {
-                PRINTK(("%s: KeRegisterBugCheckReasonCallback failed\n",
-                        VDEV_DRIVER_NAME));
-            }
-        }
+        pvcrash_register_callbacks(fdx);
 
         powerState.DeviceState = PowerDeviceD0;
         PoSetPowerState (fdo, DevicePowerState, powerState);
@@ -238,7 +288,6 @@ pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     PCM_PARTIAL_RESOURCE_LIST raw, translated;
     PLIST_ENTRY entry, listHead, nextEntry;
     PDEVICE_RELATIONS relations, oldRelations;
-    DECLARE_UNICODE_STRING_SIZE(symbolic_link_name, 128);
 
     fdx = (PFDO_DEVICE_EXTENSION) DeviceObject->DeviceExtension;
     stack = IoGetCurrentIrpStackLocation(Irp);
@@ -285,6 +334,13 @@ pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         RPRINTK(DPRTL_ON, ("%s: IRP_MN_STOP_DEVICE.\n", __func__));
         /* TODO: Irps and resources */
 
+        if (fdx->ifname.Buffer != NULL) {
+            status = IoSetDeviceInterfaceState(&fdx->ifname, FALSE);
+            if (status != STATUS_SUCCESS) {
+                PRINTK(("%s: IoSetDeviceInterfaceState failed: %x\n",
+                        VDEV_DRIVER_NAME, status));
+            }
+        }
         fdx->pnpstate = Stopped;
         Irp->IoStatus.Status = STATUS_SUCCESS;
         break;
@@ -315,30 +371,21 @@ pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         fdx->pnpstate = Deleted;
         Irp->IoStatus.Status = STATUS_SUCCESS;
 
-        RtlUnicodeStringPrintf(&symbolic_link_name,
-           L"%ws", PVPANIC_DOS_DEVICE_NAME);
-        status = IoDeleteSymbolicLink(&symbolic_link_name);
-        if (status != STATUS_SUCCESS) {
-            PRINTK(("%s: IoDeleteSymbolicLink for %ws failed %p\n",
-                    VDEV_DRIVER_NAME, symbolic_link_name, status));
+        if (fdx->ifname.Buffer != NULL) {
+            status = IoSetDeviceInterfaceState(&fdx->ifname, FALSE);
+            if (status != STATUS_SUCCESS) {
+                PRINTK(("%s: IoSetDeviceInterfaceState failed: %x\n",
+                        VDEV_DRIVER_NAME, status));
+            }
+            ExFreePool(fdx->ifname.Buffer);
+            RtlZeroMemory(&fdx->ifname, sizeof(UNICODE_STRING));
         }
 
         IoSkipCurrentIrpStackLocation(Irp);
         status = IoCallDriver(fdx->LowerDevice, Irp);
 
-        RPRINTK(DPRTL_ON, ("    KeDeregisterBugCheckCallback irql %d dev %p\n",
-            KeGetCurrentIrql(), DeviceObject));
-        KeDeregisterBugCheckCallback(&bugcheck_cbr);
+        pvcrash_deregister_callbacks(fdx);
 
-        if (fdx->support_crash_loaded) {
-            RPRINTK(DPRTL_ON, ("    KeDeregisterBugCheckReasonCallback\n"));
-            KeDeregisterBugCheckReasonCallback(&dump_cbr);
-        }
-
-        if (fdx->mapped_port && fdx->IoBaseAddress != NULL) {
-            RPRINTK(DPRTL_ON, ("    MmUnmapIoSpace %p\n", fdx->IoBaseAddress));
-            MmUnmapIoSpace(fdx->IoBaseAddress, fdx->IoRange);
-        }
 
         /* Seems we crash if we try to print from here down. */
         IoDetachDevice(fdx->LowerDevice);
