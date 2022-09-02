@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2022 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,8 +26,7 @@
 
 #include <windows.h>
 #include <stdio.h>
-
-#include "pvvxsvc.h"
+#include <setupapi.h>
 
 static PSP_DEVICE_INTERFACE_DETAIL_DATA
 dev_get_interface_detail(LPGUID guid)
