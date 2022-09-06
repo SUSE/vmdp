@@ -32,6 +32,8 @@
 #include "vfs.h"
 #include "shared\fuse.h"
 
+#define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+
 DRIVER_CANCEL vfs_request_cancel;
 
 static inline int
@@ -46,8 +48,8 @@ static SIZE_T
 vfs_get_required_sg_size(IN virtio_fs_request_t *fs_req)
 {
 
-    return (((fs_req->in_len / PAGE_SIZE) + 1) +
-            ((fs_req->out_len / PAGE_SIZE) + 1));
+    return (DIV_ROUND_UP(fs_req->in_len, PAGE_SIZE) +
+            DIV_ROUND_UP(fs_req->out_len, PAGE_SIZE));
 }
 
 static PMDL
