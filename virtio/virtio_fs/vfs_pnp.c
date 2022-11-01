@@ -52,6 +52,15 @@ wdm_device_virtio_init(IN FDO_DEVICE_EXTENSION *fdx)
     if (virtio_is_feature_enabled(host_features, VIRTIO_F_ANY_LAYOUT)) {
         virtio_feature_enable(guest_features, VIRTIO_F_ANY_LAYOUT);
     }
+    if (virtio_is_feature_enabled(host_features, VIRTIO_RING_F_EVENT_IDX)) {
+        virtio_feature_enable(guest_features, VIRTIO_RING_F_EVENT_IDX);
+    }
+    if (virtio_is_feature_enabled(host_features, VIRTIO_RING_F_INDIRECT_DESC)) {
+        virtio_feature_enable(guest_features, VIRTIO_RING_F_INDIRECT_DESC);
+        fdx->use_indirect = TRUE;
+    } else {
+        fdx->use_indirect = FALSE;
+    }
 
     /* make sure that we always follow the status bit-setting protocol */
     dev_status = VIRTIO_DEVICE_GET_STATUS(&fdx->vdev);
@@ -79,6 +88,21 @@ wdm_device_virtio_init(IN FDO_DEVICE_EXTENSION *fdx)
 
     RPRINTK(DPRTL_INIT, ("<-- %s %s\n", VDEV_DRIVER_NAME, __func__));
     return STATUS_SUCCESS;
+}
+
+static BOOLEAN
+vfs_alloc_indirect_area(FDO_DEVICE_EXTENSION *fdx)
+{
+    fdx->indirect_va = EX_ALLOC_POOL(VPOOL_NON_PAGED,
+                                     VFS_INDIRECT_AREA_PAGES * PAGE_SIZE,
+                                     VFS_POOL_TAG);
+    if (fdx->indirect_va == NULL) {
+        return FALSE;
+    }
+
+    fdx->indirect_pa = MmGetPhysicalAddress(fdx->indirect_va);
+
+    return TRUE;
 }
 
 static NTSTATUS
@@ -161,6 +185,14 @@ wdm_device_powerup(IN FDO_DEVICE_EXTENSION *fdx)
         KeInitializeSpinLock(&fdx->qlock[i]);
     }
     KeInitializeSpinLock(&fdx->req_lock);
+
+    if (fdx->use_indirect) {
+        if (vfs_alloc_indirect_area(fdx) == FALSE) {
+            PRINTK(("%s %s : Failed to allocate indirect area\n",
+                    VDEV_DRIVER_NAME, __func__));
+            return STATUS_INSUFFICIENT_RESOURCES;
+        }
+    }
 
     wdm_finish_init(fdx);
 
@@ -271,6 +303,12 @@ wdm_device_powerdown(FDO_DEVICE_EXTENSION *fdx)
     }
 
     vfs_shutdown_queues(fdx);
+
+    if (fdx->use_indirect && fdx->indirect_va != NULL) {
+        RPRINTK(DPRTL_ON, ("--- Free indirect space\n"));
+        ExFreePoolWithTag(fdx->indirect_va, VFS_POOL_TAG);
+        fdx->indirect_va = NULL;
+    }
 
     ExFreePoolWithTag(fdx->vqs, VFS_POOL_TAG);
     fdx->vqs = NULL;

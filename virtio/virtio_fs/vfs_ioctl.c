@@ -158,7 +158,18 @@ vfs_enqueue_request(IN PFDO_DEVICE_EXTENSION fdx,
         PushEntryList(&fdx->request_list, &fs_req->list_entry);
         KeReleaseInStackQueuedSpinLock(&rlh);
 
-        ret = vq_add_buf(vq, sg, out_num, in_num, fs_req);
+        if (2 < sg_size && sg_size <= VFS_INDIRECT_AREA_CAPACITY &&
+                fdx->use_indirect && !high_prio) {
+            ret = vq_add_buf_indirect(vq,
+                                   sg,
+                                   out_num,
+                                   in_num,
+                                   fs_req,
+                                   (struct vring_desc *)fdx->indirect_va,
+                                   fdx->indirect_pa.QuadPart);
+        } else {
+            ret = vq_add_buf(vq, sg, out_num, in_num, fs_req);
+        }
 
         if (ret < 0) {
             RPRINTK(DPRTL_UNEXPD,

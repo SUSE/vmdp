@@ -51,6 +51,12 @@
 #define VIRTIO_FS_MAX_INTS 2
 #define WDM_DEVICE_MAX_INTS VIRTIO_FS_MAX_INTS
 
+
+#define VFS_INDIRECT_AREA_PAGES 2
+#define VFS_INDIRECT_PAGE_CAPACITY 256
+#define VFS_INDIRECT_AREA_CAPACITY (VFS_INDIRECT_AREA_PAGES * \
+                                    VFS_INDIRECT_PAGE_CAPACITY)
+
 enum {
     VQ_TYPE_HIPRIO = 0,
     VQ_TYPE_REQUEST = 1,
@@ -110,6 +116,8 @@ typedef struct _FDO_DEVICE_EXTENSION {
     virtio_bar_t vbar[PCI_TYPE0_ADDRESSES];
     wdm_device_int_info_t int_info[WDM_DEVICE_MAX_INTS];
     virtio_queue_t **vqs;
+    void *indirect_va;
+    PHYSICAL_ADDRESS indirect_pa;
     SINGLE_LIST_ENTRY request_list;
     LIST_ENTRY hold_list;
     UNICODE_STRING ifname;
@@ -126,6 +134,7 @@ typedef struct _FDO_DEVICE_EXTENSION {
 #ifdef TARGET_OS_GTE_WinLH
     IO_INTERRUPT_MESSAGE_INFO *int_connection_ctx;
 #endif
+    BOOLEAN use_indirect;
 } FDO_DEVICE_EXTENSION, *PFDO_DEVICE_EXTENSION;
 
 extern PKINTERRUPT DriverInterruptObj;
