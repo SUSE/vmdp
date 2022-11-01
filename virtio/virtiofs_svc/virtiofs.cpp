@@ -52,6 +52,7 @@
 
 #include "virtiofs.h"
 #include "fusereq.h"
+#include "utils.h"
 
 #define FS_SERVICE_NAME TEXT("VirtIO-FS")
 #define FS_SERVICE_REGKEY   TEXT("Software\\") FS_SERVICE_NAME
@@ -80,14 +81,7 @@
 #define SafeHeapFree(p) if (p != NULL) { HeapFree(GetProcessHeap(), 0, p); }
 
 #define ReadAndExecute(x) ((x) | (((x) & 0444) >> 2))
-
-typedef struct
-{
-    HCMNOTIFICATION     Handle;
-    CRITICAL_SECTION    Lock;
-    BOOL                Unregister;
-    PTP_WORK            UnregWork;
-} VIRTFS_NOTIFICATION;
+#define GroupAsOwner(x) (((x) & ~0070) | (((x) & 0700) >> 3))
 
 typedef struct
 {
@@ -111,10 +105,11 @@ struct VIRTFS
     HANDLE  EvtDeviceFound{ NULL };
 
     // Used to handle device arrive notification.
-    HCMNOTIFICATION     DevInterfaceNotification{ NULL };
+    DeviceInterfaceNotification DevInterfaceNotification{};
     // Used to handle device remove notification.
-    VIRTFS_NOTIFICATION DevHandleNotification{};
+    DeviceHandleNotification DevHandleNotification{};
 
+    bool CaseInsensitive{ false };
     std::wstring MountPoint{ L"*" };
     std::wstring Tag{};
 
@@ -134,31 +129,48 @@ struct VIRTFS
     // Maps NodeId to its Nlookup counter.
     std::map<UINT64, UINT64> LookupMap{};
 
-    VIRTFS(ULONG DebugFlags, const std::wstring& MountPoint);
+    VIRTFS(ULONG DebugFlags, bool CaseInsensitive, const std::wstring& MountPoint,
+        const std::wstring& Tag) : DebugFlags{ DebugFlags },
+        CaseInsensitive{ CaseInsensitive }, MountPoint{ MountPoint }, Tag{ Tag }
+    {
+    }
     NTSTATUS Start();
     VOID Stop();
+
+    DWORD FindDeviceInterface();
+    VOID CloseDeviceInterface();
+
+    DWORD DevInterfaceArrival();
+    VOID DevQueryRemove();
+
+    VOID LookupMapNewOrIncNode(UINT64 NodeId);
+    UINT64 LookupMapPopNode(UINT64 NodeId);
+
+    NTSTATUS ReadDirAndIgnoreCaseSearch(const VIRTFS_FILE_CONTEXT* ParentContext,
+        const char *filename, std::string& result);
+    template<class Request, class... Args>
+    requires std::invocable<Request, VIRTFS *, uint64_t, const char *, Args...>
+    NTSTATUS NameAwareRequest(uint64_t parent, const char *name, Request req, Args... args);
+
+    NTSTATUS RenameWithFallbackRequest(uint64_t oldparent, const char *oldname,
+        uint64_t newparent, const char *newname, uint32_t flags);
+
     NTSTATUS SubmitInitRequest();
     NTSTATUS SubmitOpenRequest(UINT32 GrantedAccess,
         VIRTFS_FILE_CONTEXT *FileContext);
+    NTSTATUS SubmitReadDirRequest(const VIRTFS_FILE_CONTEXT *FileContext, uint64_t Offset,
+        bool Plus, FUSE_READ_OUT *read_out, uint32_t read_out_size);
+    NTSTATUS SubmitReleaseRequest(const VIRTFS_FILE_CONTEXT *FileContext);
+    NTSTATUS SubmitLookupRequest(uint64_t parent, const char *filename,
+        FUSE_LOOKUP_OUT *lookup_out);
+    NTSTATUS SubmitDeleteRequest(uint64_t parent, const char *filename,
+        const VIRTFS_FILE_CONTEXT *FileContext);
+    NTSTATUS SubmitRenameRequest(uint64_t oldparent, uint64_t newparent,
+        const char *oldname, int oldname_size, const char *newname, int newname_size);
+    NTSTATUS SubmitRename2Request(uint64_t oldparent, uint64_t newparent,
+        const char *oldname, int oldname_size, const char *newname, int newname_size,
+        uint32_t flags);
     NTSTATUS SubmitDestroyRequest();
-};
-
-VIRTFS::VIRTFS(ULONG DebugFlags, const std::wstring& MountPoint)
-    : DebugFlags{ DebugFlags }, MountPoint{ MountPoint }, Tag{ Tag }
-{
-}
-
-template <typename EF>
-class scope_exit
-{
-    EF exit_func;
-
-public:
-    scope_exit(EF&& exit_func) : exit_func{ exit_func } {};
-    ~scope_exit()
-    {
-        exit_func();
-    }
 };
 
 static NTSTATUS SetBasicInfo(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
@@ -175,8 +187,6 @@ static VOID GetVolumeName(HANDLE Device, PWSTR VolumeName, DWORD VolumeNameSize)
 
 static NTSTATUS VirtFsLookupFileName(VIRTFS *VirtFs, PWSTR FileName,
     FUSE_LOOKUP_OUT *LookupOut);
-
-static DWORD FindDeviceInterface(PHANDLE Device, const std::wstring& Tag);
 
 static DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
     PVOID Context, CM_NOTIFY_ACTION Action, PCM_NOTIFY_EVENT_DATA EventData,
@@ -201,99 +211,6 @@ static void FUSE_HEADER_INIT(struct fuse_in_header *hdr, uint32_t opcode,
     hdr->pid = GetCurrentProcessId();
 }
 
-VOID WINAPI UnregisterNotificationWork(PTP_CALLBACK_INSTANCE Instance,
-    PVOID Context, PTP_WORK Work)
-{
-    VIRTFS_NOTIFICATION *Notification = (VIRTFS_NOTIFICATION *)Context;
-
-    UNREFERENCED_PARAMETER(Instance);
-    UNREFERENCED_PARAMETER(Work);
-
-    CM_Unregister_Notification(Notification->Handle);
-}
-
-static VOID VirtFsNotificationUnreg(VIRTFS_NOTIFICATION *Notification)
-{
-    BOOL ShouldUnregister = FALSE;
-
-    EnterCriticalSection(&Notification->Lock);
-
-    if (!Notification->Unregister)
-    {
-        Notification->Unregister = TRUE;
-        ShouldUnregister = TRUE;
-    }
-
-    LeaveCriticalSection(&Notification->Lock);
-
-    if (ShouldUnregister)
-    {
-        CM_Unregister_Notification(Notification->Handle);
-    }
-    else
-    {
-        WaitForThreadpoolWorkCallbacks(Notification->UnregWork, FALSE);
-    }
-}
-
-// Must be used instead of VirtFsNotificationUnreg when unregistering
-// device notification callback from itself.
-static VOID VirtFsNotificationAsyncUnreg(VIRTFS_NOTIFICATION *Notification)
-{
-    EnterCriticalSection(&Notification->Lock);
-
-    if (!Notification->Unregister)
-    {
-        Notification->Unregister = TRUE;
-        SubmitThreadpoolWork(Notification->UnregWork);
-    }
-
-    LeaveCriticalSection(&Notification->Lock);
-}
-
-static BOOL VirtFsNotificationCreate(VIRTFS_NOTIFICATION *Notification)
-{
-    InitializeCriticalSection(&Notification->Lock);
-
-    Notification->UnregWork = CreateThreadpoolWork(UnregisterNotificationWork,
-            Notification, NULL);
-    if (Notification->UnregWork == NULL)
-    {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-static VOID VirtFsNotificationDelete(VIRTFS_NOTIFICATION *Notification)
-{
-    CloseThreadpoolWork(Notification->UnregWork);
-    DeleteCriticalSection(&Notification->Lock);
-}
-
-static DWORD VirtFsRegDevHandleNotification(VIRTFS *VirtFs)
-{
-    HCMNOTIFICATION Handle = NULL;
-    CM_NOTIFY_FILTER Filter;
-    CONFIGRET ConfigRet;
-
-    ZeroMemory(&Filter, sizeof(Filter));
-    Filter.cbSize = sizeof(Filter);
-    Filter.FilterType = CM_NOTIFY_FILTER_TYPE_DEVICEHANDLE;
-    Filter.u.DeviceHandle.hTarget = VirtFs->Device;
-
-    ConfigRet = CM_Register_Notification(&Filter, VirtFs,
-            DeviceNotificationCallback, &Handle);
-
-    if (ConfigRet == CR_SUCCESS)
-    {
-        VirtFs->DevHandleNotification.Handle = Handle;
-        VirtFs->DevHandleNotification.Unregister = FALSE;
-    }
-
-    return CM_MapCrToWin32Err(ConfigRet, ERROR_NOT_SUPPORTED);
-}
-
 VOID VIRTFS::Stop()
 {
     if (FileSystem == NULL)
@@ -310,37 +227,50 @@ VOID VIRTFS::Stop()
     SubmitDestroyRequest();
 }
 
-static DWORD VirtFsDevInterfaceArrival(VIRTFS *VirtFs, HCMNOTIFICATION Notify)
+DWORD VIRTFS::FindDeviceInterface()
+{
+    if (Tag.empty())
+    {
+        return ::FindDeviceInterface(&GUID_DEVINTERFACE_VIRT_FS, &Device, 0);
+    }
+
+    auto tag_cmp_fn = [this](HANDLE Device) {
+        WCHAR VolumeName[MAX_FILE_SYSTEM_NAME + 1];
+        GetVolumeName(Device, VolumeName, sizeof(VolumeName));
+        return Tag == VolumeName;
+    };
+
+    return ::FindDeviceInterface(&GUID_DEVINTERFACE_VIRT_FS, &Device, tag_cmp_fn);
+}
+
+DWORD VIRTFS::DevInterfaceArrival()
 {
     DWORD Error;
     NTSTATUS Status;
-    VIRTFS_NOTIFICATION *Notification = &VirtFs->DevHandleNotification;
-
-    DBG("Notify = 0x%x", Notify);
 
     // Wait for unregister work to end, if any.
-    WaitForThreadpoolWorkCallbacks(Notification->UnregWork, FALSE);
+    DevHandleNotification.WaitForUnregWork();
 
-    Error = FindDeviceInterface(&VirtFs->Device, VirtFs->Tag);
+    Error = FindDeviceInterface();
     if (Error != ERROR_SUCCESS)
     {
         return Error;
     }
 
-    Error = VirtFsRegDevHandleNotification(VirtFs);
+    Error = DevHandleNotification.Register(DeviceNotificationCallback, this, Device);
     if (Error != ERROR_SUCCESS)
     {
         goto out_close_handle;
     }
 
-    Status = VirtFs->Start();
+    Status = Start();
     if (!NT_SUCCESS(Status))
     {
         Error = FspWin32FromNtStatus(Status);
         goto out_unreg_dh_notify;
     }
 
-    if (SetEvent(VirtFs->EvtDeviceFound) == FALSE)
+    if (SetEvent(EvtDeviceFound) == FALSE)
     {
         Error = GetLastError();
         goto out_stop_virtfs;
@@ -349,39 +279,38 @@ static DWORD VirtFsDevInterfaceArrival(VIRTFS *VirtFs, HCMNOTIFICATION Notify)
     return ERROR_SUCCESS;
 
 out_stop_virtfs:
-    VirtFs->Stop();
+    Stop();
 out_unreg_dh_notify:
-    VirtFsNotificationAsyncUnreg(&VirtFs->DevHandleNotification);
+    DevHandleNotification.AsyncUnregister();
 out_close_handle:
-    CloseHandle(VirtFs->Device);
+    CloseHandle(Device);
 
     return Error;
 }
 
-static VOID CloseDeviceInterface(PHANDLE Device)
+VOID VIRTFS::CloseDeviceInterface()
 {
-    if (*Device != INVALID_HANDLE_VALUE)
+    if (Device != INVALID_HANDLE_VALUE)
     {
-        CloseHandle(*Device);
-        *Device = INVALID_HANDLE_VALUE;
+        CloseHandle(Device);
+        Device = INVALID_HANDLE_VALUE;
     }
 }
 
-static VOID VirtFsDevQueryRemove(VIRTFS *VirtFs, HCMNOTIFICATION Notify)
+VOID VIRTFS::DevQueryRemove()
 {
-    DBG("Notify = 0x%x", Notify);
-
-    VirtFs->Stop();
-    VirtFsNotificationAsyncUnreg(&VirtFs->DevHandleNotification);
-    CloseDeviceInterface(&VirtFs->Device);
+    Stop();
+    DevHandleNotification.AsyncUnregister();
+    CloseDeviceInterface();
 }
 
 DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
     PVOID Context, CM_NOTIFY_ACTION Action, PCM_NOTIFY_EVENT_DATA EventData,
     DWORD EventDataSize)
 {
-    VIRTFS *VirtFs = (VIRTFS *)Context;
+    auto VirtFs = static_cast<VIRTFS *>(Context);
 
+    UNREFERENCED_PARAMETER(Notify);
     UNREFERENCED_PARAMETER(EventData);
     UNREFERENCED_PARAMETER(EventDataSize);
 
@@ -389,126 +318,17 @@ DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
     {
         case CM_NOTIFY_ACTION_DEVICEINTERFACEARRIVAL:
         case CM_NOTIFY_ACTION_DEVICEQUERYREMOVEFAILED:
-            VirtFsDevInterfaceArrival(VirtFs, Notify);
+            VirtFs->DevInterfaceArrival();
             break;
         case CM_NOTIFY_ACTION_DEVICEQUERYREMOVE:
         case CM_NOTIFY_ACTION_DEVICEREMOVECOMPLETE:
-            VirtFsDevQueryRemove(VirtFs, Notify);
+            VirtFs->DevQueryRemove();
             break;
         default:
             break;
     }
 
     return ERROR_SUCCESS;
-}
-
-static DWORD VirtFsRegDevInterfaceNotification(VIRTFS *VirtFs)
-{
-    HCMNOTIFICATION Handle = NULL;
-    CM_NOTIFY_FILTER Filter;
-    CONFIGRET ConfigRet;
-
-    ZeroMemory(&Filter, sizeof(Filter));
-    Filter.cbSize = sizeof(Filter);
-    Filter.FilterType = CM_NOTIFY_FILTER_TYPE_DEVICEINTERFACE;
-    Filter.u.DeviceInterface.ClassGuid = GUID_DEVINTERFACE_VIRT_FS;
-
-    ConfigRet = CM_Register_Notification(&Filter, VirtFs,
-            DeviceNotificationCallback, &Handle);
-
-    if (ConfigRet == CR_SUCCESS)
-    {
-        VirtFs->DevInterfaceNotification = Handle;
-    }
-
-    return CM_MapCrToWin32Err(ConfigRet, ERROR_NOT_SUPPORTED);
-}
-
-static DWORD FindDeviceInterface(PHANDLE Device, DWORD MemberIndex)
-{
-    HDEVINFO DevInfo;
-    SECURITY_ATTRIBUTES SecurityAttributes;
-    SP_DEVICE_INTERFACE_DATA DevIfaceData;
-    PSP_DEVICE_INTERFACE_DETAIL_DATA DevIfaceDetail = NULL;
-    ULONG Length, RequiredLength = 0;
-
-    DevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_VIRT_FS, NULL, NULL,
-        (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
-    if (DevInfo == INVALID_HANDLE_VALUE)
-    {
-        return GetLastError();
-    }
-    scope_exit devinfo_se([DevInfo] { SetupDiDestroyDeviceInfoList(DevInfo); });
-
-    DevIfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-
-    if (!SetupDiEnumDeviceInterfaces(DevInfo, 0,
-        &GUID_DEVINTERFACE_VIRT_FS, MemberIndex, &DevIfaceData))
-    {
-        return GetLastError();
-    }
-
-    SetupDiGetDeviceInterfaceDetail(DevInfo, &DevIfaceData, NULL, 0,
-        &RequiredLength, NULL);
-
-    DevIfaceDetail = (PSP_DEVICE_INTERFACE_DETAIL_DATA)LocalAlloc(LMEM_FIXED,
-            RequiredLength);
-    if (DevIfaceDetail == NULL)
-    {
-        return GetLastError();
-    }
-    scope_exit devifacedetail_se([DevIfaceDetail] { LocalFree(DevIfaceDetail); });
-
-    DevIfaceDetail->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-    Length = RequiredLength;
-
-    if (!SetupDiGetDeviceInterfaceDetail(DevInfo, &DevIfaceData,
-        DevIfaceDetail, Length, &RequiredLength, NULL))
-    {
-        return GetLastError();
-    }
-
-    SecurityAttributes.nLength = sizeof(SecurityAttributes);
-    SecurityAttributes.lpSecurityDescriptor = NULL;
-    SecurityAttributes.bInheritHandle = FALSE;
-
-    *Device = CreateFile(DevIfaceDetail->DevicePath, GENERIC_READ | GENERIC_WRITE,
-        0, &SecurityAttributes, OPEN_EXISTING, 0L, NULL);
-    if (*Device == INVALID_HANDLE_VALUE)
-    {
-        return GetLastError();
-    }
-
-    return ERROR_SUCCESS;
-}
-
-static DWORD FindDeviceInterface(PHANDLE Device, const std::wstring& Tag)
-{
-    if (Tag.empty())
-    {
-        return FindDeviceInterface(Device, 0);
-    }
-
-    for (DWORD MemberIndex = 0; ; MemberIndex++)
-    {
-        DWORD Error = FindDeviceInterface(Device, MemberIndex);
-        if (Error != ERROR_SUCCESS)
-        {
-            return Error;
-        }
-
-        WCHAR VolumeName[MAX_FILE_SYSTEM_NAME + 1];
-        GetVolumeName(*Device, VolumeName, sizeof(VolumeName));
-
-        if (Tag == VolumeName)
-        {
-            return ERROR_SUCCESS;
-        }
-        else
-        {
-            CloseHandle(*Device);
-        }
-    }
 }
 
 static UINT32 PosixUnixModeToAttributes(VIRTFS *VirtFs, uint64_t nodeid,
@@ -794,9 +614,9 @@ static NTSTATUS VirtFsCreateDir(VIRTFS *VirtFs,
     return Status;
 }
 
-static VOID VirtFsLookupMapNewOrIncNode(VIRTFS *VirtFs, UINT64 NodeId)
+VOID VIRTFS::LookupMapNewOrIncNode(UINT64 NodeId)
 {
-    auto EmplaceResult = VirtFs->LookupMap.emplace(NodeId, 1);
+    auto EmplaceResult = LookupMap.emplace(NodeId, 1);
 
     if (!EmplaceResult.second)
     {
@@ -804,9 +624,9 @@ static VOID VirtFsLookupMapNewOrIncNode(VIRTFS *VirtFs, UINT64 NodeId)
     }
 }
 
-static UINT64 VirtFsLookupMapPopNode(VIRTFS* VirtFs, UINT64 NodeId)
+UINT64 VIRTFS::LookupMapPopNode(UINT64 NodeId)
 {
-    auto Item = VirtFs->LookupMap.extract(NodeId);
+    auto Item = LookupMap.extract(NodeId);
 
     return Item.empty() ? 0 : Item.mapped();
 }
@@ -827,28 +647,36 @@ static VOID SubmitForgetRequest(HANDLE Device, UINT64 NodeId, UINT64 Nlookup)
         &forget_out, sizeof(forget_out));
 }
 
-static VOID SubmitDeleteRequest(VIRTFS *VirtFs,
-    VIRTFS_FILE_CONTEXT *FileContext, CHAR *FileName, UINT64 Parent)
+NTSTATUS VIRTFS::SubmitDeleteRequest(uint64_t parent, const char *filename,
+    const VIRTFS_FILE_CONTEXT *FileContext)
 {
     FUSE_UNLINK_IN unlink_in;
     FUSE_UNLINK_OUT unlink_out;
-    UINT64 Nlookup = VirtFsLookupMapPopNode(VirtFs, FileContext->NodeId);
 
     FUSE_HEADER_INIT(&unlink_in.hdr,
-        FileContext->IsDirectory ? FUSE_RMDIR : FUSE_UNLINK, Parent,
-        lstrlenA(FileName) + 1);
+        FileContext->IsDirectory ? FUSE_RMDIR : FUSE_UNLINK, parent,
+        lstrlenA(filename) + 1);
 
-    lstrcpyA(unlink_in.name, FileName);
+    lstrcpyA(unlink_in.name, filename);
 
-    (VOID)VirtFsFuseRequest(VirtFs->Device, &unlink_in, unlink_in.hdr.len,
+    NTSTATUS Status = VirtFsFuseRequest(Device, &unlink_in, unlink_in.hdr.len,
         &unlink_out, sizeof(unlink_out));
 
-    SubmitForgetRequest(VirtFs->Device, FileContext->NodeId, Nlookup);
+    if (NT_SUCCESS(Status))
+    {
+        UINT64 Nlookup = LookupMapPopNode(FileContext->NodeId);
+
+        SubmitForgetRequest(Device, FileContext->NodeId, Nlookup);
+    }
+
+    return Status;
 }
 
-static NTSTATUS SubmitLookupRequest(VIRTFS *VirtFs, uint64_t parent,
-    char *filename, FUSE_LOOKUP_OUT *LookupOut)
+NTSTATUS VIRTFS::SubmitLookupRequest(uint64_t parent, const char *filename,
+    FUSE_LOOKUP_OUT *lookup_out)
 {
+    DBG("filename = '%s' parent = %I64u", filename, parent);
+
     NTSTATUS Status;
     FUSE_LOOKUP_IN lookup_in;
 
@@ -857,19 +685,19 @@ static NTSTATUS SubmitLookupRequest(VIRTFS *VirtFs, uint64_t parent,
 
     lstrcpyA(lookup_in.name, filename);
 
-    Status = VirtFsFuseRequest(VirtFs->Device, &lookup_in, lookup_in.hdr.len,
-        LookupOut, sizeof(*LookupOut));
+    Status = VirtFsFuseRequest(Device, &lookup_in, lookup_in.hdr.len,
+        lookup_out, sizeof(*lookup_out));
 
     if (NT_SUCCESS(Status))
     {
-        struct fuse_attr *attr = &LookupOut->entry.attr;
+        struct fuse_attr *attr = &lookup_out->entry.attr;
 
-        VirtFsLookupMapNewOrIncNode(VirtFs, LookupOut->entry.nodeid);
+        LookupMapNewOrIncNode(lookup_out->entry.nodeid);
 
         DBG("nodeid=%I64u ino=%I64u size=%I64u blocks=%I64u atime=%I64u mtime=%I64u "
             "ctime=%I64u atimensec=%u mtimensec=%u ctimensec=%u mode=%x "
             "nlink=%u uid=%u gid=%u rdev=%u blksize=%u",
-            LookupOut->entry.nodeid, attr->ino, attr->size, attr->blocks,
+            lookup_out->entry.nodeid, attr->ino, attr->size, attr->blocks,
             attr->atime, attr->mtime, attr->ctime, attr->atimensec,
             attr->mtimensec, attr->ctimensec, attr->mode, attr->nlink,
             attr->uid, attr->gid, attr->rdev, attr->blksize);
@@ -909,8 +737,8 @@ static NTSTATUS SubmitReadLinkRequest(HANDLE Device, UINT64 NodeId,
     return Status;
 }
 
-static NTSTATUS SubmitRenameRequest(HANDLE Device, uint64_t oldparent,
-    uint64_t newparent, char *oldname, int oldname_size, char *newname,
+NTSTATUS VIRTFS::SubmitRenameRequest(uint64_t oldparent,
+    uint64_t newparent, const char *oldname, int oldname_size, const char *newname,
     int newname_size)
 {
     FUSE_RENAME_IN *rename_in;
@@ -940,8 +768,8 @@ static NTSTATUS SubmitRenameRequest(HANDLE Device, uint64_t oldparent,
     return Status;
 }
 
-static NTSTATUS SubmitRename2Request(HANDLE Device, uint64_t oldparent,
-    uint64_t newparent, char *oldname, int oldname_size, char *newname,
+NTSTATUS VIRTFS::SubmitRename2Request(uint64_t oldparent,
+    uint64_t newparent, const char *oldname, int oldname_size, const char *newname,
     int newname_size, uint32_t flags)
 {
     FUSE_RENAME2_IN *rename2_in;
@@ -972,6 +800,62 @@ static NTSTATUS SubmitRename2Request(HANDLE Device, uint64_t oldparent,
     return Status;
 }
 
+NTSTATUS VIRTFS::RenameWithFallbackRequest(uint64_t oldparent, const char *oldname,
+    uint64_t newparent, const char *newname, uint32_t flags)
+{
+    int oldname_size = lstrlenA(oldname) + 1;
+    int newname_size = lstrlenA(newname) + 1;
+
+    DBG("old: %s (%d) new: %s (%d) flags: %d",
+        oldname, oldname_size, newname, newname_size, flags);
+
+    NTSTATUS Status = SubmitRename2Request(oldparent, newparent,
+        oldname, oldname_size, newname, newname_size, flags);
+
+    // Rename2 fails on NFS shared folder with EINVAL error. So retry to
+    // rename the file without the flags.
+    if (Status == STATUS_INVALID_PARAMETER)
+    {
+        Status = SubmitRenameRequest(oldparent, newparent,
+            oldname, oldname_size, newname, newname_size);
+    }
+
+    return Status;
+}
+
+template<class Request, class... Args>
+requires std::invocable<Request, VIRTFS *, uint64_t, const char *, Args...>
+NTSTATUS VIRTFS::NameAwareRequest(uint64_t parent, const char *name, Request req, Args... args)
+{
+    // First attempt
+    NTSTATUS Status = std::invoke(req, this, parent, name, args...);
+    if (NT_SUCCESS(Status) || !CaseInsensitive)
+    {
+        return Status;
+    }
+
+    VIRTFS_FILE_CONTEXT ParentContext = { .IsDirectory = TRUE, .NodeId = parent, };
+
+    Status = SubmitOpenRequest(0, &ParentContext);
+    if (!NT_SUCCESS(Status))
+    {
+        return Status;
+    }
+    SCOPE_EXIT(ParentContext, { SubmitReleaseRequest(&ParentContext); }, this);
+
+    std::string result_name{};
+    Status = ReadDirAndIgnoreCaseSearch(&ParentContext, name, result_name);
+    if (!NT_SUCCESS(Status))
+    {
+        return Status;
+    }
+
+    // Second attempt
+    Status = std::invoke(req, this, parent, result_name.c_str(), args...);
+
+    return Status;
+}
+
 static NTSTATUS PathWalkthough(VIRTFS *VirtFs, CHAR *FullPath,
     CHAR **FileName, UINT64 *Parent)
 {
@@ -988,7 +872,8 @@ static NTSTATUS PathWalkthough(VIRTFS *VirtFs, CHAR *FullPath,
     {
         *Separator = '\0';
 
-        Status = SubmitLookupRequest(VirtFs, *Parent, *FileName, &LookupOut);
+        Status = VirtFs->NameAwareRequest(*Parent, *FileName,
+            &VIRTFS::SubmitLookupRequest, &LookupOut);
         if (!NT_SUCCESS(Status))
         {
             break;
@@ -1038,17 +923,16 @@ static NTSTATUS VirtFsLookupFileName(VIRTFS *VirtFs, PWSTR FileName,
     Status = FspPosixMapWindowsToPosixPath(FileName, &fullpath);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(fullpath);
         return Status;
     }
+    SCOPE_EXIT(fullpath, { FspPosixDeletePath(fullpath); });
 
     Status = PathWalkthough(VirtFs, fullpath, &filename, &parent);
     if (NT_SUCCESS(Status))
     {
-        Status = SubmitLookupRequest(VirtFs, parent, filename, LookupOut);
+        Status = VirtFs->NameAwareRequest(parent, filename,
+            &VIRTFS::SubmitLookupRequest, LookupOut);
     }
-
-    FspPosixDeletePath(fullpath);
 
     return Status;
 }
@@ -1130,7 +1014,7 @@ static NTSTATUS GetFileInfoInternal(VIRTFS *VirtFs,
         {
             Status = FspPosixMapPermissionsToSecurityDescriptor(
                 VirtFs->LocalUid, VirtFs->LocalGid,
-                ReadAndExecute(attr->mode), SecurityDescriptor);
+                GroupAsOwner(ReadAndExecute(attr->mode)), SecurityDescriptor);
         }
     }
 
@@ -1306,7 +1190,7 @@ static NTSTATUS GetSecurityByName(FSP_FILE_SYSTEM *FileSystem, PWSTR FileName,
         }
 
         Status = FspPosixMapPermissionsToSecurityDescriptor(VirtFs->LocalUid,
-            VirtFs->LocalGid, ReadAndExecute(attr->mode), &Security);
+            VirtFs->LocalGid, GroupAsOwner(ReadAndExecute(attr->mode)), &Security);
 
         if (NT_SUCCESS(Status))
         {
@@ -1390,11 +1274,11 @@ static NTSTATUS Create(FSP_FILE_SYSTEM *FileSystem, PWSTR FileName,
     {
         return Status;
     }
+    SCOPE_EXIT(fullpath, { FspPosixDeletePath(fullpath); });
 
     Status = PathWalkthough(VirtFs, fullpath, &filename, &parent);
     if (!NT_SUCCESS(Status) && (Status != STATUS_OBJECT_NAME_NOT_FOUND))
     {
-        FspPosixDeletePath(fullpath);
         return Status;
     }
 
@@ -1403,7 +1287,6 @@ static NTSTATUS Create(FSP_FILE_SYSTEM *FileSystem, PWSTR FileName,
 
     if (FileContext == NULL)
     {
-        FspPosixDeletePath(fullpath);
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
@@ -1431,8 +1314,6 @@ static NTSTATUS Create(FSP_FILE_SYSTEM *FileSystem, PWSTR FileName,
         Status = VirtFsCreateFile(VirtFs, FileContext, GrantedAccess,
             filename, parent, Mode, AllocationSize, FileInfo);
     }
-
-    FspPosixDeletePath(fullpath);
 
     if (!NT_SUCCESS(Status))
     {
@@ -1532,14 +1413,10 @@ static NTSTATUS Overwrite(FSP_FILE_SYSTEM *FileSystem,
         FileInfo);
 }
 
-static VOID Close(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0)
+NTSTATUS VIRTFS::SubmitReleaseRequest(const VIRTFS_FILE_CONTEXT *FileContext)
 {
-    VIRTFS *VirtFs = (VIRTFS *)FileSystem->UserContext;
-    VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
     FUSE_RELEASE_IN release_in;
     FUSE_RELEASE_OUT release_out;
-
-    DBG("fh: %I64u nodeid: %I64u", FileContext->FileHandle, FileContext->NodeId);
 
     FUSE_HEADER_INIT(&release_in.hdr,
         FileContext->IsDirectory ? FUSE_RELEASEDIR : FUSE_RELEASE,
@@ -1550,8 +1427,18 @@ static VOID Close(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0)
     release_in.release.lock_owner = 0;
     release_in.release.release_flags = 0;
 
-    (VOID)VirtFsFuseRequest(VirtFs->Device, &release_in, sizeof(release_in),
+    return VirtFsFuseRequest(Device, &release_in, sizeof(release_in),
         &release_out, sizeof(release_out));
+}
+
+static VOID Close(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0)
+{
+    VIRTFS *VirtFs = (VIRTFS *)FileSystem->UserContext;
+    VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
+
+    DBG("fh: %I64u nodeid: %I64u", FileContext->FileHandle, FileContext->NodeId);
+
+    (VOID)VirtFs->SubmitReleaseRequest(FileContext);
 
     FspFileSystemDeleteDirectoryBuffer(&FileContext->DirBuffer);
 
@@ -1867,20 +1754,20 @@ static VOID Cleanup(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     Status = FspPosixMapWindowsToPosixPath(FileName + 1, &fullpath);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(fullpath);
         return;
     }
+    SCOPE_EXIT(fullpath, { FspPosixDeletePath(fullpath); });
 
     Status = PathWalkthough(VirtFs, fullpath, &filename, &parent);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(fullpath);
         return;
     }
 
     if (Flags & FspCleanupDelete)
     {
-        SubmitDeleteRequest(VirtFs, FileContext, filename, parent);
+        VirtFs->NameAwareRequest(parent, filename,
+            &VIRTFS::SubmitDeleteRequest, FileContext);
     }
     else
     {
@@ -1908,8 +1795,6 @@ static VOID Cleanup(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
         (VOID)SetBasicInfo(FileSystem, FileContext0, 0, 0, LastAccessTime,
             LastWriteTime, 0, NULL);
     }
-
-    FspPosixDeletePath(fullpath);
 }
 
 static NTSTATUS SetFileSize(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
@@ -2000,7 +1885,6 @@ static NTSTATUS Rename(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
     NTSTATUS Status;
     char *oldname, *newname, *oldfullpath, *newfullpath;
-    int oldname_size, newname_size;
     uint64_t oldparent, newparent;
     uint32_t flags;
 
@@ -2011,55 +1895,36 @@ static NTSTATUS Rename(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     Status = FspPosixMapWindowsToPosixPath(FileName + 1, &oldfullpath);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(oldfullpath);
         return Status;
     }
+    SCOPE_EXIT(oldfullpath, { FspPosixDeletePath(oldfullpath); });
 
     Status = FspPosixMapWindowsToPosixPath(NewFileName + 1, &newfullpath);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(oldfullpath);
-        FspPosixDeletePath(newfullpath);
         return Status;
     }
+    SCOPE_EXIT(newfullpath, { FspPosixDeletePath(newfullpath); });
 
     Status = PathWalkthough(VirtFs, oldfullpath, &oldname, &oldparent);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(oldfullpath);
-        FspPosixDeletePath(newfullpath);
         return Status;
     }
 
     Status = PathWalkthough(VirtFs, newfullpath, &newname, &newparent);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(oldfullpath);
-        FspPosixDeletePath(newfullpath);
         return Status;
     }
-
-    oldname_size = lstrlenA(oldname) + 1;
-    newname_size = lstrlenA(newname) + 1;
 
     // It is not allowed to rename to an existing directory even when
     // ReplaceIfExists is set.
     flags = ((FileContext->IsDirectory == FALSE) &&
         (ReplaceIfExists == TRUE)) ? 0 : (1 << 0) /* RENAME_NOREPLACE */;
 
-    DBG("old: %s (%d) new: %s (%d) flags: %d", oldname, oldname_size, newname,
-        newname_size, flags);
-
-    Status = SubmitRename2Request(VirtFs->Device, oldparent, newparent,
-        oldname, oldname_size, newname, newname_size, flags);
-
-    // Rename2 fails on NFS shared folder with EINVAL error. So retry to
-    // rename the file without the flags.
-    if (Status == STATUS_INVALID_PARAMETER)
-    {
-        Status = SubmitRenameRequest(VirtFs->Device, oldparent, newparent,
-            oldname, oldname_size, newname, newname_size);
-    }
+    Status = VirtFs->NameAwareRequest(oldparent, oldname,
+        &VIRTFS::RenameWithFallbackRequest, newparent, newname, flags);
 
     // Fix to expected error when renaming a directory to existing directory.
     if ((FileContext->IsDirectory == TRUE) && (ReplaceIfExists == TRUE) &&
@@ -2067,9 +1932,6 @@ static NTSTATUS Rename(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     {
         Status = STATUS_ACCESS_DENIED;
     }
-
-    FspPosixDeletePath(oldfullpath);
-    FspPosixDeletePath(newfullpath);
 
     return Status;
 }
@@ -2182,6 +2044,87 @@ static NTSTATUS SetSecurity(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     return Status;
 }
 
+NTSTATUS VIRTFS::SubmitReadDirRequest(const VIRTFS_FILE_CONTEXT *FileContext,
+    uint64_t Offset, bool Plus, FUSE_READ_OUT *read_out, uint32_t read_out_size)
+{
+    FUSE_READ_IN read_in;
+
+    FUSE_HEADER_INIT(&read_in.hdr, Plus ? FUSE_READDIRPLUS : FUSE_READDIR,
+        FileContext->NodeId, sizeof(read_in.read));
+
+    read_in.read.fh = FileContext->FileHandle;
+    read_in.read.offset = Offset;
+    read_in.read.size = read_out_size - sizeof(struct fuse_out_header);
+    read_in.read.read_flags = 0;
+    read_in.read.lock_owner = 0;
+    read_in.read.flags = 0;
+
+    return VirtFsFuseRequest(Device, &read_in, sizeof(read_in),
+        read_out, read_out_size);
+}
+
+NTSTATUS VIRTFS::ReadDirAndIgnoreCaseSearch(const VIRTFS_FILE_CONTEXT *ParentContext,
+    const char *filename, std::string &result)
+{
+    NTSTATUS Status;
+    struct fuse_dirent *dirent;
+    UINT64 Offset = 0;
+    UINT32 Remains;
+    uint32_t buf_size = PAGE_SZ_4K - sizeof(struct fuse_out_header);
+    WCHAR FileName[MAX_PATH];
+
+    DBG("filename = '%s'", filename);
+
+    FUSE_READ_OUT *read_out = (FUSE_READ_OUT *)HeapAlloc(GetProcessHeap(), 0,
+        sizeof(struct fuse_out_header) + buf_size);
+    if (read_out == NULL)
+    {
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    SCOPE_EXIT(read_out, { SafeHeapFree(read_out); });
+
+    if (MultiByteToWideChar(CP_UTF8, 0, filename, -1, FileName, MAX_PATH) == 0)
+    {
+        return FspNtStatusFromWin32(GetLastError());
+    }
+
+    for (;;)
+    {
+        Status = SubmitReadDirRequest(ParentContext, Offset, FALSE,
+            read_out, buf_size + sizeof(struct fuse_out_header));
+        if (!NT_SUCCESS(Status))
+        {
+            return Status;
+        }
+
+        Remains = read_out->hdr.len - sizeof(struct fuse_out_header);
+        if (Remains == 0)
+        {
+            break;
+        }
+
+        dirent = (struct fuse_dirent *)read_out->buf;
+
+        while (Remains > sizeof(struct fuse_dirent))
+        {
+            if (FileNameIgnoreCaseCompare(FileName, dirent->name, dirent->namelen))
+            {
+                result.assign(dirent->name, dirent->namelen);
+                DBG("match: name = '%s' (%u) type = %u",
+                    result.c_str(), dirent->namelen, dirent->type);
+
+                return STATUS_SUCCESS;
+            }
+
+            Offset = dirent->off;
+            Remains -= FUSE_DIRENT_SIZE(dirent);
+            dirent = (struct fuse_dirent *)((PBYTE)dirent + FUSE_DIRENT_SIZE(dirent));
+        }
+    }
+
+    return STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
 static NTSTATUS ReadDirectory(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     PWSTR Pattern, PWSTR Marker, PVOID Buffer, ULONG BufferLength,
     PULONG PBytesTransferred)
@@ -2196,7 +2139,6 @@ static NTSTATUS ReadDirectory(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
     UINT32 Remains;
     BOOLEAN Result;
     int FileNameLength;
-    FUSE_READ_IN read_in;
     FUSE_READ_OUT *read_out;
 
     DBG("Pattern: %S Marker: %S BufferLength: %u",
@@ -2215,19 +2157,8 @@ static NTSTATUS ReadDirectory(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
         {
             for (;;)
             {
-                FUSE_HEADER_INIT(&read_in.hdr, FUSE_READDIRPLUS,
-                    FileContext->NodeId, sizeof(read_in.read));
-
-                read_in.read.fh = FileContext->FileHandle;
-                read_in.read.offset = Offset;
-                read_in.read.size = BufferLength * 2;
-                read_in.read.read_flags = 0;
-                read_in.read.lock_owner = 0;
-                read_in.read.flags = 0;
-
-                Status = VirtFsFuseRequest(VirtFs->Device, &read_in,
-                    sizeof(read_in), read_out,
-                    sizeof(struct fuse_out_header) + read_in.read.size);
+                VirtFs->SubmitReadDirRequest(FileContext, Offset, TRUE, read_out,
+                    sizeof(struct fuse_out_header) + (ULONG64)BufferLength * 2);
 
                 if (!NT_SUCCESS(Status))
                 {
@@ -2282,8 +2213,7 @@ static NTSTATUS ReadDirectory(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0,
                     if (wcscmp(DirInfo->FileNameBuf, L".") &&
                         wcscmp(DirInfo->FileNameBuf, L".."))
                     {
-                        VirtFsLookupMapNewOrIncNode(VirtFs,
-                            DirEntryPlus->entry_out.nodeid);
+                        VirtFs->LookupMapNewOrIncNode(DirEntryPlus->entry_out.nodeid);
                     }
 
                     Offset = DirEntryPlus->dirent.off;
@@ -2337,10 +2267,14 @@ static NTSTATUS SetReparsePoint(FSP_FILE_SYSTEM *FileSystem,
     int linkname_len, targetname_len;
     uint64_t parent;
 
-    UNREFERENCED_PARAMETER(FileContext);
     UNREFERENCED_PARAMETER(Size);
 
     DBG("\"%S\"", FileName);
+
+    if (!(ReparseData->SymbolicLinkReparseBuffer.Flags & SYMLINK_FLAG_RELATIVE))
+    {
+        return STATUS_INVALID_PARAMETER;
+    }
 
     Cleanup(FileSystem, FileContext, FileName, FspCleanupDelete);
 
@@ -2359,26 +2293,24 @@ static NTSTATUS SetReparsePoint(FSP_FILE_SYSTEM *FileSystem,
     Status = FspPosixMapWindowsToPosixPath(TargetName, &targetname);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(targetname);
         return Status;
     }
-
-    Status = PathWalkthough(VirtFs, targetname, &filename, &parent);
-    if (!NT_SUCCESS(Status))
-    {
-        FspPosixDeletePath(targetname);
-        return Status;
-    }
+    SCOPE_EXIT(targetname, { FspPosixDeletePath(targetname); });
 
     Status = FspPosixMapWindowsToPosixPath(FileName + 1, &linkname);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(targetname);
-        FspPosixDeletePath(linkname);
+        return Status;
+    }
+    SCOPE_EXIT(linkname, { FspPosixDeletePath(linkname); });
+
+    Status = PathWalkthough(VirtFs, linkname, &filename, &parent);
+    if (!NT_SUCCESS(Status))
+    {
         return Status;
     }
 
-    linkname_len = lstrlenA(linkname) + 1;
+    linkname_len = lstrlenA(filename) + 1;
     targetname_len = lstrlenA(targetname) + 1;
 
     symlink_in = (FUSE_SYMLINK_IN *)HeapAlloc(GetProcessHeap(),
@@ -2386,19 +2318,14 @@ static NTSTATUS SetReparsePoint(FSP_FILE_SYSTEM *FileSystem,
 
     if (symlink_in == NULL)
     {
-        FspPosixDeletePath(targetname);
-        FspPosixDeletePath(linkname);
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
     FUSE_HEADER_INIT(&symlink_in->hdr, FUSE_SYMLINK, parent,
         linkname_len + targetname_len);
 
-    CopyMemory(symlink_in->names, linkname, linkname_len);
+    CopyMemory(symlink_in->names, filename, linkname_len);
     CopyMemory(symlink_in->names + linkname_len, targetname, targetname_len);
-
-    FspPosixDeletePath(targetname);
-    FspPosixDeletePath(linkname);
 
     Status = VirtFsFuseRequest(VirtFs->Device, symlink_in,
         symlink_in->hdr.len, &symlink_out, sizeof(symlink_out));
@@ -2422,12 +2349,12 @@ static NTSTATUS GetDirInfoByName(FSP_FILE_SYSTEM *FileSystem,
     Status = FspPosixMapWindowsToPosixPath(FileName, &filename);
     if (!NT_SUCCESS(Status))
     {
-        FspPosixDeletePath(filename);
         return Status;
     }
+    SCOPE_EXIT(filename, { FspPosixDeletePath(filename); });
 
-    Status = SubmitLookupRequest(VirtFs, FileContext->NodeId,
-        filename, &lookup_out);
+    Status = VirtFs->NameAwareRequest(FileContext->NodeId, filename,
+        &VIRTFS::SubmitLookupRequest, &lookup_out);
 
     if (NT_SUCCESS(Status))
     {
@@ -2439,8 +2366,6 @@ static NTSTATUS GetDirInfoByName(FSP_FILE_SYSTEM *FileSystem,
         CopyMemory(DirInfo->FileNameBuf, FileName,
             DirInfo->Size - sizeof(FSP_FSCTL_DIR_INFO));
     }
-
-    FspPosixDeletePath(filename);
 
     return Status;
 }
@@ -2593,8 +2518,8 @@ out_del_fs:
 }
 
 static NTSTATUS ParseArgs(ULONG argc, PWSTR *argv,
-    ULONG& DebugFlags, std::wstring& DebugLogFile, std::wstring& MountPoint,
-    std::wstring& Tag)
+    ULONG& DebugFlags, std::wstring& DebugLogFile, bool &CaseInsensitive,
+    std::wstring& MountPoint, std::wstring& Tag)
 {
 #define argtos(v) if (arge > ++argp && *argp) v.assign(*argp); else goto usage
 #define argtol(v) if (arge > ++argp) v = wcstol_deflt(*argp, v); \
@@ -2618,6 +2543,9 @@ static NTSTATUS ParseArgs(ULONG argc, PWSTR *argv,
                 break;
             case L'D':
                 argtos(DebugLogFile);
+                break;
+            case L'i':
+                CaseInsensitive = true;
                 break;
             case L'm':
                 argtos(MountPoint);
@@ -2647,6 +2575,7 @@ usage:
         "options:\n"
         "    -d DebugFlags       [-1: enable all debug logs]\n"
         "    -D DebugLogFile     [file path; use - for stderr]\n"
+        "    -i                  [case insensitive file system]\n"
         "    -m MountPoint       [X:|* (required if no UNC prefix)]\n"
         "    -t Tag              [mount tag; max 36 symbols]\n";
 
@@ -2655,63 +2584,13 @@ usage:
     return STATUS_UNSUCCESSFUL;
 }
 
-static DWORD VirtFsRegistryGetDword(PCWSTR ValueName, DWORD& Value)
-{
-    LSTATUS Status;
-    DWORD Val;
-    DWORD ValSize = sizeof(Val);
-
-    Status = RegGetValue(HKEY_LOCAL_MACHINE, FS_SERVICE_REGKEY, ValueName,
-        RRF_RT_REG_DWORD, NULL, &Val, &ValSize);
-    if (Status == ERROR_SUCCESS)
-    {
-        Value = Val;
-    }
-
-    return Status;
-}
-
-static DWORD VirtFsRegistryGetString(PCWSTR ValueName, std::wstring& Str)
-{
-    LSTATUS Status;
-    DWORD BufSize = 0;
-    PWSTR Buf;
-
-    // Determine required buffer size
-    Status = RegGetValue(HKEY_LOCAL_MACHINE, FS_SERVICE_REGKEY, ValueName,
-        RRF_RT_REG_SZ, NULL, NULL, &BufSize);
-    if (Status != ERROR_SUCCESS)
-    {
-        return Status;
-    }
-
-    try
-    {
-        Buf = new WCHAR[BufSize];
-    }
-    catch (std::bad_alloc)
-    {
-        return ERROR_NO_SYSTEM_RESOURCES;
-    }
-
-    Status = RegGetValue(HKEY_LOCAL_MACHINE, FS_SERVICE_REGKEY, ValueName,
-        RRF_RT_REG_SZ, NULL, Buf, &BufSize);
-    if (Status == ERROR_SUCCESS)
-    {
-        Str.assign(Buf);
-    }
-
-    delete[] Buf;
-
-    return Status;
-}
-
 static VOID ParseRegistry(ULONG& DebugFlags, std::wstring& DebugLogFile,
-    std::wstring& MountPoint)
+    bool &CaseInsensitive, std::wstring& MountPoint)
 {
-    VirtFsRegistryGetDword(L"DebugFlags", DebugFlags);
-    VirtFsRegistryGetString(L"DebugLogFile", DebugLogFile);
-    VirtFsRegistryGetString(L"MountPoint", MountPoint);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"DebugFlags", DebugFlags);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"DebugLogFile", DebugLogFile);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"CaseInsensitive", CaseInsensitive);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"MountPoint", MountPoint);
 }
 
 static NTSTATUS DebugLogSet(const std::wstring& DebugLogFile)
@@ -2745,6 +2624,7 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
 {
     std::wstring DebugLogFile{};
     ULONG DebugFlags{ 0 };
+    bool CaseInsensitive{ false };
     std::wstring MountPoint{ L"*" };
     std::wstring Tag{};
     VIRTFS *VirtFs;
@@ -2753,11 +2633,12 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
 
     if (argc > 1)
     {
-        Status = ParseArgs(argc, argv, DebugFlags, DebugLogFile, MountPoint, Tag);
+        Status = ParseArgs(argc, argv, DebugFlags, DebugLogFile,
+            CaseInsensitive, MountPoint, Tag);
     }
     else
     {
-        ParseRegistry(DebugFlags, DebugLogFile, MountPoint);
+        ParseRegistry(DebugFlags, DebugLogFile, CaseInsensitive, MountPoint);
     }
 
     if (!NT_SUCCESS(Status))
@@ -2776,7 +2657,7 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
 
     try
     {
-        VirtFs = new VIRTFS(DebugFlags, MountPoint);
+        VirtFs = new VIRTFS(DebugFlags, CaseInsensitive, MountPoint, Tag);
     }
     catch (std::bad_alloc)
     {
@@ -2785,7 +2666,7 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
 
     Service->UserContext = VirtFs;
 
-    if (!VirtFsNotificationCreate(&VirtFs->DevHandleNotification))
+    if (!VirtFs->DevHandleNotification.CreateUnregWork())
     {
         Status = STATUS_UNSUCCESSFUL;
         goto out_free_virtfs;
@@ -2796,17 +2677,18 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
     {
         Error = GetLastError();
         Status = FspNtStatusFromWin32(Error);
-        goto out_delete_dh_notify;
+        goto out_free_virtfs;
     }
 
-    Error = VirtFsRegDevInterfaceNotification(VirtFs);
+    Error = VirtFs->DevInterfaceNotification.Register(DeviceNotificationCallback,
+        VirtFs, GUID_DEVINTERFACE_VIRT_FS);
     if (Error != ERROR_SUCCESS)
     {
         Status = FspNtStatusFromWin32(Error);
         goto out_close_event;
     }
 
-    Error = FindDeviceInterface(&VirtFs->Device, Tag);
+    Error = VirtFs->FindDeviceInterface();
     if (Error != ERROR_SUCCESS)
     {
         // Wait for device to be found by arrival notification callback.
@@ -2822,7 +2704,8 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
         }
     }
 
-    Error = VirtFsRegDevHandleNotification(VirtFs);
+    Error = VirtFs->DevHandleNotification.Register(DeviceNotificationCallback,
+        VirtFs, VirtFs->Device);
     if (Error != ERROR_SUCCESS)
     {
         Status = FspNtStatusFromWin32(Error);
@@ -2838,15 +2721,13 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
     return STATUS_SUCCESS;
 
 out_unreg_dh_notify:
-    VirtFsNotificationUnreg(&VirtFs->DevHandleNotification);
+    VirtFs->DevHandleNotification.Unregister();
 out_close_handle:
     CloseHandle(VirtFs->Device);
 out_unreg_di_notify:
-    CM_Unregister_Notification(VirtFs->DevInterfaceNotification);
+    VirtFs->DevInterfaceNotification.Unregister();
 out_close_event:
     CloseHandle(VirtFs->EvtDeviceFound);
-out_delete_dh_notify:
-    VirtFsNotificationDelete(&VirtFs->DevHandleNotification);
 out_free_virtfs:
     delete VirtFs;
 
@@ -2858,11 +2739,10 @@ static NTSTATUS SvcStop(FSP_SERVICE *Service)
     VIRTFS *VirtFs = (VIRTFS *)Service->UserContext;
 
     VirtFs->Stop();
-    VirtFsNotificationUnreg(&VirtFs->DevHandleNotification);
-    CloseDeviceInterface(&VirtFs->Device);
-    VirtFsNotificationDelete(&VirtFs->DevHandleNotification);
+    VirtFs->DevHandleNotification.Unregister();
+    VirtFs->CloseDeviceInterface();
     CloseHandle(VirtFs->EvtDeviceFound);
-    CM_Unregister_Notification(VirtFs->DevInterfaceNotification);
+    VirtFs->DevInterfaceNotification.Unregister();
     delete VirtFs;
 
     return STATUS_SUCCESS;
