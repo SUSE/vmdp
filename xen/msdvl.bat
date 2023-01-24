@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-20023 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -70,7 +70,7 @@ shift
 if not "%1"=="" goto l_loop
 
 if "%dvl_drv%"=="" goto help
-if %config_os%=="" set config_os=Win10-2004Release Win10Release Win8.1Release Win8Release"
+if %config_os%=="" set config_os=Win10-2004Release Win10Release Win8.1Release Win8Release
 
 :build_it
 
