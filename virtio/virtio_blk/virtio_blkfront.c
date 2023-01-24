@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2011-2022 SUSE LLC
+ * Copyright 2011-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,7 +35,7 @@ virtio_sp_get_device_config(virtio_sp_dev_ext_t *dev_ext)
         &dev_ext->info, sizeof(vbif_info_t));
 
     if (!IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_SIZE_MAX)) {
-        dev_ext->info.size_max = SECTOR_SIZE;
+        dev_ext->info.size_max = PAGE_SIZE;
     }
     if (!IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_SEG_MAX)) {
         dev_ext->info.seg_max = 0;
@@ -54,6 +54,38 @@ virtio_sp_get_device_config(virtio_sp_dev_ext_t *dev_ext)
         dev_ext->info.min_io_size = 0;
         dev_ext->info.opt_io_size = 0;
     }
+    if (!IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_MQ)) {
+        dev_ext->info.num_queues = 1;
+    }
+
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+    if (IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_DISCARD)) {
+        dev_ext->info.discard_sector_alignment =
+        (max(dev_ext->info.discard_sector_alignment,
+             MIN_DISCARD_SECTOR_ALIGNMENT)) << SECTOR_SHIFT;
+
+        if (dev_ext->info.max_discard_sectors == 0) {
+            dev_ext->info.max_discard_sectors = UINT_MAX;
+        }
+
+        if (dev_ext->info.max_discard_seg >= MAX_DISCARD_SEGMENTS) {
+            dev_ext->info.max_discard_seg = MAX_DISCARD_SEGMENTS -1;
+        }
+    }
+#endif
+
+    if (dev_ext->info.size_max > 0 && dev_ext->info.seg_max > 0) {
+        dev_ext->num_phys_breaks =
+            (dev_ext->info.size_max * dev_ext->info.seg_max)
+                / (ROUND_TO_PAGES(dev_ext->info.size_max));
+        if (dev_ext->num_phys_breaks > MAX_PHYS_SEGMENTS) {
+            dev_ext->num_phys_breaks = MAX_PHYS_SEGMENTS;
+        }
+    } else {
+        dev_ext->num_phys_breaks = DEFAULT_MAX_PHYS_SEGS;
+    }
+
+    dev_ext->num_queues = dev_ext->info.num_queues;
 }
 
 void
@@ -75,6 +107,12 @@ virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
         dev_ext->info.size_max));
     PRINTK(("\tVIRTIO_BLK_F_SEG_MAX: %d\n",
         dev_ext->info.seg_max));
+
+
+    PRINTK(("\tCalculated phys breaks: %d\n",
+        (dev_ext->info.size_max * dev_ext->info.seg_max) /
+            ROUND_TO_PAGES(dev_ext->info.size_max)));
+
     PRINTK(("\tVIRTIO_BLK_F_BLK_SIZE: %d\n",
         dev_ext->info.blk_size));
     PRINTK(("\tVIRTIO_BLK_F_GEOMETRY: cy %d, heads %d, sectrs %d\n",
@@ -85,8 +123,37 @@ virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
         dev_ext->info.physical_block_exp));
     PRINTK(("\talignment_offset: %d\n",
         dev_ext->info.alignment_offset));
-    PRINTK(("\tmin_io_size: %d\n", dev_ext->info.min_io_size));
-    PRINTK(("\topt_io_size: %d\n", dev_ext->info.opt_io_size));
+    PRINTK(("\tmin_io_size: %d\n",
+        dev_ext->info.min_io_size));
+    PRINTK(("\topt_io_size: %d\n",
+        dev_ext->info.opt_io_size));
+    PRINTK(("\twce %d: %d\n",
+        IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_CONFIG_WCE),
+        dev_ext->info.wce));
+    PRINTK(("\tunused: %d\n",
+        dev_ext->info.unused));
+    PRINTK(("\tnum_queues %d: %d %d\n",
+        IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_MQ),
+        dev_ext->info.num_queues,
+            dev_ext->num_queues));
+
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+    PRINTK(("\tmax_discard_sectors %d: %d\n",
+        IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_DISCARD),
+        dev_ext->info.max_discard_sectors));
+    PRINTK(("\t  max-discard_seg: %d\n",
+        dev_ext->info.max_discard_seg));
+    PRINTK(("\t  discard_sector_alignment: %d\n",
+        dev_ext->info.discard_sector_alignment));
+
+    PRINTK(("\tmax_write_zeroes_sectors %d: %d\n",
+        IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_WRITE_ZEROES),
+        dev_ext->info.max_write_zeroes_sectors));
+    PRINTK(("\t  max_write_zeroes_sectors %d\n",
+        dev_ext->info.max_write_zeroes_seg));
+    PRINTK(("\t  write_zeros_may_unmap: %d\n",
+        dev_ext->info.write_zeroes_may_unmap));
+#endif
 }
 
 void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext)
@@ -94,9 +161,6 @@ void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext)
     uint64_t guest_features;
 
     guest_features = 0;
-    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_WCACHE)) {
-        virtio_feature_enable(guest_features, VIRTIO_BLK_F_WCACHE);
-    }
     if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_F_VERSION_1)) {
         virtio_feature_enable(guest_features, VIRTIO_F_VERSION_1);
 
@@ -104,15 +168,65 @@ void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext)
                 && virtio_is_feature_enabled(dev_ext->features,
                                              VIRTIO_F_RING_PACKED)) {
             virtio_feature_enable(guest_features, VIRTIO_F_RING_PACKED);
+            RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_F_RING_PACKED\n",
+                                 __func__));
         }
     }
     if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_RING_F_EVENT_IDX)) {
         virtio_feature_enable(guest_features, VIRTIO_RING_F_EVENT_IDX);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_RING_F_EVENT_IDX\n",
+                             __func__));
     }
     if (virtio_is_feature_enabled(dev_ext->features,
                                   VIRTIO_RING_F_INDIRECT_DESC)) {
         virtio_feature_enable(guest_features, VIRTIO_RING_F_INDIRECT_DESC);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_RING_F_INDIRECT_DESC\n",
+                             __func__));
     }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_FLUSH)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_FLUSH);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_FLUSH\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_BARRIER)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_BARRIER);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_BARRIER\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_RO)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_RO);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_RO\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_SIZE_MAX)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_SIZE_MAX);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_SIZE_MAX\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_SEG_MAX)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_SEG_MAX);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_SEG_MAX\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_BLK_SIZE)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_BLK_SIZE);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_BLK_SIZE\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_GEOMETRY)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_GEOMETRY);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_GEOMETRY\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_MQ)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_MQ);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_MQ\n", __func__));
+    }
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+    if (virtio_is_feature_enabled(dev_ext->features, VIRTIO_BLK_F_DISCARD)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_DISCARD);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_DISCARD\n", __func__));
+    }
+    if (virtio_is_feature_enabled(dev_ext->features,
+                                  VIRTIO_BLK_F_WRITE_ZEROES)) {
+        virtio_feature_enable(guest_features, VIRTIO_BLK_F_WRITE_ZEROES);
+        RPRINTK(DPRTL_INIT, ("%s: enable VIRTIO_BLK_F_WRITE_ZEROES\n",
+                             __func__));
+    }
+#endif
     PRINTK(("%s: setting guest features 0x%llx\n",
             VIRTIO_SP_DRIVER_NAME, guest_features));
     virtio_device_set_guest_feature_list(&dev_ext->vdev, guest_features);
@@ -129,6 +243,9 @@ virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
         dev_ext->queue_depth = qdepth;
         PRINTK(("\tusing default queue depth: %d\n", dev_ext->queue_depth));
     }
+#ifdef IS_STORPORT
+    sp_init_perfdata(dev_ext);
+#endif
 }
 
 void
@@ -209,10 +326,20 @@ virtio_blk_inquery_data(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
             spage->DeviceTypeQualifier = DEVICE_CONNECTED;
             spage->PageCode = VPD_SUPPORTED_PAGES;
             /* spage->Reserved; */
-            spage->PageLength = 3;
             spage->SupportedPageList[0] = VPD_SUPPORTED_PAGES;
             spage->SupportedPageList[1] = VPD_SERIAL_NUMBER;
             spage->SupportedPageList[2] = VPD_DEVICE_IDENTIFIERS;
+#if (NTDDI_VERSION < NTDDI_WIN8)
+            spage->PageLength = 3;
+#else
+            spage->PageLength = 4;
+            spage->SupportedPageList[3] = VPD_BLOCK_LIMITS;
+            if (IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_DISCARD)) {
+                spage->SupportedPageList[4] = VPD_BLOCK_DEVICE_CHARACTERISTICS;
+                spage->SupportedPageList[5] = VPD_LOGICAL_BLOCK_PROVISIONING;
+                spage->PageLength = 6;
+            }
+#endif
             break;
         }
         case VPD_DEVICE_IDENTIFIERS: {
@@ -246,21 +373,117 @@ virtio_blk_inquery_data(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
             break;
         }
         case VPD_SERIAL_NUMBER: {
-            PVPD_SERIAL_NUMBER_PAGE buf;
-
-            buf = (PVPD_SERIAL_NUMBER_PAGE)srb->DataBuffer;
-
-            RPRINTK(DPRTL_CONFIG,
-                    ("%x: SCSIOP_INQUIRY page 80.\n",
-                     srb->TargetId));
-            buf->DeviceType = DIRECT_ACCESS_DEVICE;
-            buf->DeviceTypeQualifier = DEVICE_CONNECTED;
-            buf->PageCode = VPD_SERIAL_NUMBER;
-            /* buf->Reserved; */
-            buf->PageLength = 1;
-            buf->SerialNumber[0] = '0';
+            if (dev_ext->sn[0] == '\0') {
+                if (virtio_blk_do_sn(dev_ext, srb) == TRUE) {
+                    srb->SrbStatus = SRB_STATUS_PENDING;
+                } else {
+                    srb->SrbStatus = SRB_STATUS_ERROR;
+                }
+            } else {
+                virtio_blk_fill_sn(dev_ext, srb);
+            }
             break;
         }
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+        case VPD_BLOCK_LIMITS: {
+            PVPD_BLOCK_LIMITS_PAGE lpage;
+            ULONG max_io_size;
+            USHORT page_len;
+
+            RPRINTK(DPRTL_CONFIG,
+                    ("%x: SCSIOP_INQUIRY VPD_BLOCK_LIMITS B0.\n",
+                     srb->TargetId));
+            max_io_size = dev_ext->max_xfer_len / dev_ext->info.blk_size;
+            page_len = 0x10;
+            lpage = (PVPD_BLOCK_LIMITS_PAGE)srb->DataBuffer;
+            lpage->DeviceType = DIRECT_ACCESS_DEVICE;
+            lpage->DeviceTypeQualifier = DEVICE_CONNECTED;
+            lpage->PageCode = VPD_BLOCK_LIMITS;
+            REVERSE_BYTES_SHORT(&lpage->OptimalTransferLengthGranularity,
+                                &dev_ext->info.min_io_size);
+            REVERSE_BYTES(&lpage->MaximumTransferLength,
+                          &max_io_size);
+            REVERSE_BYTES(&lpage->OptimalTransferLength,
+                          &dev_ext->info.opt_io_size);
+            if (IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_DISCARD) &&
+                    (srb->DataTransferLength >= 0x14)) {
+                ULONG max_discard_sectors = dev_ext->info.max_discard_sectors;
+                ULONG discard_sector_alignment = 0;
+                ULONG opt_unmap_granularity =
+                    dev_ext->info.discard_sector_alignment
+                        / dev_ext->info.blk_size;
+
+                page_len = 0x3c;
+                REVERSE_BYTES(&lpage->MaximumUnmapLBACount,
+                              &max_discard_sectors);
+                REVERSE_BYTES(&lpage->MaximumUnmapBlockDescriptorCount,
+                              &dev_ext->info.max_discard_seg);
+                REVERSE_BYTES(&lpage->OptimalUnmapGranularity,
+                              &opt_unmap_granularity);
+                REVERSE_BYTES(&lpage->UnmapGranularityAlignment,
+                              &discard_sector_alignment);
+                lpage->UGAValid = 1;
+            }
+            REVERSE_BYTES_SHORT(&lpage->PageLength, &page_len);
+            srb->DataTransferLength =
+                FIELD_OFFSET(VPD_BLOCK_LIMITS_PAGE, Reserved0) + page_len;
+            break;
+        }
+        case VPD_BLOCK_DEVICE_CHARACTERISTICS: {
+            PVPD_BLOCK_DEVICE_CHARACTERISTICS_PAGE cpage;
+
+            RPRINTK(DPRTL_CONFIG,
+                   ("%x: SCSIOP_INQUIRY VPD_BLOCK_DEVICE_CHARACTERISTICS B1.\n",
+                    srb->TargetId));
+            if (srb->DataTransferLength >= 0x8) {
+                cpage = (PVPD_BLOCK_DEVICE_CHARACTERISTICS_PAGE)srb->DataBuffer;
+                cpage->DeviceType = DIRECT_ACCESS_DEVICE;
+                cpage->DeviceTypeQualifier = DEVICE_CONNECTED;
+                cpage->PageCode = VPD_BLOCK_DEVICE_CHARACTERISTICS;
+                cpage->PageLength = 0x3C;
+                cpage->MediumRotationRateMsb = 0;
+                cpage->MediumRotationRateLsb = 0;
+                cpage->NominalFormFactor = 0;
+            } else {
+                PRINTK(("%x: VPD_BLOCK_DEVICE_CHARACTERISTICS buf too small.\n",
+                         srb->TargetId));
+                srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+            }
+            break;
+        }
+        case VPD_LOGICAL_BLOCK_PROVISIONING: {
+            PVPD_LOGICAL_BLOCK_PROVISIONING_PAGE ppage;
+            USHORT pageLen = 0x04;
+
+            RPRINTK(DPRTL_CONFIG,
+                    ("%x: SCSIOP_INQUIRY VPD_LOGICAL_BLOCK_PROVISIONING B2.\n",
+                     srb->TargetId));
+            if (srb->DataTransferLength >= 0x8) {
+                ppage = (PVPD_LOGICAL_BLOCK_PROVISIONING_PAGE)srb->DataBuffer;
+                ppage->DeviceType = DIRECT_ACCESS_DEVICE;
+                ppage->DeviceTypeQualifier = DEVICE_CONNECTED;
+                ppage->PageCode = VPD_LOGICAL_BLOCK_PROVISIONING;
+                REVERSE_BYTES_SHORT(&ppage->PageLength, &pageLen);
+
+                ppage->DP = 0;
+                ppage->LBPRZ = 0;
+                ppage->LBPWS10 = 0;
+                ppage->LBPWS = 0;
+                if (IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_DISCARD)) {
+                    ppage->LBPU = 1;
+                    ppage->ProvisioningType = PROVISIONING_TYPE_THIN;
+                } else {
+                    ppage->LBPU = 0;
+                    ppage->ProvisioningType = PROVISIONING_TYPE_RESOURCE;
+                }
+            } else {
+                PRINTK(("%x: VPD_LOGICAL_BLOCK_PROVISIONING buf too small.\n",
+                         srb->TargetId));
+                srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+            }
+            break;
+        }
+#endif
         default:
             srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
             break;
@@ -326,7 +549,7 @@ virtio_blk_mode_sense(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
                 cache_page->PageCode = MODE_PAGE_CACHING;
                 cache_page->PageLength = 10;
                 cache_page->WriteCacheEnable =
-                    IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_WCACHE) ? 1 : 0;
+                    IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_FLUSH) ? 1 : 0;
                 srb->DataTransferLength = sizeof(MODE_PARAMETER_HEADER) +
                     sizeof(MODE_CACHING_PAGE);
 
@@ -434,7 +657,9 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     srb_ext->sg[1].phys_addr = pa.QuadPart;
     srb_ext->sg[1].len   = sizeof(srb_ext->vbr.status);
 
-    KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->request_lock, &lh);
+    KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->requestq_lock[qidx], &lh);
+
+    DPRINTK(DPRTL_PWR, ("%s: srb %p qidx %d\n", __func__, srb, qidx));
 
     dev_ext->op_mode |= OP_MODE_FLUSH;
     if (dev_ext->indirect) {
@@ -489,3 +714,250 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
     return FALSE;
 }
+
+BOOLEAN
+virtio_blk_do_sn(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
+{
+#ifdef IS_STORPORT
+    STARTIO_PERFORMANCE_PARAMETERS param;
+#endif
+    vbif_srb_ext_t *srb_ext;
+    PHYSICAL_ADDRESS pa;
+    KLOCK_QUEUE_HANDLE lh;
+    ULONG status;
+    ULONG qidx;
+    ULONG len = 0UL;
+    int num_free;
+
+    srb_ext = (vbif_srb_ext_t *)srb->SrbExtension;
+
+#ifdef IS_STORPORT
+    if (dev_ext->num_queues > 1) {
+        param.Size = sizeof(STARTIO_PERFORMANCE_PARAMETERS);
+        status = StorPortGetStartIoPerfParams(dev_ext, srb, &param);
+        if (status == STOR_STATUS_SUCCESS && param.MessageNumber != 0) {
+            qidx = param.MessageNumber - 1;
+        } else {
+            qidx = 0;
+        }
+    } else {
+        qidx = 0;
+    }
+#else
+    qidx = 0;
+#endif
+
+    srb_ext->vbr.out_hdr.sector = 0;
+    srb_ext->vbr.out_hdr.ioprio = 0;
+    srb_ext->vbr.req            = srb;
+    srb_ext->vbr.out_hdr.type   = VIRTIO_BLK_T_GET_ID | VIRTIO_BLK_T_IN;
+    srb_ext->out                = 1;
+    srb_ext->in                 = 2;
+
+    pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, &srb_ext->vbr.out_hdr, &len);
+    srb_ext->sg[0].phys_addr = pa.QuadPart;
+    srb_ext->sg[0].len   = sizeof(srb_ext->vbr.out_hdr);
+
+    pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, &dev_ext->sn[0], &len);
+    srb_ext->sg[1].phys_addr = pa.QuadPart;
+    srb_ext->sg[1].len = sizeof(dev_ext->sn);
+
+    pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, &srb_ext->vbr.status, &len);
+    srb_ext->sg[2].phys_addr = pa.QuadPart;
+    srb_ext->sg[2].len = sizeof(srb_ext->vbr.status);
+
+    KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->requestq_lock[qidx], &lh);
+    if (dev_ext->indirect) {
+        pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, srb_ext->vr_desc, &len);
+        num_free = vq_add_buf_indirect(dev_ext->vq[qidx],
+            &srb_ext->sg[0],
+            srb_ext->out,
+            srb_ext->in,
+            &srb_ext->vbr,
+            srb_ext->vr_desc,
+            pa.QuadPart);
+    } else {
+        num_free = vq_add_buf(dev_ext->vq[qidx],
+            &srb_ext->sg[0],
+            srb_ext->out,
+            srb_ext->in,
+            &srb_ext->vbr);
+    }
+    if (num_free >= 0) {
+        vq_kick(dev_ext->vq[qidx]);
+        KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
+        DPRINTK(DPRTL_TRC, ("%s: %s out.\n", VIRTIO_SP_DRIVER_NAME, __func__));
+        return TRUE;
+    }
+    KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
+
+    SP_BUSY(dev_ext, max(dev_ext->queue_depth, 2));
+    DPRINTK(DPRTL_UNEXPD, ("%s %s: busy out FALSE\n",
+                           VIRTIO_SP_DRIVER_NAME, __func__));
+    return FALSE;
+}
+
+void
+virtio_blk_fill_sn(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
+{
+    PVPD_SERIAL_NUMBER_PAGE snpage;
+    size_t len;
+    ULONG srb_buf_len;
+
+    RPRINTK(DPRTL_CONFIG, ("%s %x\n", __func__, srb->TargetId));
+
+    len = strnlen(dev_ext->sn, sizeof(dev_ext->sn));
+    srb_buf_len = srb->DataTransferLength;
+    if(srb_buf_len < sizeof(VPD_SERIAL_NUMBER_PAGE) + len) {
+        PRINTK(("%s: data len too small %d, %d\n",
+                __func__, srb_buf_len, sizeof(VPD_SERIAL_NUMBER_PAGE) + len));
+        srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+        return;
+    }
+
+    if (len == 0) {
+        PRINTK(("%s: No serial number provided.\n", VIRTIO_SP_DRIVER_NAME));
+        dev_ext->sn[0] = '0';
+        dev_ext->sn[1] = '\0';
+        len = 1;
+    }
+
+    snpage = (PVPD_SERIAL_NUMBER_PAGE)srb->DataBuffer;
+    RtlZeroMemory(snpage, srb_buf_len);
+    snpage->DeviceType = DIRECT_ACCESS_DEVICE;
+    snpage->DeviceTypeQualifier = DEVICE_CONNECTED;
+    snpage->PageCode = VPD_SERIAL_NUMBER;
+    /* snpage->Reserved; */
+    snpage->PageLength = (UCHAR)len;
+    memcpy(&snpage->SerialNumber, &dev_ext->sn, len);
+    srb->DataTransferLength = sizeof(VPD_SERIAL_NUMBER_PAGE) + len;
+    srb->SrbStatus = SRB_STATUS_SUCCESS;
+    srb->ScsiStatus = SCSISTAT_GOOD;
+    RPRINTK(DPRTL_CONFIG, ("%s: Setting serial number to %s.\n",
+                           VIRTIO_SP_DRIVER_NAME, snpage->SerialNumber));
+}
+
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+BOOLEAN
+virtio_blk_do_unmap(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
+{
+    STARTIO_PERFORMANCE_PARAMETERS param;
+    vbif_srb_ext_t *srb_ext;
+    PUNMAP_LIST_HEADER unmap_list;
+    PVOID srb_buf;
+    PUNMAP_BLOCK_DESCRIPTOR blk_descrs;
+    ULONGLONG blk_start_lba;
+    PHYSICAL_ADDRESS pa;
+    KLOCK_QUEUE_HANDLE lh;
+    ULONG blk_descr_lba_cnt;
+    ULONG srb_buf_len;
+    ULONG i;
+    ULONG len = 0UL;
+    ULONG qidx = 0;
+    ULONG status;
+    int num_free;
+    USHORT blk_descr_cnt;
+    USHORT blk_desc_data_len;
+
+    srb_ext = (vbif_srb_ext_t *)srb->SrbExtension;
+    srb_buf = srb->DataBuffer;
+    srb_buf_len = srb->DataTransferLength;
+
+    unmap_list = (PUNMAP_LIST_HEADER)srb_buf;
+
+    if (unmap_list == NULL) {
+        srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+        return FALSE;
+    }
+
+    REVERSE_BYTES_SHORT(&blk_desc_data_len, unmap_list->BlockDescrDataLength);
+
+    if (!(IS_BIT_SET(dev_ext->features, VIRTIO_BLK_F_DISCARD)) ||
+         (srb_buf_len < (ULONG)(blk_desc_data_len + 8)) ) {
+        srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+        return FALSE;
+    }
+
+    blk_descr_cnt = blk_desc_data_len / sizeof(UNMAP_BLOCK_DESCRIPTOR);
+    if (blk_descr_cnt > VIRTIO_BLK_MAX_DISCARD) {
+        srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
+        return FALSE;
+    }
+
+    blk_descrs = (PUNMAP_BLOCK_DESCRIPTOR)((PCHAR)srb_buf + 8);
+    for (i = 0; i < blk_descr_cnt; i++) {
+        REVERSE_BYTES_QUAD(&blk_start_lba, blk_descrs[i].StartingLba);
+        REVERSE_BYTES(&blk_descr_lba_cnt, blk_descrs[i].LbaCount);
+        DPRINTK(DPRTL_ON,
+            ("[%d] blk_descr_cnt %d blk_start_lba %llu blk_descr_lba_cnt %lu\n",
+            i, blk_descr_cnt, blk_start_lba, blk_descr_lba_cnt));
+        dev_ext->blk_discard[i].sector =
+            blk_start_lba * (dev_ext->info.blk_size / SECTOR_SIZE);
+        dev_ext->blk_discard[i].num_sectors =
+            blk_descr_lba_cnt * (dev_ext->info.blk_size / SECTOR_SIZE);
+        dev_ext->blk_discard[i].flags = 0;
+    }
+
+    srb_ext->vbr.out_hdr.sector = 0;
+    srb_ext->vbr.out_hdr.ioprio = 0;
+    srb_ext->vbr.req            = srb;
+    srb_ext->vbr.out_hdr.type   = VIRTIO_BLK_T_DISCARD | VIRTIO_BLK_T_OUT;
+    srb_ext->out                = 2;
+    srb_ext->in                 = 1;
+
+    pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, &srb_ext->vbr.out_hdr, &len);
+    srb_ext->sg[0].phys_addr = pa.QuadPart;
+    srb_ext->sg[0].len   = sizeof(srb_ext->vbr.out_hdr);
+
+    pa = MmGetPhysicalAddress(&dev_ext->blk_discard[0]);
+    srb_ext->sg[1].phys_addr = pa.QuadPart;
+    srb_ext->sg[1].len =
+        sizeof(virtio_blk_discard_write_zeroes_t) * blk_descr_cnt;
+
+    pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, &srb_ext->vbr.status, &len);
+    srb_ext->sg[2].phys_addr = pa.QuadPart;
+    srb_ext->sg[2].len = sizeof(srb_ext->vbr.status);
+
+    if (dev_ext->num_queues > 1) {
+        param.Size = sizeof(STARTIO_PERFORMANCE_PARAMETERS);
+        status = StorPortGetStartIoPerfParams(dev_ext, srb, &param);
+        if (status == STOR_STATUS_SUCCESS && param.MessageNumber != 0) {
+            qidx = param.MessageNumber - 1;
+        } else {
+            qidx = 0;
+        }
+    } else {
+        qidx = 0;
+    }
+
+    KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->requestq_lock[qidx], &lh);
+    if (dev_ext->indirect) {
+        pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, srb_ext->vr_desc, &len);
+        num_free = vq_add_buf_indirect(dev_ext->vq[qidx],
+            &srb_ext->sg[0],
+            srb_ext->out,
+            srb_ext->in,
+            &srb_ext->vbr,
+            srb_ext->vr_desc,
+            pa.QuadPart);
+    } else {
+        num_free = vq_add_buf(dev_ext->vq[qidx],
+            &srb_ext->sg[0],
+            srb_ext->out,
+            srb_ext->in,
+            &srb_ext->vbr);
+    }
+    if (num_free >= 0) {
+        vq_kick(dev_ext->vq[qidx]);
+        KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
+        DPRINTK(DPRTL_TRC, ("%s: %s out.\n", VIRTIO_SP_DRIVER_NAME, __func__));
+        return TRUE;
+    }
+    KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
+
+    SP_BUSY(dev_ext, max(dev_ext->queue_depth, 2));
+    DPRINTK(DPRTL_UNEXPD, ("%s %s: busy out FALSE\n",
+                           VIRTIO_SP_DRIVER_NAME, __func__));
+    return FALSE;
+}
+#endif

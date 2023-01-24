@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -96,6 +96,8 @@ virtio_scsi_complete_request(virtio_sp_dev_ext_t *dev_ext,
 BOOLEAN
 sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 {
+    uint32_t i;
+
     VBIF_INC_SRB(sio_srbs_seen);
     VBIF_SET_FLAG(dev_ext->sp_locks, (BLK_STI_L | BLK_SIO_L));
 
@@ -141,10 +143,21 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         dev_ext->op_mode |= OP_MODE_RESET;
         RPRINTK(DPRTL_ON, ("  new op_mode %x\n", dev_ext->op_mode));
 
-        if (vq_has_unconsumed_responses(
-                dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])) {
-            /* Try to clean up any outstanding requests. */
-            dev_ext->op_mode |= OP_MODE_POLLING;
+        for (i = 0; i < dev_ext->num_queues + VIRTIO_SCSI_QUEUE_REQUEST; i++) {
+            PRINTK(("%s SRB_FUNC_RESET[%d] 0x%x: op = %x, st = %x, %x %x\n",
+                    VIRTIO_SP_DRIVER_NAME,
+                    i,
+                    Srb->Function, dev_ext->op_mode, dev_ext->state,
+                    ((virtio_queue_split_t *)dev_ext->vq[i])->last_used_idx,
+                    ((virtio_queue_split_t *)dev_ext->vq[i])->vring.used->idx));
+            if (vq_has_unconsumed_responses(dev_ext->vq[i])) {
+                /* Try to clean up any outstanding requests. */
+                PRINTK(("  found work on %d\n", i));
+                dev_ext->op_mode |= OP_MODE_POLLING;
+            }
+        }
+        if (dev_ext->op_mode & OP_MODE_POLLING) {
+            PRINTK(("  do the poll\n"));
             virtio_sp_poll(dev_ext);
         }
 
@@ -457,7 +470,7 @@ sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
 BOOLEAN
 virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                        ULONG reason,
-                       ULONG  msg_id,
+                       ULONG  qidx,
                        BOOLEAN from_int)
 {
     virtio_scsi_cmd_t *cmd;
@@ -475,10 +488,11 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
     VBIF_SET_FLAG(dev_ext->sp_locks, (BLK_ISR_L));
     DPRINTK(DPRTL_INT, ("%s %s: in\n", VIRTIO_SP_DRIVER_NAME, __func__));
     InitializeListHead(&srb_complete_list);
-    if (reason == 1 || msg_id >= VIRTIO_SCSI_QUEUE_REQUEST) {
+    if (reason == 1 || qidx >= VIRTIO_SCSI_QUEUE_REQUEST) {
         cnt = 0;
-        KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->request_lock, &lh);
-        while ((cmd = vq_get_buf(dev_ext->vq[msg_id],
+        KeAcquireInStackQueuedSpinLockAtDpcLevel(
+            &dev_ext->requestq_lock[qidx], &lh);
+        while ((cmd = vq_get_buf(dev_ext->vq[qidx],
                 &len)) != NULL) {
             InsertTailList(&srb_complete_list, &cmd->list_entry);
         }
@@ -570,7 +584,7 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                 srb_ext->vbr.sc, &srb_ext->vbr.sc, cmd->sc));
         }
     }
-    if (reason == 1 || msg_id == VIRTIO_SCSI_QUEUE_CONTROL) {
+    if (reason == 1 || qidx == VIRTIO_SCSI_QUEUE_CONTROL) {
         KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->control_lock, &lh);
         if (dev_ext->tmf_infly) {
             PRINTK(("%s: ** int infly\n", VIRTIO_SP_DRIVER_NAME));
@@ -597,7 +611,7 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
         }
         KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
     }
-    if (reason == 1 || msg_id == VIRTIO_SCSI_QUEUE_EVENT) {
+    if (reason == 1 || qidx == VIRTIO_SCSI_QUEUE_EVENT) {
 
         KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->event_lock, &lh);
         while ((event_node = vq_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_EVENT],
@@ -638,16 +652,16 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
 #ifdef USE_STORPORT_DPC
     if (from_int == FALSE) {
         StorPortSynchronizeAccess(dev_ext, virtio_sp_enable_interrupt,
-                                  dev_ext->vq[msg_id]);
-        if (vq_has_unconsumed_responses(dev_ext->vq[msg_id])) {
-            RPRINTK(DPRTL_DPC, ("%s: issue DPC, msg_id %d has work to do: %d\n",
+                                  dev_ext->vq[qidx]);
+        if (vq_has_unconsumed_responses(dev_ext->vq[qidx])) {
+            RPRINTK(DPRTL_DPC, ("%s: issue DPC, qidx %d has work to do: %d\n",
                     VIRTIO_SP_DRIVER_NAME,
-                    msg_id,
-                    vq_has_unconsumed_responses(dev_ext->vq[msg_id])));
+                    qidx,
+                    vq_has_unconsumed_responses(dev_ext->vq[qidx])));
             StorPortIssueDpc(dev_ext,
-                             &dev_ext->srb_complete_dpc[msg_id],
+                             &dev_ext->srb_complete_dpc[qidx],
                              (void *)reason,
-                             (void *)msg_id);
+                             (void *)qidx);
         }
     }
 #endif

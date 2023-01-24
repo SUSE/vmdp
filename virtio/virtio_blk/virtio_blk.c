@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,7 +35,7 @@ BOOLEAN
 sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 {
     uint32_t i;
-    BOOLEAN flush_status;
+    BOOLEAN do_status;
 
     VBIF_INC_SRB(sio_srbs_seen);
     VBIF_SET_FLAG(dev_ext->sp_locks, (BLK_STI_L | BLK_SIO_L));
@@ -51,8 +51,11 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         dev_ext, KeGetCurrentIrql(), Srb, Srb->Function, Srb->Cdb[0],
         KeGetCurrentProcessorNumber()));
 
+    DPRINTK(DPRTL_PWR, ("%s: srb %p function %x\n",
+                        __func__, Srb, Srb->Function));
     switch (Srb->Function) {
     case SRB_FUNCTION_EXECUTE_SCSI: {
+        DPRINTK(DPRTL_PWR, ("\tcdb %x\n", Srb->Cdb[0]));
         switch (Srb->Cdb[0]) {
         case SCSIOP_READ_CAPACITY:
         case SCSIOP_READ_CAPACITY16: {
@@ -132,7 +135,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         case SCSIOP_WRITE16: {
             NTSTATUS status;
 
-            DPRINTK(DPRTL_TRC,
+            DPRINTK(DPRTL_TRC | DPRTL_PWR,
                 ("%s %x: SCSIOP_WRITE SCSIOP_READ %x, dev=%x,srb=%x\n",
                 VIRTIO_SP_DRIVER_NAME, Srb->TargetId,
                  Srb->Cdb[0], dev_ext, Srb));
@@ -169,6 +172,9 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 
         case SCSIOP_INQUIRY:
             virtio_blk_inquery_data(dev_ext, Srb);
+            if (Srb->SrbStatus == SRB_STATUS_PENDING) {
+                return TRUE;
+            }
             break;
 
         case SCSIOP_MEDIUM_REMOVAL:
@@ -211,9 +217,9 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
                                 VIRTIO_SP_DRIVER_NAME));
             Srb->SrbStatus = SRB_STATUS_PENDING;
             Srb->ScsiStatus = SCSISTAT_GOOD;
-            flush_status = virtio_blk_do_flush(dev_ext, Srb);
+            do_status = virtio_blk_do_flush(dev_ext, Srb);
 #ifdef IS_STORPORT
-            if (flush_status == FALSE) {
+            if (do_status == FALSE) {
                 Srb->SrbStatus = SRB_STATUS_ERROR;
                 PRINTK(("%s: SYNCHRONIZE_CACHE flush fail\n",
                         VIRTIO_SP_DRIVER_NAME));
@@ -226,10 +232,26 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
             /* srb->SrbStatus is set in the flush: error or success. */
             DPRINTK(DPRTL_TRC, ("%s: SYNCHRONIZE_CACHE: %d\n",
                                VIRTIO_SP_DRIVER_NAME,
-                               flush_status));
+                               do_status));
             break;
 #endif
-
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+        case SCSIOP_UNMAP: {
+            RPRINTK(DPRTL_TRC, ("%s: SCSIOP_UNMAP\n", VIRTIO_SP_DRIVER_NAME));
+            Srb->SrbStatus = SRB_STATUS_PENDING;
+            Srb->ScsiStatus = SCSISTAT_GOOD;
+            do_status = virtio_blk_do_unmap(dev_ext, Srb);
+            if (do_status == FALSE) {
+                Srb->SrbStatus = SRB_STATUS_ERROR;
+                PRINTK(("%s: SCSIOP_UNMAP failed\n",
+                        VIRTIO_SP_DRIVER_NAME));
+                break;
+            }
+            RPRINTK(DPRTL_TRC, ("%s: SCSIOP_UNMAP ok\n",
+                                VIRTIO_SP_DRIVER_NAME));
+            return TRUE;
+        }
+#endif
         default:
             RPRINTK(DPRTL_TRC,
                 ("%s %x: default %x\n",
@@ -251,8 +273,8 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 
         if (Srb->Function == SRB_FUNCTION_SHUTDOWN
                 && (dev_ext->op_mode & OP_MODE_NORMAL)) {
-            dev_ext->op_mode &= ~OP_MODE_NORMAL;
             dev_ext->op_mode |= OP_MODE_SHUTTING_DOWN;
+            dbg_print_mask |= DPRTL_PWR;
             PRINTK(("%s: shutdown.\n", VIRTIO_SP_DRIVER_NAME));
         }
 
@@ -264,9 +286,9 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         /* SrbStatus set when complete. */
         Srb->SrbStatus = SRB_STATUS_PENDING;
         Srb->ScsiStatus = SCSISTAT_GOOD;
-        flush_status = virtio_blk_do_flush(dev_ext, Srb);
+        do_status = virtio_blk_do_flush(dev_ext, Srb);
 #ifdef IS_STORPORT
-        if (flush_status == FALSE) {
+        if (do_status == FALSE) {
             Srb->SrbStatus = SRB_STATUS_ERROR;
             break;
         }
@@ -275,7 +297,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         /* srb->SrbStatus is set in the flush: error or success. */
         DPRINTK(DPRTL_TRC, ("%s: FLUSH/SHUTDOWN: %d\n",
                            VIRTIO_SP_DRIVER_NAME,
-                           flush_status));
+                           do_status));
         break;
 #endif
 
@@ -294,10 +316,21 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 
         dev_ext->op_mode |= OP_MODE_RESET;
 
-        if (vq_has_unconsumed_responses(
-                dev_ext->vq[VIRTIO_SCSI_QUEUE_REQUEST])) {
-            /* Try to clean up any outstanding requests. */
-            dev_ext->op_mode |= OP_MODE_POLLING;
+        for (i = 0; i < dev_ext->num_queues + VIRTIO_SCSI_QUEUE_REQUEST; i++) {
+            PRINTK(("%s SRB_FUNC_RESET[%d] 0x%x: op = %x, st = %x, %x %x\n",
+                    VIRTIO_SP_DRIVER_NAME,
+                    i,
+                    Srb->Function, dev_ext->op_mode, dev_ext->state,
+                    ((virtio_queue_split_t *)dev_ext->vq[i])->last_used_idx,
+                    ((virtio_queue_split_t *)dev_ext->vq[i])->vring.used->idx));
+            if (vq_has_unconsumed_responses(dev_ext->vq[i])) {
+                /* Try to clean up any outstanding requests. */
+                PRINTK(("  found work on %d\n", i));
+                dev_ext->op_mode |= OP_MODE_POLLING;
+            }
+        }
+        if (dev_ext->op_mode & OP_MODE_POLLING) {
+            PRINTK(("  do the poll\n"));
             virtio_sp_poll(dev_ext);
         }
 
@@ -332,6 +365,10 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         Srb->SrbStatus = SRB_STATUS_INVALID_REQUEST;
         break;
     }
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+    case SRB_FUNCTION_STORAGE_REQUEST_BLOCK:
+        PRINTK(("** SRB_FUNCTION_STORAGE_REQUEST_BLOCK **\n"));
+#endif
 
     default:
         RPRINTK(DPRTL_TRC,
@@ -346,8 +383,8 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
          VIRTIO_SP_DRIVER_NAME, __func__,
          KeGetCurrentIrql(), KeGetCurrentProcessorNumber(), dev_ext, Srb));
 
-    DPRINTK(DPRTL_IO,
-        ("%s %s: srb %x, status = %x - Out\n",
+    DPRINTK(DPRTL_IO | DPRTL_PWR,
+        ("%s %s: complete srb %x, status = %x - Out\n",
          VIRTIO_SP_DRIVER_NAME, __func__, Srb, Srb->SrbStatus));
     SP_COMPLETE_SRB(dev_ext, Srb);
 
@@ -453,7 +490,7 @@ sp_build_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
         srb_ext->sg[el].phys_addr = pa.QuadPart;
         srb_ext->sg[el].len = sizeof(srb_ext->vbr.status);
         srb_ext->force_unit_access = virtio_is_feature_enabled(
-            dev_ext->features, VIRTIO_BLK_F_WCACHE)
+            dev_ext->features, VIRTIO_BLK_F_FLUSH)
                 ? (cdb->CDB10.ForceUnitAccess == 1)
                 : FALSE;
 #ifdef DBG
@@ -487,7 +524,7 @@ sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
 BOOLEAN
 virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                        ULONG reason,
-                       ULONG  msg_id,
+                       ULONG  qidx,
                        BOOLEAN from_int)
 {
     vbif_srb_ext_t *srb_ext;
@@ -497,19 +534,22 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
     KLOCK_QUEUE_HANDLE lh;
     unsigned int len;
 
-    DPRINTK(DPRTL_INT, ("%s %s: msg_id %d\n",
-                        VIRTIO_SP_DRIVER_NAME, __func__, msg_id));
-    if (reason == 1 || (LONG)msg_id >= VIRTIO_SCSI_QUEUE_REQUEST) {
+    DPRINTK(DPRTL_INT | DPRTL_PWR, ("%s %s: qidx %d\n",
+                        VIRTIO_SP_DRIVER_NAME, __func__, qidx));
+
+    if (reason == 1 || (LONG)qidx >= VIRTIO_SCSI_QUEUE_REQUEST) {
         VBIF_INC(g_int_to_send);
 
         InitializeListHead(&srb_complete_list);
 
-        KeAcquireInStackQueuedSpinLockAtDpcLevel(&dev_ext->request_lock, &lh);
-        while ((vbr = vq_get_buf(dev_ext->vq[msg_id], &len)) != NULL) {
+        DPRINTK(DPRTL_PWR, ("  checking for work on %d\n", qidx));
+        KeAcquireInStackQueuedSpinLockAtDpcLevel(
+            &dev_ext->requestq_lock[qidx], &lh);
+        while ((vbr = vq_get_buf(dev_ext->vq[qidx], &len)) != NULL) {
             InsertTailList(&srb_complete_list, &vbr->list_entry);
         }
         KeReleaseInStackQueuedSpinLockFromDpcLevel(&lh);
-
+        DPRINTK(DPRTL_PWR, ("  done checking for work on %d\n", qidx));
 
         while (!IsListEmpty(&srb_complete_list)) {
             vbr  = (virtio_blk_req_t *)RemoveHeadList(&srb_complete_list);
@@ -530,44 +570,59 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                 break;
             }
 
+            DPRINTK(DPRTL_PWR, ("  srb %p complete on %d\n", srb, qidx));
+
             if (vbr->out_hdr.type == VIRTIO_BLK_T_FLUSH) {
                 dev_ext->op_mode &= ~OP_MODE_FLUSH;
+            } else if (vbr->out_hdr.type & VIRTIO_BLK_T_GET_ID) {
+                RPRINTK(DPRTL_ON, ("%s: status %x, sn %s\n",
+                         __func__, srb->SrbStatus, dev_ext->sn));
+                virtio_blk_fill_sn(dev_ext, srb);
             }
 #ifdef IS_STORPORT
             if (srb_ext->force_unit_access == TRUE) {
                 srb_ext->force_unit_access = FALSE;
                 srb->SrbStatus = SRB_STATUS_PENDING;
+                DPRINTK(DPRTL_PWR, ("Flush doing another flush on %d\n", qidx));
                 if (virtio_blk_do_flush(dev_ext, srb) == FALSE) {
                     srb->SrbStatus = SRB_STATUS_ERROR;
                     SP_COMPLETE_SRB(dev_ext, srb);
                 }
-            }
-#endif
-            else {
+            } else {
                 SP_COMPLETE_SRB(dev_ext, srb);
             }
+#else
+            SP_COMPLETE_SRB(dev_ext, srb);
+#endif
         }
-    } else if (reason == 3 || msg_id + 1 == VIRTIO_BLK_MSIX_CONFIG_VECTOR) {
-        RPRINTK(DPRTL_ON, ("%s %s: reason %d, msg_id %d\n",
-                            VIRTIO_SP_DRIVER_NAME, __func__, reason, msg_id));
+    } else if (reason == 3 || qidx + 1 == VIRTIO_BLK_MSIX_CONFIG_VECTOR) {
+        RPRINTK(DPRTL_ON | DPRTL_PWR, ("%s %s: reason %d, qidx %d\n",
+                            VIRTIO_SP_DRIVER_NAME, __func__, reason, qidx));
         virtio_sp_get_device_config(dev_ext);
         SP_NOTIFICATION(BusChangeDetected, dev_ext, 0);
     }
 #ifdef USE_STORPORT_DPC
     if (from_int == FALSE) {
+        DPRINTK(DPRTL_PWR, ("%s %s: sync access reason %d, qidx %d\n",
+                            VIRTIO_SP_DRIVER_NAME, __func__, reason, qidx));
         StorPortSynchronizeAccess(dev_ext, virtio_sp_enable_interrupt,
-                                  dev_ext->vq[msg_id]);
-        if (vq_has_unconsumed_responses(dev_ext->vq[msg_id])) {
-            RPRINTK(DPRTL_DPC, ("%s: issue DPC, msg_id %d has work to do: %d\n",
+                                  dev_ext->vq[qidx]);
+        DPRINTK(DPRTL_PWR, ("%s %s: done sync access reason %d, qidx %d\n",
+                            VIRTIO_SP_DRIVER_NAME, __func__, reason, qidx));
+        if (vq_has_unconsumed_responses(dev_ext->vq[qidx])) {
+            RPRINTK(DPRTL_DPC | DPRTL_PWR,
+                    ("%s: issue DPC, qidx %d has work to do: %d\n",
                     VIRTIO_SP_DRIVER_NAME,
-                    msg_id,
-                    vq_has_unconsumed_responses(dev_ext->vq[msg_id])));
+                    qidx,
+                    vq_has_unconsumed_responses(dev_ext->vq[qidx])));
             StorPortIssueDpc(dev_ext,
-                             &dev_ext->srb_complete_dpc[msg_id],
+                             &dev_ext->srb_complete_dpc[qidx],
                              (void *)reason,
-                             (void *)msg_id);
+                             (void *)qidx);
         }
     }
 #endif
+    DPRINTK(DPRTL_PWR, ("%s %s: out qidx %d\n",
+                        VIRTIO_SP_DRIVER_NAME, __func__, qidx));
     return TRUE;
 }

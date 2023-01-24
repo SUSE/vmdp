@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2017 Red Hat, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -51,6 +51,7 @@
 
 #define VBIF_DESIGNATOR_STR "Virtio Block Device"
 #define VIRTIO_SP_DRIVER_NAME "VSCSI"
+#define VIRTIO_SP_POOL_TAG    ((ULONG)'ICSV')
 
 #define VIRTIO_SCSI_QUEUE_CONTROL       0
 #define VIRTIO_SCSI_QUEUE_EVENT         1
@@ -67,18 +68,14 @@
 #define VIRTIO_SCSI_OFFSET_MAX (VIRTIO_SCSI_OFFSET_VQ + 1)
 #endif
 
-#define VIRTIO_SCSI_DEFAULT_QUEU_NUM    128
-
 #define VIRTIO_SCSI_MAX_Q_DEPTH 32
 
-#define SECTOR_SIZE             512
-#define MAX_PHYS_SEGMENTS       64
 #ifdef IS_STORPORT
-#define VIRTIO_MAX_SG           (3 + MAX_PHYS_SEGMENTS)
+#define MAX_PHYS_SEGMENTS       128
 #else
-#define MAX_PHYS_SEGMENTS_SCSI  64
-#define VIRTIO_MAX_SG           (3 + MAX_PHYS_SEGMENTS_SCSI)
+#define MAX_PHYS_SEGMENTS       64
 #endif
+#define VIRTIO_MAX_SG           (3 + MAX_PHYS_SEGMENTS)
 
 #include <sp_defs.h>
 
@@ -338,13 +335,16 @@ typedef struct _vscsi_dev_ext {
     uint32_t        op_mode;            /* operation mode e.g. OP_MODE_NORMAL */
 #ifdef USE_STORPORT_DPC
     STOR_DPC        *srb_complete_dpc;
+    PGROUP_AFFINITY pmsg_affinity;
+    ULONG           perf_flags;
 #endif
 #ifndef IS_STORPORT
     sp_sgl_t        scsi_sgl;
 #endif
+    ULONG           num_affinity;
     KSPIN_LOCK      control_lock;
     KSPIN_LOCK      event_lock;
-    KSPIN_LOCK      request_lock;
+    KSPIN_LOCK      *requestq_lock;
     BOOLEAN         msi_enabled;
     BOOLEAN         msix_uses_one_vector;
     BOOLEAN         indirect;
@@ -353,6 +353,8 @@ typedef struct _vscsi_dev_ext {
 
     virtio_scsi_event_node_t *event_node;
     virtio_scsi_config_t scsi_config;
+    uint32_t        num_phys_breaks;
+    uint32_t        max_xfer_len;
     SCSI_REQUEST_BLOCK  tmf_cmd_srb;
     uint32_t        underruns;
     BOOLEAN         tmf_infly;

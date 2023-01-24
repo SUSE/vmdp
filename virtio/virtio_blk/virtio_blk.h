@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008-2017 Red Hat, Inc.
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,6 +32,7 @@
 
 #include <ntddk.h>
 #include <ntdddisk.h>
+#include <limits.h>
 #ifdef IS_STORPORT
 #include <storport.h>
 #else
@@ -51,6 +52,7 @@
 #include <sp_io_control.h>
 #define VBIF_DESIGNATOR_STR "Virtio Block Device"
 #define VIRTIO_SP_DRIVER_NAME "VBLK"
+#define VIRTIO_SP_POOL_TAG         ((ULONG)'KLBV')
 
 #define VIRTIO_SCSI_QUEUE_REQUEST 0
 #define VIRTIO_SP_MSI_NUM_QUEUE_ADJUST 1
@@ -63,10 +65,15 @@
 #define VIRTIO_BLK_F_RO         5       /* Disk is read-only */
 #define VIRTIO_BLK_F_BLK_SIZE   6       /* Block size of disk is available*/
 #define VIRTIO_BLK_F_SCSI       7       /* Supports scsi command passthru */
-#define VIRTIO_BLK_F_WCACHE     9       /* write cache enabled */
+#define VIRTIO_BLK_F_FLUSH      9       /* Flush command supported */
 #define VIRTIO_BLK_F_TOPOLOGY   10      /* Topology information is available */
 #define VIRTIO_BLK_F_CONFIG_WCE 11      /* Writeback mode available in config */
 #define VIRTIO_BLK_F_MQ         12      /* support more than one vq */
+#define VIRTIO_BLK_F_DISCARD    13      /* DISCARD is supported */
+#define VIRTIO_BLK_F_WRITE_ZEROES 14    /* WRITE ZEROES is supported */
+
+#define VIRTIO_BLK_MAX_DISCARD  16
+#define VIRIOT_BLK_SERIAL_STRLEN 20
 
 /* These two define direction. */
 #define VIRTIO_BLK_T_IN         0
@@ -75,15 +82,26 @@
 #define VIRTIO_BLK_T_SCSI_CMD   2
 #define VIRTIO_BLK_T_FLUSH      4
 #define VIRTIO_BLK_T_GET_ID     8
+#define VIRTIO_BLK_T_DISCARD    11
+#define VIRTIO_BLK_T_WRITE_ZEROES   13
 
 #define VIRTIO_BLK_S_OK         0
 #define VIRTIO_BLK_S_IOERR      1
 #define VIRTIO_BLK_S_UNSUPP     2
 
 #define SECTOR_SIZE             512
+#define SECTOR_SHIFT            9
+#define MAX_DISCARD_SEGMENTS    256u
 
+#ifdef IS_STORPORT
+#define MAX_PHYS_SEGMENTS       254
+#else
 #define MAX_PHYS_SEGMENTS       64
+#endif
+#define DEFAULT_MAX_PHYS_SEGS   64
 #define VIRTIO_MAX_SG           (3 + MAX_PHYS_SEGMENTS)
+
+#define MIN_DISCARD_SECTOR_ALIGNMENT    8
 
 #include <sp_defs.h>
 
@@ -168,24 +186,28 @@ typedef struct vbif_info_s {
     uint8_t  physical_block_exp;
     uint8_t  alignment_offset;
     uint16_t min_io_size;
-    uint16_t opt_io_size;
-} vbif_info_t;
-
-typedef struct vbif_info_ex_s {
-    uint64_t capacity;              /* capacity (in 512-byte sectors). */
-    uint32_t size_max;              /* max seg sz (if VIRTIO_BLK_F_SIZE_MAX) */
-    uint32_t seg_max;               /* max segs (if VIRTIO_BLK_F_SEG_MAX) */
-    virtio_blk_geometry_t geometry; /* (if VIRTIO_BLK_F_GEOMETRY) */
-    uint32_t blk_size;              /* (if VIRTIO_BLK_F_BLK_SIZE) */
-    uint8_t  physical_block_exp;
-    uint8_t  alignment_offset;
-    uint16_t min_io_size;
-    uint16_t opt_io_size;
-    uint8_t wce;                    /* (if VIRTIO_BLK_F_CONFIG_WCE) */
+    uint32_t opt_io_size;
+    uint8_t wce;
     uint8_t unused;
-    u16 num_queues;                 /* only when VIRTIO_BLK_F_MQ is set */
-} vbif_info_ex_t;
+    uint16_t num_queues;            /* Available when VIRTIO_BLK_F_MQ is set */
 
+    /* The next 3 entries are guarded by VIRTIO_BLK_F_DISCARD */
+    uint32_t max_discard_sectors;       /* Max discard sectors (in 512-byte */
+                                        /* sectors) for one segment. */
+    uint32_t max_discard_seg;           /* Max segs in a discard command */
+    uint32_t discard_sector_alignment;  /* Discard commands must be aligned */
+                                        /* to this number of sectors. */
+
+    /* The next 3 entries are guarded by VIRTIO_BLK_F_WRITE_ZEROES */
+    uint32_t max_write_zeroes_sectors;  /* Max write zero sectors (in 512 */
+                                        /* byte sectors) in one segment. */
+    uint32_t max_write_zeroes_seg;  /* Max segs in a write zeroes command */
+    uint8_t write_zeroes_may_unmap; /* Set if a VIRTIO_BLK_T_WRITE_ZEROES */
+                                    /* request may result in the deallocation */
+                                    /* of one or more of the sectors. */
+
+    uint8_t unused1[3];
+} vbif_info_t;
 #pragma pack()
 
 typedef struct virtio_blk_outhdr_s {
@@ -193,6 +215,15 @@ typedef struct virtio_blk_outhdr_s {
     uint32_t ioprio;    /* io priority. */
     uint64_t sector;    /* sector offset of request */
 } virtio_blk_outhdr_t;
+
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+/* Discard/write zeroes range for each request. */
+typedef struct virtio_blk_discard_write_zeroes_s {
+    uint64_t sector;        /* discard/write zeroes start sector */
+    uint32_t num_sectors;   /* number of discard/write zeroes sectors */
+    uint32_t flags;         /* flags for this range */
+} virtio_blk_discard_write_zeroes_t;
+#endif
 
 typedef struct virtio_blk_req_s {
     LIST_ENTRY list_entry;
@@ -232,18 +263,27 @@ typedef struct _virtio_sp_dev_ext {
     /* Common to the adapter */
     uint32_t        state;              /* Current device state */
     uint32_t        op_mode;            /* operation mode e.g. OP_MODE_NORMAL */
-#ifdef IS_STORPORT
+#ifdef USE_STORPORT_DPC
     STOR_DPC        *srb_complete_dpc;
+    PGROUP_AFFINITY pmsg_affinity;
+    ULONG           perf_flags;
 #else
     sp_sgl_t        scsi_sgl;
 #endif
-    KSPIN_LOCK      request_lock;
+    ULONG           num_affinity;
+    KSPIN_LOCK      *requestq_lock;
     BOOLEAN         msi_enabled;
     BOOLEAN         msix_uses_one_vector;
     BOOLEAN         indirect;
     BOOLEAN         b_use_packed_rings;
 
     vbif_info_t     info;
+    uint32_t        num_phys_breaks;
+    uint32_t        max_xfer_len;
+    CHAR            sn[VIRIOT_BLK_SERIAL_STRLEN];
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+    virtio_blk_discard_write_zeroes_t blk_discard[VIRTIO_BLK_MAX_DISCARD];
+#endif
 #ifdef DBG
     uint32_t        sp_locks;
     uint32_t        cpu_locks;
@@ -267,5 +307,13 @@ uint64_t virtio_blk_get_lba(virtio_sp_dev_ext_t *dev_ext,
     PSCSI_REQUEST_BLOCK srb);
 BOOLEAN virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext,
     SCSI_REQUEST_BLOCK *srb);
+BOOLEAN virtio_blk_do_sn(virtio_sp_dev_ext_t *dev_ext,
+    SCSI_REQUEST_BLOCK *srb);
+void virtio_blk_fill_sn(virtio_sp_dev_ext_t *dev_ext,
+    SCSI_REQUEST_BLOCK *srb);
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+BOOLEAN virtio_blk_do_unmap(virtio_sp_dev_ext_t *dev_ext,
+    SCSI_REQUEST_BLOCK *srb);
+#endif
 
 #endif  /* _VIRTIO_BLK_H_ */

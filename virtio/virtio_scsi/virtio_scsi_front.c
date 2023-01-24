@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -98,6 +98,9 @@ virtio_sp_get_device_config(virtio_sp_dev_ext_t *dev_ext)
         sizeof(dev_ext->scsi_config.max_lun));
     RPRINTK(DPRTL_INIT, ("\tmax_lun: %d\n",
                          dev_ext->scsi_config.max_lun));
+
+    dev_ext->num_phys_breaks = MAX_PHYS_SEGMENTS;
+    dev_ext->num_queues = dev_ext->scsi_config.num_queues;
 }
 
 void
@@ -177,6 +180,9 @@ virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext)
         dev_ext->queue_depth = qdepth;
         PRINTK(("\tusing default queue depth: %d\n", dev_ext->queue_depth));
     }
+#ifdef IS_STORPORT
+    sp_init_perfdata(dev_ext);
+#endif
 }
 
 BOOLEAN

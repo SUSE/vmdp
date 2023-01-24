@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright (c) 2013-2015 Novell, Inc.
-; Copyright 2015-2022 SUSE LLC
+; Copyright 2015-2023 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -93,7 +93,7 @@ HKR, "Parameters\PnpInterface", "5", %REG_DWORD%, 0x00000001
 HKR, "Interrupt Management",, 0x00000010
 HKR, "Interrupt Management\MessageSignaledInterruptProperties",, 0x00000010
 HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00010001, 0
-HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 2
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 256
 HKR, "Interrupt Management\Affinity Policy",, 0x00000010
 HKR, "Interrupt Management\Affinity Policy", DevicePolicy, 0x00010001, 5
 

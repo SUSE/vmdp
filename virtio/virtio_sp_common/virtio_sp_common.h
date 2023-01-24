@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2022 SUSE LLC
+ * Copyright 2017-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,6 +26,10 @@
 
 #ifndef _VIRTIO_SP_COMMON_H
 #define _VIRTIO_SP_COMMON_H
+
+#ifndef NTDDI_WIN8
+#define NTDDI_WIN8 0x6020000
+#endif
 
 #define VIRTIO_SP_PHYS_CRASH_DUMP_SEGMENTS    8
 #ifdef IS_STORPORT
@@ -95,6 +99,9 @@ NTSTATUS sp_find_adapter(
     OUT PBOOLEAN Again);
 
 BOOLEAN sp_initialize(virtio_sp_dev_ext_t *dev_ext);
+#ifdef IS_STORPORT
+void sp_init_perfdata(virtio_sp_dev_ext_t *dev_ext);
+#endif
 BOOLEAN sp_passive_init(virtio_sp_dev_ext_t *dev_ext);
 BOOLEAN sp_start_io(virtio_sp_dev_ext_t *dev_ext,
     PSCSI_REQUEST_BLOCK Srb);
@@ -168,27 +175,27 @@ BOOLEAN virtio_sp_scsi_do_cmd(virtio_sp_dev_ext_t *dev_ext,
 #ifdef USE_STORPORT_DPC
 void sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
 
-#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
+#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _qidx, _cc)           \
 {                                                                           \
     if ((_dev_ext)->op_mode & OP_MODE_NORMAL) {                             \
         (_cc) = StorPortIssueDpc((_dev_ext),                                \
-                         &(_dev_ext)->srb_complete_dpc[(_msg_id)],          \
+                         &(_dev_ext)->srb_complete_dpc[(_qidx)],            \
                          (void *)(_reason),                                 \
-                         (void *)(_msg_id));                                \
+                         (void *)(_qidx));                                  \
         if ((_cc) == TRUE) {                                                \
-            vq_disable_interrupt(dev_ext->vq[(_msg_id)]);                   \
+            vq_disable_interrupt(dev_ext->vq[(_qidx)]);                     \
         }                                                                   \
         (_cc) |= TRUE;                                                      \
     }                                                                       \
     else                                                                    \
         (_cc) |= virtio_sp_complete_cmd((_dev_ext),                         \
                                        (_reason),                           \
-                                       (_msg_id),                           \
+                                       (_qidx),                             \
                                        TRUE);                               \
 }
 #else
-#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
-    (_cc) |= virtio_sp_complete_cmd((_dev_ext), (_reason), (_msg_id), TRUE)
+#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _qidx, _cc)         \
+    (_cc) |= virtio_sp_complete_cmd((_dev_ext), (_reason), (_qidx), TRUE)
 #endif
 
 #else
@@ -209,11 +216,11 @@ void sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
 
 #define virtio_sp_do_cmd virtio_scsi_do_cmd
 
-#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _msg_id, _cc)         \
+#define virtio_sp_int_complete_cmd(_dev_ext, _reason, _qidx, _cc)           \
 {                                                                           \
     if ((_dev_ext)->op_mode & OP_MODE_NORMAL) {                             \
         if ((_reason) == 1) {                                               \
-            vq_disable_interrupt(dev_ext->vq[(_msg_id)]);                   \
+            vq_disable_interrupt(dev_ext->vq[(_qidx)]);                     \
             SP_NOTIFICATION(CallEnableInterrupts,                           \
                            (_dev_ext),                                      \
                            sp_enable_int_callback);                         \
@@ -221,13 +228,13 @@ void sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2);
         } else {                                                            \
             (_cc) |= virtio_sp_complete_cmd((_dev_ext),                     \
                                            (_reason),                       \
-                                           (_msg_id),                       \
+                                           (_qidx),                         \
                                            TRUE);                           \
         }                                                                   \
     } else {                                                                \
         (_cc) |= virtio_sp_complete_cmd((_dev_ext),                         \
                                        (_reason),                           \
-                                       (_msg_id),                           \
+                                       (_qidx),                             \
                                        TRUE);                               \
     }                                                                       \
 }
