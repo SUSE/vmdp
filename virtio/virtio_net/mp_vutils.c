@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2017 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -106,9 +106,6 @@ vnif_report_link_status(PVNIF_ADAPTER adapter)
                                   VIRTIO_NET_F_GUEST_ANNOUNCE)
             && link_up
             && !!(link_status & VIRTIO_NET_S_ANNOUNCE)) {
-
-        DPRINTK(DPRTL_ON, ("%s: send arp.\n", __func__));
-        vnif_send_arp(adapter);
 
         DPRINTK(DPRTL_ON, ("%s: send anounce ctrl msg.\n", __func__));
         vnif_send_control_msg(adapter,
