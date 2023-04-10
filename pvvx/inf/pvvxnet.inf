@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2013-2021 SUSE LLC
+; Copyright 2013-2023 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -339,14 +339,6 @@ HKR, Ndi\params\*NumRssQueues,     step,      0, "1"
 HKR, Ndi\params\*NumRssQueues,     base,      0, "10"
 HKR, Ndi\params\*NumRssQueues,     type,      0, "int"
 
-HKR, Ndi\params\NumPaths,          ParamDesc, 0, %NUM_MULTI_QUEUE_PATHS%
-HKR, Ndi\params\NumPaths,          default,   0, "1"
-HKR, Ndi\params\NumPaths,          min,       0, "0"
-HKR, Ndi\params\NumPaths,          max,       0, "64"
-HKR, Ndi\params\NumPaths,          step,      0, "1"
-HKR, Ndi\params\NumPaths,          base,      0, "10"
-HKR, Ndi\params\NumPaths,          type,      0, "int"
-
 HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport,       ParamDesc, 0, %TCPIPv6ExtHdrsSupport%
 HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport,       default,   0, "0"
 HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport,       type,      0, "enum"
@@ -416,7 +408,6 @@ PMC = "Power Management Capabilities"
 W2K12 = "Win2012"
 RSS = "Receive Side Scaling"
 RSS_QUEUES = "Maximum Number of RSS Queues"
-NUM_MULTI_QUEUE_PATHS = "Maximum Multi Queue Paths (0 defaults to backend)"
 SPLIT_EVTCHN = "Split Event Channels (Xen)"
 IndirectDesc = "Indirect Descriptors (virtio)"
 UsePackedRings = "Packed Rings (virtio)"

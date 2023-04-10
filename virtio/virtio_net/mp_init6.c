@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -908,9 +908,9 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
                 }
 
                 rcb->mdl_start_va = rcb->mdl->StartVa;
-                DPRINTK(DPRTL_RX,
-                        ("rcb[%d]: p %x sva %x %x mva %x s %d bc %x min %x\n",
-                        i, rcb->page, rcb->mdl->StartVa,
+                DPRINTK(DPRTL_MM,
+                  ("rcb[%d]: p %p mdl %p sva %x %x mva %x s %d bc %x min %x\n",
+                        i, rcb->page, rcb->mdl, rcb->mdl->StartVa,
                         rcb->mdl_start_va,
                         rcb->mdl->MappedSystemVa, rcb->mdl->Size,
                         rcb->mdl->ByteCount,

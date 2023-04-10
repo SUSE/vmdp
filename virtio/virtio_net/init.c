@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -363,10 +363,10 @@ static void
 vnif_set_num_paths(PVNIF_ADAPTER adapter)
 {
     UINT num_cpus;
-    UINT num_paths;
-    UINT max_paths;
+    UINT msi_paths;
+    UINT cpu_limit_paths;
 
-    num_paths = 1;
+    adapter->num_paths = 1;
     do {
         if (!adapter->b_multi_signaled) {
             RPRINTK(DPRTL_INIT, ("[%s] Not multi signled, use 1 queue\n",
@@ -385,24 +385,17 @@ vnif_set_num_paths(PVNIF_ADAPTER adapter)
         RPRINTK(DPRTL_INIT, ("[%s] num cpus %d\n",
             __func__, num_cpus));
 
-        max_paths = (adapter->num_hw_queues < num_cpus)
+        cpu_limit_paths = (adapter->num_hw_queues < num_cpus)
             ? adapter->num_hw_queues : num_cpus;
 
-        num_paths = VNIF_GET_NUM_PATHS(adapter);
+        msi_paths = VNIF_GET_NUM_PATHS(adapter);
 
-        if (num_paths > max_paths) {
-            num_paths = max_paths;
-        }
-
-        if (num_paths > adapter->num_paths) {
-            num_paths = adapter->num_paths;
-        }
+        adapter->num_paths = msi_paths < cpu_limit_paths
+            ? msi_paths : cpu_limit_paths;
 
     } while (FALSE);
 
-    adapter->num_paths = num_paths;
-
-    RPRINTK(DPRTL_INIT, ("[%s] num paths %u\n", __func__, num_paths));
+    RPRINTK(DPRTL_INIT, ("[%s] num paths %u\n", __func__, adapter->num_paths));
 }
 
 static NDIS_STATUS
@@ -1238,38 +1231,9 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             adapter->num_rcv_queues = min(adapter->num_rcv_queues,
                                           max_multi_queues);
 
-            /* Write back what we set it to. */
-            reg_value.ParameterType = NdisParameterString;
-            reg_value.ParameterData.StringData.Length = 0;
-            reg_value.ParameterData.StringData.MaximumLength = sizeof(wbuffer);
-            reg_value.ParameterData.StringData.Buffer = wbuffer;
-            RtlIntegerToUnicodeString(adapter->num_rcv_queues,
-                                      10,
-                                      &reg_value.ParameterData.StringData);
-            reg_value.ParameterData.StringData.Length += sizeof(WCHAR);
-            NdisWriteConfiguration(&status,
-                                   config_handle,
-                                   &reg_num_rss_qs,
-                                   &reg_value);
-
             if (adapter->num_rcv_queues == 1) {
                 /* No need to enable RSS if there is only 1 receive queue. */
                 adapter->b_rss_supported = FALSE;
-
-                /* Disable *RSS in the registry. */
-                reg_value.ParameterType = NdisParameterString;
-                reg_value.ParameterData.StringData.Length = 0;
-                reg_value.ParameterData.StringData.MaximumLength = sizeof(wbuffer);
-                reg_value.ParameterData.StringData.Buffer = wbuffer;
-                RtlIntegerToUnicodeString(0,
-                                          10,
-                                          &reg_value.ParameterData.StringData);
-                reg_value.ParameterData.StringData.Length += sizeof(WCHAR);
-                NdisWriteConfiguration(
-                    &status,
-                    config_handle,
-                    &reg_rss,
-                    &reg_value);
             } else {
                 /* Add 1 for the VNIF_NO_RECEIVE_QUEUE */
                 adapter->num_rcv_queues++;
@@ -1292,33 +1256,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         RPRINTK(DPRTL_INIT,
             ("VNIF: NdisReadConfiguration num_rss_qs set to %d\n",
              adapter->num_rcv_queues));
-
-        NdisReadConfiguration(&status,
-                              &returned_value,
-                              config_handle,
-                              &reg_num_paths,
-                              NdisParameterInteger);
-
-        /* Don't let num_paths be greater than num_hw_queues. */
-        if (status == NDIS_STATUS_SUCCESS) {
-            if (returned_value->ParameterData.IntegerData == 0
-                    && adapter->b_rss_supported) {
-                adapter->num_paths = adapter->num_hw_queues;
-            } else if (returned_value->ParameterData.IntegerData
-                    > adapter->num_hw_queues) {
-                adapter->num_paths = adapter->num_hw_queues;
-            } else if (returned_value->ParameterData.IntegerData != 0) {
-                adapter->num_paths = returned_value->ParameterData.IntegerData;
-            }
-            RPRINTK(DPRTL_INIT,
-                ("VNIF: NdisReadConfiguration reg_num_paths val: %d:%d\n",
-                 returned_value->ParameterData.IntegerData,
-                 adapter->num_paths));
-        } else {
-            RPRINTK(DPRTL_INIT,
-               ("VNIF: NdisReadConfiguration failed to read reg_num_paths\n"));
-            status = NDIS_STATUS_SUCCESS;
-        }
     }
 
     adapter->priority_vlan_support = 0;
