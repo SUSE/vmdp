@@ -75,6 +75,9 @@
 #define S_IFDIR     040000
 #define S_IFLNK     0120000
 
+#define DEFAULT_OVERFLOWUID 65534
+#define DEFAULT_OVERFLOWGID 65534
+
 #define DBG(format, ...) \
     FspDebugLog("*** %s: " format "\n", __FUNCTION__, __VA_ARGS__)
 
@@ -82,6 +85,9 @@
 
 #define ReadAndExecute(x) ((x) | (((x) & 0444) >> 2))
 #define GroupAsOwner(x) (((x) & ~0070) | (((x) & 0700) >> 3))
+
+static uint32_t OverflowUid;
+static uint32_t OverflowGid;
 
 typedef struct
 {
@@ -100,9 +106,6 @@ struct VIRTFS
     HANDLE  Device{ NULL };
 
     ULONG   DebugFlags{ 0 };
-
-    // Service start rountine waits for this event until the device is found.
-    HANDLE  EvtDeviceFound{ NULL };
 
     // Used to handle device arrive notification.
     DeviceInterfaceNotification DevInterfaceNotification{};
@@ -126,14 +129,26 @@ struct VIRTFS
     UINT32  OwnerUid{ 0 };
     UINT32  OwnerGid{ 0 };
 
+    // Set owner UID/GID to shared directory owner UID/GID, otherwise use
+    // commandline/registry parameters.
+    bool    AutoOwnerIds{ true };
+
     // Maps NodeId to its Nlookup counter.
     std::map<UINT64, UINT64> LookupMap{};
 
     VIRTFS(ULONG DebugFlags, bool CaseInsensitive, const std::wstring& MountPoint,
-        const std::wstring& Tag) : DebugFlags{ DebugFlags },
-        CaseInsensitive{ CaseInsensitive }, MountPoint{ MountPoint }, Tag{ Tag }
+        const std::wstring& Tag, bool AutoOwnerIds,
+        uint32_t OwnerUid,  uint32_t OwnerGid) :
+        DebugFlags{ DebugFlags }, CaseInsensitive{ CaseInsensitive },
+        MountPoint{ MountPoint }, Tag{ Tag }, AutoOwnerIds{ AutoOwnerIds }
     {
+        if (!AutoOwnerIds)
+        {
+            this->OwnerUid = OwnerUid;
+            this->OwnerGid = OwnerGid;
+        }
     }
+
     NTSTATUS Start();
     VOID Stop();
 
@@ -270,16 +285,8 @@ DWORD VIRTFS::DevInterfaceArrival()
         goto out_unreg_dh_notify;
     }
 
-    if (SetEvent(EvtDeviceFound) == FALSE)
-    {
-        Error = GetLastError();
-        goto out_stop_virtfs;
-    }
-
     return ERROR_SUCCESS;
 
-out_stop_virtfs:
-    Stop();
 out_unreg_dh_notify:
     DevHandleNotification.AsyncUnregister();
 out_close_handle:
@@ -403,10 +410,8 @@ static VOID FileTimeToUnixTime(UINT64 FileTime, uint64_t *time,
 static VOID UnixTimeToFileTime(uint64_t time, uint32_t nsec,
     PUINT64 PFileTime)
 {
-    __int3264 UnixTime[2];
-    UnixTime[0] = time;
-    UnixTime[1] = nsec;
-    FspPosixUnixTimeToFileTime(UnixTime, PFileTime);
+    *PFileTime = time * 10000000 + nsec / 100 +
+        116444736000000000LL;
 }
 
 static VOID SetFileInfo(VIRTFS *VirtFs, struct fuse_entry_out *entry,
@@ -488,6 +493,7 @@ static NTSTATUS VirtFsFuseRequest(HANDLE Device, LPVOID InBuffer,
         switch (out_hdr->error)
         {
             case -EPERM:
+            case -EACCES:
                 Status = STATUS_ACCESS_DENIED;
                 break;
             case -ENOENT:
@@ -1177,10 +1183,16 @@ static NTSTATUS GetSecurityByName(FSP_FILE_SYSTEM *FileSystem, PWSTR FileName,
     {
         struct fuse_attr *attr = &lookup_out.entry.attr;
 
-        if (lstrcmp(FileName, TEXT("\\")) == 0)
+        if (VirtFs->AutoOwnerIds && (lstrcmp(FileName, TEXT("\\")) == 0))
         {
-            VirtFs->OwnerUid = attr->uid;
-            VirtFs->OwnerGid = attr->gid;
+            // If the shared directory UID or GID turns out to be 'nobody', it
+            // means the host daemon is inside the user namespace. So, the
+            // previous identity is 0 or another valid value. So, let's try to
+            // preserve it.
+            VirtFs->OwnerUid = (attr->uid != OverflowUid) ?
+                                attr->uid : VirtFs->OwnerUid;
+            VirtFs->OwnerGid = (attr->gid != OverflowGid) ?
+                                attr->gid : VirtFs->OwnerGid;
         }
 
         if (PFileAttributes != NULL)
@@ -2518,8 +2530,8 @@ out_del_fs:
 }
 
 static NTSTATUS ParseArgs(ULONG argc, PWSTR *argv,
-    ULONG& DebugFlags, std::wstring& DebugLogFile, bool &CaseInsensitive,
-    std::wstring& MountPoint, std::wstring& Tag)
+    ULONG& DebugFlags, std::wstring& DebugLogFile, bool& CaseInsensitive,
+    std::wstring& MountPoint, std::wstring& Tag, std::wstring& Owner)
 {
 #define argtos(v) if (arge > ++argp && *argp) v.assign(*argp); else goto usage
 #define argtol(v) if (arge > ++argp) v = wcstol_deflt(*argp, v); \
@@ -2553,6 +2565,13 @@ static NTSTATUS ParseArgs(ULONG argc, PWSTR *argv,
             case L't':
                 argtos(Tag);
                 break;
+            case L'o':
+                argtos(Owner);
+                if (!CheckIds(Owner))
+                {
+                    goto usage;
+                }
+                break;
             default:
                 goto usage;
         }
@@ -2577,7 +2596,8 @@ usage:
         "    -D DebugLogFile     [file path; use - for stderr]\n"
         "    -i                  [case insensitive file system]\n"
         "    -m MountPoint       [X:|* (required if no UNC prefix)]\n"
-        "    -t Tag              [mount tag; max 36 symbols]\n";
+        "    -t Tag              [mount tag; max 36 symbols]\n"
+        "    -o UID:GID          [host owner UID:GID]\n";
 
     FspServiceLog(EVENTLOG_ERROR_TYPE, usage, FS_SERVICE_NAME);
 
@@ -2585,12 +2605,22 @@ usage:
 }
 
 static VOID ParseRegistry(ULONG& DebugFlags, std::wstring& DebugLogFile,
-    bool &CaseInsensitive, std::wstring& MountPoint)
+    bool &CaseInsensitive, std::wstring& MountPoint, std::wstring& Owner)
 {
     RegistryGetVal(FS_SERVICE_REGKEY, L"DebugFlags", DebugFlags);
     RegistryGetVal(FS_SERVICE_REGKEY, L"DebugLogFile", DebugLogFile);
     RegistryGetVal(FS_SERVICE_REGKEY, L"CaseInsensitive", CaseInsensitive);
     RegistryGetVal(FS_SERVICE_REGKEY, L"MountPoint", MountPoint);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"Owner", Owner);
+}
+
+static VOID ParseRegistryCommon()
+{
+    OverflowUid = DEFAULT_OVERFLOWUID;
+    OverflowGid = DEFAULT_OVERFLOWGID;
+
+    RegistryGetVal(FS_SERVICE_REGKEY, L"OverflowUid", OverflowUid);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"OverflowGid", OverflowGid);
 }
 
 static NTSTATUS DebugLogSet(const std::wstring& DebugLogFile)
@@ -2627,6 +2657,9 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
     bool CaseInsensitive{ false };
     std::wstring MountPoint{ L"*" };
     std::wstring Tag{};
+    std::wstring Owner{};
+    uint32_t OwnerUid, OwnerGid;
+    bool AutoOwnerIds;
     VIRTFS *VirtFs;
     NTSTATUS Status{ STATUS_SUCCESS };
     DWORD Error;
@@ -2634,12 +2667,17 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
     if (argc > 1)
     {
         Status = ParseArgs(argc, argv, DebugFlags, DebugLogFile,
-            CaseInsensitive, MountPoint, Tag);
+            CaseInsensitive, MountPoint, Tag, Owner);
     }
     else
     {
-        ParseRegistry(DebugFlags, DebugLogFile, CaseInsensitive, MountPoint);
+        ParseRegistry(DebugFlags, DebugLogFile, CaseInsensitive, MountPoint,
+            Owner);
     }
+
+    ParseRegistryCommon();
+
+    AutoOwnerIds = !ParseIds(Owner, OwnerUid, OwnerGid);
 
     if (!NT_SUCCESS(Status))
     {
@@ -2657,7 +2695,8 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
 
     try
     {
-        VirtFs = new VIRTFS(DebugFlags, CaseInsensitive, MountPoint, Tag);
+        VirtFs = new VIRTFS(DebugFlags, CaseInsensitive, MountPoint, Tag,
+            AutoOwnerIds, OwnerUid, OwnerGid);
     }
     catch (std::bad_alloc)
     {
@@ -2672,36 +2711,22 @@ static NTSTATUS SvcStart(FSP_SERVICE* Service, ULONG argc, PWSTR* argv)
         goto out_free_virtfs;
     }
 
-    VirtFs->EvtDeviceFound = CreateEvent(NULL, FALSE, FALSE, NULL);
-    if (VirtFs->EvtDeviceFound == NULL)
-    {
-        Error = GetLastError();
-        Status = FspNtStatusFromWin32(Error);
-        goto out_free_virtfs;
-    }
-
     Error = VirtFs->DevInterfaceNotification.Register(DeviceNotificationCallback,
         VirtFs, GUID_DEVINTERFACE_VIRT_FS);
     if (Error != ERROR_SUCCESS)
     {
         Status = FspNtStatusFromWin32(Error);
-        goto out_close_event;
+        goto out_unreg_di_notify;
     }
 
     Error = VirtFs->FindDeviceInterface();
     if (Error != ERROR_SUCCESS)
     {
         // Wait for device to be found by arrival notification callback.
-        Error = WaitForSingleObject(VirtFs->EvtDeviceFound, INFINITE);
-        if (Error == WAIT_OBJECT_0)
-        {
-            return STATUS_SUCCESS;
-        }
-        else
-        {
-            Status = STATUS_UNSUCCESSFUL;
-            goto out_unreg_di_notify;
-        }
+        FspServiceLog(EVENTLOG_INFORMATION_TYPE,
+            (PWSTR)L"The %s service will start and wait for the device.",
+	    FS_SERVICE_NAME);
+        return STATUS_SUCCESS;
     }
 
     Error = VirtFs->DevHandleNotification.Register(DeviceNotificationCallback,
@@ -2726,8 +2751,6 @@ out_close_handle:
     CloseHandle(VirtFs->Device);
 out_unreg_di_notify:
     VirtFs->DevInterfaceNotification.Unregister();
-out_close_event:
-    CloseHandle(VirtFs->EvtDeviceFound);
 out_free_virtfs:
     delete VirtFs;
 
@@ -2741,7 +2764,6 @@ static NTSTATUS SvcStop(FSP_SERVICE *Service)
     VirtFs->Stop();
     VirtFs->DevHandleNotification.Unregister();
     VirtFs->CloseDeviceInterface();
-    CloseHandle(VirtFs->EvtDeviceFound);
     VirtFs->DevInterfaceNotification.Unregister();
     delete VirtFs;
 
@@ -2776,8 +2798,14 @@ int wmain(int argc, wchar_t **argv)
     UNREFERENCED_PARAMETER(argc);
     UNREFERENCED_PARAMETER(argv);
 
-    if (!NT_SUCCESS(FspLoad(0)))
+    Result = FspLoad(0);
+
+    if (!NT_SUCCESS(Result))
     {
+        fwprintf(stderr,
+            L"The service %s failed to load WinFsp DLL (Status=%lx).",
+            FS_SERVICE_NAME, Result);
+
         return ERROR_DELAY_LOAD_FAILED;
     }
 
