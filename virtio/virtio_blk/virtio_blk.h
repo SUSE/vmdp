@@ -73,7 +73,7 @@
 #define VIRTIO_BLK_F_WRITE_ZEROES 14    /* WRITE ZEROES is supported */
 
 #define VIRTIO_BLK_MAX_DISCARD  16
-#define VIRIOT_BLK_SERIAL_STRLEN 20
+#define VIRTIO_BLK_SERIAL_STRLEN 20
 
 /* These two define direction. */
 #define VIRTIO_BLK_T_IN         0
@@ -280,7 +280,7 @@ typedef struct _virtio_sp_dev_ext {
     vbif_info_t     info;
     uint32_t        num_phys_breaks;
     uint32_t        max_xfer_len;
-    CHAR            sn[VIRIOT_BLK_SERIAL_STRLEN];
+    CHAR            sn[VIRTIO_BLK_SERIAL_STRLEN];
 #if (NTDDI_VERSION >= NTDDI_WIN8)
     virtio_blk_discard_write_zeroes_t blk_discard[VIRTIO_BLK_MAX_DISCARD];
 #endif

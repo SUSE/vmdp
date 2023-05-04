@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1240,8 +1240,9 @@ XenBlkStartIo(XENBLK_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
             PRINTK(("XenBlk: *** hibernate/crashdump is now complete ***\n"));
             PRINTK(("  XenBlkStartIo hibernate/crashdump: Shutting down.\n"));
         }
-        RPRINTK(DPRTL_ON, ("%x: SRB_FUNCTION_SHUTDOWN %d: op = %x, st = %x\n",
+        RPRINTK(DPRTL_ON, ("%x: SRB_FUNCTION_SHUTDOWN %d %d: op = %x, st = %x\n",
                            Srb->TargetId,
+                           KeGetCurrentProcessorNumber(),
                            KeGetCurrentIrql(),
                            dev_ext->op_mode, dev_ext->state));
         for (i = 0; i < dev_ext->max_targets; i++) {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -890,9 +890,9 @@ ADD_ID_TO_FREELIST(struct blkfront_info *info, unsigned long id)
 static void
 flush_enabled(struct blkfront_info *info)
 {
-    RPRINTK(DPRTL_TRC, ("flush_enabled - IN irql = %d\n", KeGetCurrentIrql()));
+    RPRINTK(DPRTL_TRC, ("flush_enabled: IN irql = %d\n", KeGetCurrentIrql()));
     notify_remote_via_irq(info->evtchn);
-    RPRINTK(DPRTL_TRC, ("flush_enabled - OUT irql = %d\n", KeGetCurrentIrql()));
+    RPRINTK(DPRTL_TRC, ("flush_enabled: OUT irql = %d\n", KeGetCurrentIrql()));
 }
 
 static inline void
@@ -990,7 +990,7 @@ do_blkif_ind_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
     srb_ext->srb = srb;
     srb_ext->use_cnt = 0;
     DPRINTK(DPRTL_TRC,
-            ("      %s - IN srb %p, srb_ext %p, va %p\n",
+            ("      %s: IN srb %p, srb_ext %p, va %p\n",
              __func__, srb, srb_ext, srb_ext->va));
 
     srb_req_offset(srb, disk_offset);
@@ -1156,7 +1156,7 @@ do_blkif_ind_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
     }
 
     DPRINTK(DPRTL_TRC,
-            ("      blkif_queue_request - OUT srb %p, srb_ext %p, va %p\n",
+            ("      blkif_queue_request: OUT srb %p, srb_ext %p, va %p\n",
              srb, srb_ext, srb_ext->va));
     XENBLK_INC_SRB(io_srbs_seen);
     return STATUS_SUCCESS;
@@ -1193,7 +1193,7 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
 
     srb_ext = (xenblk_srb_extension *)srb->SrbExtension;
     if (info->connected != BLKIF_STATE_CONNECTED) {
-        PRINTK(("\tblkif_queue_request - OUT, not connected\n"));
+        PRINTK(("\tblkif_queue_request: OUT, not connected\n"));
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -1218,7 +1218,7 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
     srb_ext->srb = srb;
     srb_ext->use_cnt = 0;
     DPRINTK(DPRTL_TRC,
-            ("      blkif_queue_request - IN srb %p, srb_ext %p, va %p\n",
+            ("      blkif_queue_request: IN srb %p, srb_ext %p, va %p\n",
              srb, srb_ext, srb_ext->va));
 
     srb_req_offset(srb, disk_offset);
@@ -1239,7 +1239,7 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
     ids = info->id;
 
     if ((int)(RING_FREE_REQUESTS(&info->ring)) < num_ring_req) {
-        PRINTK(("blkif_queue_request - OUT, free %x, required %x, pages %d\n",
+        PRINTK(("blkif_queue_request: OUT, free %x, required %x, pages %d\n",
             (int)(RING_FREE_REQUESTS(&info->ring)), num_ring_req, num_pages));
         XenReleaseSpinLock(&info->lock, lh);
         return STATUS_UNSUCCESSFUL;
@@ -1363,7 +1363,7 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
     }
 
     DPRINTK(DPRTL_TRC,
-            ("      blkif_queue_request - OUT srb %p, srb_ext %p, va %p\n",
+            ("      blkif_queue_request: OUT srb %p, srb_ext %p, va %p\n",
              srb, srb_ext, srb_ext->va));
     XENBLK_INC_SRB(io_srbs_seen);
     return STATUS_SUCCESS;
@@ -1463,7 +1463,8 @@ blkif_complete_int(struct blkfront_info *info)
     int o = 0;
 #endif
 
-    DPRINTK(DPRTL_FRNT, ("  blkif_complete_int - IN irql = %d\n",
+    DPRINTK(DPRTL_FRNT, ("  blkif_complete_int: IN cpu %d irql %d\n",
+                         KeGetCurrentProcessorNumber(),
                          KeGetCurrentIrql()));
 
     XenAcquireSpinLock(&info->lock, &lh);
@@ -1572,9 +1573,12 @@ blkif_complete_int(struct blkfront_info *info)
         }
     }
 
-    DPRINTK(DPRTL_FRNT, ("  blkif_complete_int - OUT\n"));
-
     XenReleaseSpinLock(&info->lock, lh);
+
+    DPRINTK(DPRTL_FRNT, ("  blkif_complete_int: OUT cpu %d irql %d work %d\n",
+                         KeGetCurrentProcessorNumber(),
+                         KeGetCurrentIrql(),
+                         did_work));
     return did_work;
 }
 
@@ -1587,6 +1591,9 @@ blkif_int_dpc(PKDPC dpc, PVOID dcontext, PVOID sa1, PVOID sa2)
     if (info == NULL) {
         return;
     }
+    DPRINTK(DPRTL_FRNT, ("blkif_int_dpc: IN cpu %d irql %d\n",
+                         KeGetCurrentProcessorNumber(),
+                         KeGetCurrentIrql()));
     blkif_complete_int(info);
 }
 
@@ -1610,7 +1617,10 @@ blkif_quiesce(struct blkfront_info *info)
 
     XENBLK_ZERO_VALUE(conditional_times_to_print_limit);
 
-    DPRINTK(DPRTL_ON, ("blkif_quiesce: IN\n"));
+    DPRINTK(DPRTL_ON, ("blkif_quiesce: IN cpu %d irql %d\n",
+                       KeGetCurrentProcessorNumber(),
+                       KeGetCurrentIrql()));
+
     for (j = 0; j < BLK_RING_SIZE; j++) {
         if (info->shadow[j].request) {
             PRINTK(("blkif-quiesce: %d, waiting for %p\n",
@@ -1627,8 +1637,18 @@ blkif_quiesce(struct blkfront_info *info)
                 j++) {
             DPRINTK(DPRTL_FRNT, ("blkif_quiesce outstanding reqs %p: %x %x\n",
                 info, info->ring.rsp_cons, info->ring.req_prod_pvt));
-            KeDelayExecutionThread(KernelMode, FALSE, &timeout);
+
+            if (KeGetCurrentIrql() <= APC_LEVEL) {
+                KeDelayExecutionThread(KernelMode, FALSE, &timeout);
+            } else {
+                KeStallExecutionProcessor(50);
+            }
+            DPRINTK(DPRTL_FRNT,
+                    ("blkif_quiesce back from Delay cpu %d irql %d\n",
+                     KeGetCurrentProcessorNumber(),
+                     KeGetCurrentIrql()));
             blkif_complete_int(info);
+            DPRINTK(DPRTL_FRNT, ("blkif_quiesce back from complete_int\n"));
         }
         PRINTK(("%s: waited %d time(s) - remaining reqs %x, pvt %x, cons %x\n",
                 __func__, j,
