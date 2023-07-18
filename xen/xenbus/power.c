@@ -317,8 +317,9 @@ FDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
             powerState.SystemState == PowerActionShutdownOff &&
             powerType == SystemPowerState &&
             ((pvctrl_flags & PVCTRL_DISABLE_FORCED_SHUTDOWN) == 0)) {
-        if (action == PowerActionShutdown) {
-            PRINTK(("Xenbus: powering off for shutdown\n"));
+        if (action == PowerActionShutdown
+                || action == PowerActionShutdownOff) {
+            PRINTK(("Xenbus: powering off for shutdown - action %x\n", action));
             HYPERVISOR_shutdown(SHUTDOWN_poweroff);
         } else if (action == PowerActionShutdownReset) {
             PRINTK(("Xenbus: powering off for reboot\n"));
@@ -326,8 +327,8 @@ FDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         }
     }
 
-    RPRINTK(DPRTL_PWR, ("  FDO_Power: OUT %p, state %x %x\n",
-                          fdx, fdx->power_state, fdx->sig));
+    RPRINTK(DPRTL_PWR, ("  FDO_Power: OUT %p, state %x %x, status %x\n",
+                          fdx, fdx->power_state, fdx->sig, status));
     return status;
 }
 

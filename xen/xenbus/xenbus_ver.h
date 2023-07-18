@@ -29,9 +29,9 @@
 #define _XENBUS_VER_H
 
 
-#define VER_FILEVERSION             2,4,3,33
-#define VER_FILEVERSION_STR         "2.4.3.33\0"
+#define VER_FILEVERSION             2,4,3,34
+#define VER_FILEVERSION_STR         "2.4.3.34\0"
 
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2020 Novell, Inc. SUSE All rights reserved.", "\0"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2023 Novell, Inc. SUSE All rights reserved.", "\0"
 
 #endif
