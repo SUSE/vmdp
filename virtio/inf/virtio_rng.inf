@@ -43,7 +43,6 @@ virtio_rng_Wdf_CoInstaller_CopyFiles = 11
 [SourceDisksFiles]
 virtio_rng.sys = 1,,
 viorngum.dll=1
-viorngci.dll=1
 
 [Manufacturer]
 %SUSE% = virtio_rng,NT$ARCH$
@@ -57,6 +56,7 @@ viorngci.dll=1
 [virtio_rng_Device.NT]
 CopyFiles = virtio_rng_CopyFiles
 CopyFiles=virtio_rng_Provider_CopyFiles
+AddReg = virtio_rng_Provider_AddReg
 
 [virtio_rng_Device.NT.HW]
 AddReg = virtio_rng_AddReg
@@ -85,19 +85,19 @@ LoadOrderGroup = Extended Base
 [virtio_rng_Provider_CopyFiles]
 viorngum.dll
 
-; viorngci Device CoInstaller
-[virtio_rng_Device.NT.CoInstallers]
-AddReg=virtio_rng_Wdf_CoInstaller_AddReg
-CopyFiles=virtio_rng_Wdf_CoInstaller_CopyFiles
+[virtio_rng_Provider_AddReg]
+HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Providers\%PROVIDER_NAME%\UM,Image,,viorngum.dll
+HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Providers\%PROVIDER_NAME%\UM\00000006,Flags,%REG_DWORD%,0x00000001
+HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Providers\%PROVIDER_NAME%\UM\00000006,Functions,%REG_MULTI_SZ%,RNG
+HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Configuration\Local\Default\00000006\RNG,Providers,%REG_MULTI_SZ_APPEND%,%PROVIDER_NAME%
 
-[virtio_rng_Wdf_CoInstaller_AddReg]
-HKR,,CoInstallers32,0x00010000,"viorngci.dll,VirtRngCoInstaller"
-
-[virtio_rng_Wdf_CoInstaller_CopyFiles]
-viorngci.dll
 
 [Strings]
 SUSE = "SUSE"
 DiskName               = "VirtIO RNG Installation Disk"
 virtio_rng.DeviceDesc  = "VirtIO RNG Device"
 virtio_rng.Service     = "VirtIO RNG Service"
+REG_DWORD           = 0x00010001
+REG_MULTI_SZ        = 0x00010000
+REG_MULTI_SZ_APPEND = 0x00010008
+PROVIDER_NAME       = "QEMU VirtIO RNG Provider"

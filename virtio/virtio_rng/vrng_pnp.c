@@ -128,12 +128,12 @@ vrng_return_vq_entries(FDO_DEVICE_EXTENSION *fdx)
     PIO_STACK_LOCATION  stack;
     KIRQL irql;
 
-    DPRINTK(DPRTL_TRC, ("--> %s\n", __func__));
+    RPRINTK(DPRTL_TRC, ("--> %s\n", __func__));
     fdx->read_buffers_list.Next = NULL;
     while (entry = (read_buffer_entry_t *)vq_detach_unused_buf(fdx->vq)) {
         if (entry->request != NULL) {
-            DPRINTK(DPRTL_TRC, ("    Canceling request %p\n",
-                    __func__, entry->request));
+            RPRINTK(DPRTL_TRC, ("%s: Canceling entry %p request %p\n",
+                    __func__, entry, entry->request));
             stack = IoGetCurrentIrpStackLocation(entry->request);
             entry->request->IoStatus.Information = 0;
             entry->request->IoStatus.Status = STATUS_CANCELLED;
@@ -145,7 +145,7 @@ vrng_return_vq_entries(FDO_DEVICE_EXTENSION *fdx)
         ExFreePoolWithTag(entry->buffer, VRNG_POOL_TAG);
         ExFreePoolWithTag(entry, VRNG_POOL_TAG);
     }
-    DPRINTK(DPRTL_TRC, ("<-- %s\n", __func__));
+    RPRINTK(DPRTL_TRC, ("<-- %s\n", __func__));
 }
 
 static void

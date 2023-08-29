@@ -102,6 +102,7 @@ typedef struct _FDO_DEVICE_EXTENSION {
     DEVICE_POWER_STATE dpower_state;
     uint64_t host_features;
     uint64_t guest_features;
+    BOOLEAN in_dpc;
 #ifdef TARGET_OS_GTE_WinLH
     IO_INTERRUPT_MESSAGE_INFO *int_connection_ctx;
 #endif

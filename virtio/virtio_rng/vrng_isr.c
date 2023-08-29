@@ -45,14 +45,26 @@ vrng_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
     void *system_buffer;
     unsigned int len;
 
-    DPRINTK(DPRTL_INT, ("--> %s\n", __func__));
+    RPRINTK(DPRTL_DPC, ("--> %s: cpu %d\n",
+                       __func__, KeGetCurrentProcessorNumber()));
 
     if (fdx == NULL) {
-        DPRINTK(DPRTL_INT, ("<-- %s: fdx == NULL\n", __func__));
+        PRINTK(("<-- %s: fdx == NULL\n", __func__));
         return;
     }
+    KeAcquireInStackQueuedSpinLock(&fdx->vq_lock, &lh);
+    if (fdx->in_dpc == TRUE) {
+        RPRINTK(DPRTL_DPC, ("<-- %s: fdx->in_dpc == TRUE\n", __func__));
+        KeReleaseInStackQueuedSpinLock(&lh);
+        return;
+    }
+    fdx->in_dpc = TRUE;
+
     for (;;) {
-        KeAcquireInStackQueuedSpinLock(&fdx->vq_lock, &lh);
+        if (fdx->vq == NULL) {
+            KeReleaseInStackQueuedSpinLock(&lh);
+            break;
+        }
 
         entry =  (read_buffer_entry_t *)vq_get_buf(fdx->vq, &len);
         if (entry == NULL) {
@@ -66,20 +78,19 @@ vrng_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
                                         read_buffer_entry_t,
                                         list_entry);
             if (entry == current) {
-                DPRINTK(DPRTL_INT, ("Delete %p Request: %p Buffer: %p\n",
-                    entry, entry->request, entry->buffer));
+                RPRINTK(DPRTL_DPC, (" Found entry %p request %p buffer %p\n",
+                                   entry, entry->request, entry->buffer));
                 iter->Next = current->list_entry.Next;
                 break;
             } else {
                 iter = iter->Next;
             }
         }
-        KeReleaseInStackQueuedSpinLock(&lh);
 
+        RPRINTK(DPRTL_DPC, ("%s: entry %p request %p\n",
+                    __func__, entry, entry->request));
         if (entry->request != NULL && !entry->request->Cancel) {
-            IoAcquireCancelSpinLock(&irql);
             cancel_routine = IoSetCancelRoutine(entry->request, NULL);
-            IoReleaseCancelSpinLock(irql);
             if (cancel_routine != NULL) {
                 stack = IoGetCurrentIrpStackLocation(entry->request);
                 len = min(len, (unsigned)stack->Parameters.Read.Length);
@@ -87,13 +98,17 @@ vrng_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
                 RtlCopyMemory(system_buffer, entry->buffer, len);
                 entry->request->IoStatus.Information = len;
                 entry->request->IoStatus.Status = STATUS_SUCCESS;
+                KeReleaseInStackQueuedSpinLock(&lh);
                 vrng_complete_request(entry->request, IO_NO_INCREMENT);
+                KeAcquireInStackQueuedSpinLock(&fdx->vq_lock, &lh);
             }
         }
         ExFreePoolWithTag(entry->buffer, VRNG_POOL_TAG);
         ExFreePoolWithTag(entry, VRNG_POOL_TAG);
     }
-    DPRINTK(DPRTL_INT, ("<-- %s\n", __func__));
+    RPRINTK(DPRTL_DPC, ("<-- %s: cpu %d\n",
+                       __func__, KeGetCurrentProcessorNumber()));
+    fdx->in_dpc = FALSE;
 }
 
 BOOLEAN

@@ -35,7 +35,9 @@ vrng_read_request_cancel(PDEVICE_OBJECT DeviceObject, PIRP request)
     PSINGLE_LIST_ENTRY iter;
     KLOCK_QUEUE_HANDLE lh;
 
-    RPRINTK(DPRTL_ON, ("--> %s: called on request 0x%p\n", __func__, request));
+    RPRINTK(DPRTL_RX, ("--> %s: cpu %d request %p status %x canceled %d\n",
+                        __func__, KeGetCurrentProcessorNumber(),
+                       request, request->IoStatus.Status, request->Cancel));
 
     fdx = (PFDO_DEVICE_EXTENSION)DeviceObject->DeviceExtension;
     KeAcquireInStackQueuedSpinLock(&fdx->vq_lock, &lh);
@@ -46,7 +48,8 @@ vrng_read_request_cancel(PDEVICE_OBJECT DeviceObject, PIRP request)
             read_buffer_entry_t, list_entry);
 
         if (request == entry->request) {
-            RPRINTK(DPRTL_ON, ("Clear entry %p request.\n", entry));
+            RPRINTK(DPRTL_RX, ("  Cancel entry %p request %p\n",
+                               entry, entry->request));
 
             entry->request = NULL;
             break;
@@ -55,13 +58,14 @@ vrng_read_request_cancel(PDEVICE_OBJECT DeviceObject, PIRP request)
         }
     }
 
-    KeReleaseInStackQueuedSpinLock(&lh);
-    IoReleaseCancelSpinLock(request->CancelIrql);
     request->IoStatus.Information = 0;
     request->IoStatus.Status = STATUS_CANCELLED;
+    KeReleaseInStackQueuedSpinLock(&lh);
+    IoReleaseCancelSpinLock(request->CancelIrql);
     vrng_complete_request(request, IO_NO_INCREMENT);
 
-    RPRINTK(DPRTL_ON, ("<-- %s: completed canceled request\n", __func__));
+    RPRINTK(DPRTL_RX, ("<-- %s: cpu %d\n",
+                       __func__, KeGetCurrentProcessorNumber()));
 }
 
 NTSTATUS
@@ -77,7 +81,8 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
     unsigned long len;
     int ret;
 
-    DPRINTK(DPRTL_ON, ("--> %s: request %p\n", __func__, request));
+    RPRINTK(DPRTL_RX, ("--> %s: request %p cpu %d\n",
+                       __func__, request, KeGetCurrentProcessorNumber()));
 
     entry = (read_buffer_entry_t *)EX_ALLOC_POOL(VPOOL_NON_PAGED,
                                                  sizeof(read_buffer_entry_t),
@@ -112,6 +117,14 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
 
     KeAcquireInStackQueuedSpinLock(&fdx->vq_lock, &lh);
 
+    if (fdx->vq == NULL) {
+        PRINTK(("%s: vq is NULL, return\n", __func__));
+        ExFreePoolWithTag(entry->buffer, VRNG_POOL_TAG);
+        ExFreePoolWithTag(entry, VRNG_POOL_TAG);
+        KeReleaseInStackQueuedSpinLock(&lh);
+        return STATUS_UNSUCCESSFUL;
+    }
+
     IoAcquireCancelSpinLock(&irql);
     if (request->Cancel) {
         status = STATUS_CANCELLED;
@@ -122,6 +135,8 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
         request->IoStatus.Information = len;
         request->IoStatus.Status = STATUS_PENDING;
         PushEntryList(&fdx->read_buffers_list, &entry->list_entry);
+        RPRINTK(DPRTL_RX, ("%s: entry %p request %p\n",
+                           __func__, entry, entry->request));
         ret = vq_add_buf(fdx->vq, &sg, 0, 1, entry);
         if (ret < 0) {
             RPRINTK(DPRTL_UNEXPD,
@@ -144,6 +159,7 @@ vrng_read(PFDO_DEVICE_EXTENSION fdx, PIRP request)
 
     KeReleaseInStackQueuedSpinLock(&lh);
 
-    DPRINTK(DPRTL_ON, ("<-- %s: %x\n", __func__, status));
+    RPRINTK(DPRTL_RX, ("<-- %s: cpu %d\n",
+                       __func__, KeGetCurrentProcessorNumber()));
     return status;
 }
