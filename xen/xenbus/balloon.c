@@ -36,19 +36,19 @@
 #define XEN4_VM_PAGE_ADJUSTMENT_FROM_OS 100
 #endif
 
+#define XEN_VERSION_3    0x30000
+#define XEN_VERSION_4    0x40000
+#define XEN_VERSION_4_02 0x40002
+#define XEN_VERSION_4_12 0x4000c
 #define XEN3_VM_PAGE_ADJUSTMENT_FROM_OS 105
 
 #define XEN4_PAGE_ADJUSTMENT 1024
 #define XEN3_PAGE_ADJUSTMENT 33
 #define XEN_PAGE_ADJUSTMENT 2048
+#define XEN_OVMF_BIOS_PAGE_ADJUSTMENT 1240
 
 #define PHYS_MEM_REG_FULL_WSTR \
 L"\\Registry\\Machine\\HARDWARE\\RESOURCEMAP\\System Resources\\Physical Memory"
-
-#define VM_PAGE_ADJUST_WSTR L"vm_page_adjustment"
-#define DERIVE_OS_MEM_WSTR L"derive_os_memory"
-#define DERIVE_OS_MEM_FROM_OS 1
-#define DERIVE_OS_MEM_FROM_XENSTORE 2
 
 #define PAGES2KB(_p) ((_p) << (PAGE_SHIFT - 10))
 #define MB2PAGES(mb) ((mb) << (20 - PAGE_SHIFT))
@@ -87,7 +87,6 @@ static xen_ulong_t num_physpages;
 static KSPIN_LOCK balloon_lock = 0xbad;
 static PMDL mdl_head;
 static PMDL mdl_tail;
-DWORD vm_page_adjustment;
 DWORD derive_os_mem;
 
 /* We increase/decrease in batches which fit in a page */
@@ -430,19 +429,35 @@ static DWORD
 balloon_default_os_page_adj(xen_ulong_t version)
 {
     DWORD vm_page_adjustment;
+    char *str;
 
-    if (version > 0x40002) {
+    if (version > XEN_VERSION_4_02) {
         vm_page_adjustment = XEN4_VM_PAGE_ADJUSTMENT_FROM_OS;
-        RPRINTK(DPRTL_ON, ("%s: use > 40002, %d\n",
-                           __func__, vm_page_adjustment));
-    } else if (version >= 0x40000) {
+        RPRINTK(DPRTL_ON, ("%s: use > %x, %d\n",
+                           __func__, XEN_VERSION_4_02, vm_page_adjustment));
+    } else if (version >= XEN_VERSION_4) {
         vm_page_adjustment = XEN4_VM_PAGE_ADJUSTMENT_FROM_OS;
-        RPRINTK(DPRTL_ON, ("%s: use >= 40000, %d\n",
-                           __func__, vm_page_adjustment));
+        RPRINTK(DPRTL_ON, ("%s: use >= %x, %d\n",
+                           __func__, XEN_VERSION_4, vm_page_adjustment));
     } else {
         vm_page_adjustment = XEN3_VM_PAGE_ADJUSTMENT_FROM_OS;
-        RPRINTK(DPRTL_ON, ("%s: use < 40000, %d\n",
-                           __func__, vm_page_adjustment));
+        RPRINTK(DPRTL_ON, ("%s: use < %x, %d\n",
+                           __func__, XEN_VERSION_4, vm_page_adjustment));
+    }
+    str = (char *)xenbus_read(XBT_NIL, "hvmloader", "bios", NULL);
+    if (!IS_ERR(str) && str != NULL) {
+        if (strcmp(str, "ovmf") == 0) {
+            PRINTK(("%s:\n\tbios is %s, increase vm_page_adjustment %d by %d\n",
+                    __func__, str, vm_page_adjustment,
+                    XEN_OVMF_BIOS_PAGE_ADJUSTMENT));
+            vm_page_adjustment += XEN_OVMF_BIOS_PAGE_ADJUSTMENT;
+        } else {
+            PRINTK(("%s:\n\tbios is %s, keep vm_page_adjustment at %d\n",
+                    __func__, str, vm_page_adjustment));
+        }
+        xenbus_free_string(str);
+    } else {
+        PRINTK(("%s: couldn't read xenstore hvmloader bios.\n", __func__));
     }
     return vm_page_adjustment;
 }
@@ -452,49 +467,67 @@ balloon_default_xenstore_page_adj(xen_ulong_t version)
 {
     DWORD vm_page_adjustment;
 
-    if (version > 0x40002) {
+    if (version > XEN_VERSION_4_02) {
         vm_page_adjustment = 0;
-        RPRINTK(DPRTL_ON, ("%s: use > 40002, %d\n",
-                           __func__, vm_page_adjustment));
-    } else if (version >= 0x40000) {
+        RPRINTK(DPRTL_ON, ("%s: use > %x, %d\n",
+                           __func__, XEN_VERSION_4_02, vm_page_adjustment));
+    } else if (version >= XEN_VERSION_4) {
         vm_page_adjustment = XEN_PAGE_ADJUSTMENT - XEN4_PAGE_ADJUSTMENT;
-        RPRINTK(DPRTL_ON, ("%s: use >= 40000, %d\n",
-                           __func__, vm_page_adjustment));
+        RPRINTK(DPRTL_ON, ("%s: use >= %x, %d\n",
+                           __func__, XEN_VERSION_4, vm_page_adjustment));
     } else {
         vm_page_adjustment = XEN_PAGE_ADJUSTMENT - XEN3_PAGE_ADJUSTMENT;
-        RPRINTK(DPRTL_ON, ("%s: use < 40000, %d\n",
-                           __func__, vm_page_adjustment));
+        RPRINTK(DPRTL_ON, ("%s: use < %x, %d\n",
+                           __func__, XEN_VERSION_4, vm_page_adjustment));
     }
     return vm_page_adjustment;
 }
 
 static void
-balloon_get_page_adjustment_info(DWORD *derive_os_mem, DWORD *vm_page_adj)
+balloon_get_os_vm_page_adjustment(xen_ulong_t version, DWORD *vm_page_adj)
 {
     NTSTATUS status;
-    xen_ulong_t version;
 
-    /* Default is to use OS devrived total memory. */
-    *derive_os_mem = DERIVE_OS_MEM_FROM_OS;
-    xenbus_get_reg_value(XENBUS_FULL_DEVICE_KEY_WSTR,
-        DERIVE_OS_MEM_WSTR, derive_os_mem);
-
-    /* Get the page adjustment if there. */
+    /* Get the registry page adjustment if there. */
     status = xenbus_get_reg_value(XENBUS_FULL_DEVICE_KEY_WSTR,
-        VM_PAGE_ADJUST_WSTR, vm_page_adj);
-
+                                  XENBUS_PVCTRL_VM_PAGE_ADJUST_WSTR,
+                                  vm_page_adj);
     if (status == STATUS_SUCCESS) {
-        /* The value as there.  Just use it. */
-        PRINTK(("%s: use reg page adjustment %d\n", __func__, *vm_page_adj));
-        return;
+        PRINTK(("%s:\n\tUsing regitry override for vm_page_adjustment %d\n",
+                __func__, *vm_page_adj));
+    } else {
+        /* The value wasn't there.  Get the default. */
+        *vm_page_adj = balloon_default_os_page_adj(version);
+
+        PRINTK(("%s:\n\tUsing default vm_page_adjustment %d\n",
+                __func__, *vm_page_adj));
+    }
+}
+
+static void
+balloon_get_derive_os_mem_method(xen_ulong_t version,
+                                 DWORD *derive_os_mem)
+{
+    NTSTATUS status;
+
+    if (version >= XEN_VERSION_4_12) {
+        /* Default is to use Xenstore devrived total memory. */
+        *derive_os_mem = XENBUS_DERIVE_OS_MEM_FROM_XENSTORE;
+    } else {
+        /* Default is to use OS devrived total memory. */
+        *derive_os_mem = XENBUS_DERIVE_OS_MEM_FROM_OS;
     }
 
-    version = (xen_ulong_t)HYPERVISOR_xen_version(0, NULL);
-    if (*derive_os_mem == DERIVE_OS_MEM_FROM_OS) {
-
-        *vm_page_adj = balloon_default_os_page_adj(version);
+    /* Check for derive_os_memory registry override. */
+    status = xenbus_get_reg_value(XENBUS_FULL_DEVICE_KEY_WSTR,
+                                  XENBUS_PVCTRL_DERIVE_OS_MEM_WSTR,
+                                  derive_os_mem);
+    if (status == STATUS_SUCCESS) {
+        PRINTK(("%s:\n\tUsing regitry override for derive_os_memory %d\n",
+                __func__, *derive_os_mem));
     } else {
-        *vm_page_adj = balloon_default_xenstore_page_adj(version);
+        PRINTK(("%s:\n\tUsing default derive_os_memory %d\n",
+                __func__, *derive_os_mem));
     }
 }
 
@@ -607,6 +640,7 @@ balloon_get_max_phys_pages_from_xenstore(xen_ulong_t *max_pages)
     char *str;
     int err;
 
+    *max_pages = 0;
     str = (char *)xenbus_read(XBT_NIL, "memory", "static-max", NULL);
     if (IS_ERR(str) || str == NULL) {
         PRINTK(("%s: failed to read static-max memory value\n", __func__));
@@ -636,18 +670,21 @@ balloon_init(void)
     xen_ulong_t version;
     xen_long_t rc;
     NTSTATUS status;
+    DWORD vm_page_adjustment;
+    DWORD attempts;
 
-    RPRINTK(DPRTL_ON, ("%s: derive os mem from %d, vm_page_adj %d IN\n",
-            __func__, derive_os_mem, vm_page_adjustment));
+    RPRINTK(DPRTL_ON, ("%s: derive os mem from %d IN\n",
+                       __func__, derive_os_mem));
 
+    /*
+     * Only need to get the derive_os_mem if it
+     * hasn't been derived yet.  It will already be set when coming
+     * back up from a migrate, so no need to get it again.
+     */
     if (derive_os_mem == 0) {
-        /*
-         * Only need to get the derive_os_mem and vm_page_adjustment if they
-         * haven't been derived yet.  They will already be set when coming
-         * back up from a migrate, so no need to get them again.
-         */
 
         version = (xen_ulong_t)HYPERVISOR_xen_version(0, NULL);
+        PRINTK(("%s: HYPERVERSIOR version %x\n", __func__, version));
 
         status = STATUS_SUCCESS;
 
@@ -655,48 +692,66 @@ balloon_init(void)
          * The goal here is to get num_physpages equal to the amount RAM
          * reported as installed in the VM.
          */
-        balloon_get_page_adjustment_info(&derive_os_mem, &vm_page_adjustment);
 
-        if (derive_os_mem == DERIVE_OS_MEM_FROM_OS) {
-            status = balloon_get_max_phys_pages_from_os(&totalram_pages);
-            if (status == STATUS_SUCCESS) {
-                num_physpages = totalram_pages + vm_page_adjustment;
-            } else {
-                vm_page_adjustment = balloon_default_xenstore_page_adj(version);
-            }
-        }
-        if (derive_os_mem == DERIVE_OS_MEM_FROM_XENSTORE ||
-                status != STATUS_SUCCESS) {
-            derive_os_mem = DERIVE_OS_MEM_FROM_XENSTORE;
-            pod_target.domid = DOMID_SELF;
-            if (version > 0x40002) {
-                status = balloon_get_max_phys_pages_from_xenstore(
-                    &totalram_pages);
+        balloon_get_derive_os_mem_method(version, &derive_os_mem);
+
+
+        num_physpages = 0;
+        for (attempts = 0;
+              num_physpages == 0
+                && attempts < XENBUS_DERIVE_OS_MEM_FROM_XENSTORE;
+              attempts++) {
+            switch (derive_os_mem) {
+            case XENBUS_DERIVE_OS_MEM_FROM_OS:
+                balloon_get_os_vm_page_adjustment(version, &vm_page_adjustment);
+                status = balloon_get_max_phys_pages_from_os(&totalram_pages);
                 if (status == STATUS_SUCCESS) {
-                    num_physpages = totalram_pages;
+                    num_physpages = totalram_pages + vm_page_adjustment;
                 } else {
+                    PRINTK(("%s: Failed to get total RAM pages from OS.\n",
+                            __func__));
+                    PRINTK(("\tTry xenstore method.\n"));
+                    derive_os_mem = XENBUS_DERIVE_OS_MEM_FROM_XENSTORE;
+                }
+                break;
+            case XENBUS_DERIVE_OS_MEM_FROM_XENSTORE:
+                if (version > XEN_VERSION_4_02) {
+                    status = balloon_get_max_phys_pages_from_xenstore(
+                        &totalram_pages);
+                    if (status == STATUS_SUCCESS) {
+                        num_physpages = totalram_pages;
+                    } else {
+                        PRINTK(("%s: Failed to get total RAM pages from Xen.\n",
+                                __func__));
+                        PRINTK(("\tTry OS method.\n"));
+                        derive_os_mem = XENBUS_DERIVE_OS_MEM_FROM_OS;
+                    }
+                } else {
+                    pod_target.domid = DOMID_SELF;
                     vm_page_adjustment = balloon_default_xenstore_page_adj(
                         version);
+                    if (version >= XEN_VERSION_4) {
+                        totalram_pages = HYPERVISOR_memory_op(
+                            XENMEM_maximum_reservation,
+                            &pod_target.domid);
+                    } else {
+                        totalram_pages = HYPERVISOR_memory_op(
+                            XENMEM_current_reservation,
+                            &pod_target.domid);
+                    }
+                    num_physpages = totalram_pages - vm_page_adjustment;
                 }
-            } else if (version >= 0x40000 || status != STATUS_SUCCESS) {
-                totalram_pages = HYPERVISOR_memory_op(
-                    XENMEM_maximum_reservation,
-                    &pod_target.domid);
-                num_physpages = totalram_pages - vm_page_adjustment;
-            } else {
-                totalram_pages = HYPERVISOR_memory_op(
-                    XENMEM_current_reservation,
-                    &pod_target.domid);
-                num_physpages = totalram_pages - vm_page_adjustment;
+                break;
+            default:
+                PRINTK(("%s: Unknown derive_os_mem type %d.\n",
+                        __func__, derive_os_mem));
+                break;
+
             }
         }
 
-        /*
-         * If we fail to get the totalram_pages, we can't recover so don't
-         * do the balloon.
-         */
-        if ((xen_long_t)totalram_pages == -ENOSYS) {
-            PRINTK(("%s: failed to get ram pages, ENOSYS\n", __func__));
+        if (num_physpages == 0) {
+            PRINTK(("%s: failed to get ram pages\n", __func__));
             return STATUS_UNSUCCESSFUL;
         }
 
@@ -713,10 +768,10 @@ balloon_init(void)
         KeInitializeSpinLock(&balloon_lock);
     }
 
-    PRINTK(("%s: total ram pages %lld, bs.current_pages = %lld\n",
-            __func__, (uint64_t)totalram_pages, (uint64_t)bs.current_pages));
-    PRINTK(("%s: derive os mem from %d, vm_page_adj %d\n",
-            __func__, derive_os_mem, vm_page_adjustment));
+    PRINTK(("%s: derive os memeroy method %d\n", __func__, derive_os_mem));
+    PRINTK(("\tvm_page_adjustment %d\n", vm_page_adjustment));
+    PRINTK(("\ttotalram_pages %d\n", totalram_pages));
+    PRINTK(("\tnum_physpages %d\n", num_physpages));
 
     return STATUS_SUCCESS;
 }
