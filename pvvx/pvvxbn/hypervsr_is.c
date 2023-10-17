@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2015-2020 SUSE LLC
+ * Copyright 2015-2023 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -78,7 +78,6 @@ drv_get_reg_val(ULONG path,
 static DWORD
 get_reg_hypervisor(void)
 {
-    RTL_QUERY_REGISTRY_TABLE paramTable[2] = {0};
     NTSTATUS status;
     DWORD hypervisor;
     DWORD len;
@@ -156,6 +155,13 @@ get_reg_hypervisor(void)
 
 #endif
 
+#ifdef ARM64
+DWORD
+hypervisor_is(void)
+{
+    return get_reg_hypervisor();
+}
+#else
 DWORD
 hypervisor_is(void)
 {
@@ -193,3 +199,4 @@ hypervisor_is(void)
 
     return hypervisor;
 }
+#endif

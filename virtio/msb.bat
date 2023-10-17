@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020-2021 SUSE LLC
+REM Copyright 2020-2023 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -57,6 +57,8 @@ if %1==10-2004 (
 ) else if %1==3 (
     set p_platform=x86
     rem set p_platform=Win32
+) else if %1==a (
+    set p_platform=ARM64
 ) else if %1==r (
     set config_rd=Release
 ) else if %1==d (
@@ -95,7 +97,7 @@ msbuild %sln% /p:Configuration=%msb_config% /p:Platform=%p_platform% %ddk_target
 goto end
 
 :help
-echo "msb.bat [<sln>] [10-2004|10|8.1|8|g] [r|d] [6|3] [c]"
+echo "msb.bat [<sln>] [10-2004|10|8.1|8|g] [r|d] [6|3|a] [c]"
 echo   10-2004 - Win10-2004
 echo   10 - Win10
 echo   8.1 - Win8.1
@@ -105,6 +107,7 @@ echo   r - Release
 echo   d - Debug
 echo   6 - x64
 echo   3 - x86
+echo   a - ARM64
 echo   c - rebuild clean
 echo   default: Win10-2004 Release x64
 

@@ -1,9 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -17,6 +25,18 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Win10-2004Debug|ARM64">
+      <Configuration>Win10-2004Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win10-2004Release|ARM64">
+      <Configuration>Win10-2004Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win10Debug|ARM64">
+      <Configuration>Win10Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Win10Debug|Win32">
       <Configuration>Win10Debug</Configuration>
       <Platform>Win32</Platform>
@@ -24,6 +44,10 @@
     <ProjectConfiguration Include="Win10Debug|x64">
       <Configuration>Win10Debug</Configuration>
       <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win10Release|ARM64">
+      <Configuration>Win10Release</Configuration>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Win10Release|Win32">
       <Configuration>Win10Release</Configuration>
@@ -49,6 +73,18 @@
       <Configuration>Win10-2004Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Win8.1Debug|ARM64">
+      <Configuration>Win8.1Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win8.1Release|ARM64">
+      <Configuration>Win8.1Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win8Debug|ARM64">
+      <Configuration>Win8Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Win8Debug|Win32">
       <Configuration>Win8Debug</Configuration>
       <Platform>Win32</Platform>
@@ -56,6 +92,10 @@
     <ProjectConfiguration Include="Win8Debug|x64">
       <Configuration>Win8Debug</Configuration>
       <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win8Release|ARM64">
+      <Configuration>Win8Release</Configuration>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Win8Release|Win32">
       <Configuration>Win8Release</Configuration>
@@ -149,7 +189,15 @@
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>True</UseDebugLibraries>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>True</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|ARM64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
@@ -157,7 +205,15 @@
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>True</UseDebugLibraries>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|x64'" Label="Configuration">
+    <TargetVersion>WindowsV6.3</TargetVersion>
+    <UseDebugLibraries>True</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|ARM64'" Label="Configuration">
     <TargetVersion>WindowsV6.3</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
@@ -165,7 +221,15 @@
     <TargetVersion>Windows8</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8Debug|ARM64'" Label="Configuration">
+    <TargetVersion>Windows8</TargetVersion>
+    <UseDebugLibraries>True</UseDebugLibraries>
+  </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>False</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
@@ -173,7 +237,15 @@
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>False</UseDebugLibraries>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>False</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|ARM64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
@@ -181,7 +253,15 @@
     <TargetVersion>WindowsV6.3</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|ARM64'" Label="Configuration">
+    <TargetVersion>WindowsV6.3</TargetVersion>
+    <UseDebugLibraries>False</UseDebugLibraries>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|x64'" Label="Configuration">
+    <TargetVersion>Windows8</TargetVersion>
+    <UseDebugLibraries>False</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|ARM64'" Label="Configuration">
     <TargetVersion>Windows8</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
@@ -192,31 +272,61 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8Debug|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -265,7 +375,16 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <SupportJustMyCode>false</SupportJustMyCode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -274,7 +393,16 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_MINIPORT_DRIVER=1;;NDIS685_MINIPORT;;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <SupportJustMyCode>false</SupportJustMyCode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -283,7 +411,16 @@
       <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8;WIN10_TARGET_OS=2004</PreprocessorDefinitions>
+      <SupportJustMyCode>false</SupportJustMyCode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8;WIN10_TARGET_OS=2004</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -292,7 +429,16 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <SupportJustMyCode>false</SupportJustMyCode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -301,7 +447,16 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <SupportJustMyCode>false</SupportJustMyCode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Debug|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -310,7 +465,15 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|x64'">
@@ -318,7 +481,15 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'">
@@ -326,7 +497,15 @@
       <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8;WIN10_TARGET_OS=2004</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);NDIS685_MINIPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8;WIN10_TARGET_OS=2004</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|x64'">
@@ -334,7 +513,15 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|x64'">
@@ -342,12 +529,20 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|ARM64'">
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ClCompile>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -356,7 +551,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -365,7 +560,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8;WIN10_TARGET_OS=2004</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -374,7 +569,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -383,7 +578,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -392,7 +587,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -400,7 +595,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -408,7 +603,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8;WIN10_TARGET_OS=2004</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -416,7 +611,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -424,7 +619,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS_SUPPORT_NDIS620;NDIS620_MINIPORT;NDIS620_MINIPORT_SUPPORT=1;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;NDIS60_MINIPORT=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS620_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>

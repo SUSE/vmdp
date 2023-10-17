@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020-2022 SUSE LLC
+REM Copyright 2020-2023 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -32,6 +32,8 @@ del *.err
 del *.wrn
 del *.log
 set pvbuildoption=
+set do_arm_build=
+set vxcp_latest=
 
 if "%1"=="13" (
     set vcxp=%1
@@ -51,6 +53,7 @@ if "%1"=="13" (
     shift
 ) else (
     set vcxp=19
+    set vcxp_latest=22
 )
 
 echo[
@@ -58,6 +61,26 @@ echo Build using VS20%vcxp%
 
 if "%1"=="-cZ" (
     set pvbuildoption=%1
+    shift
+)
+
+if "%1"=="msb" (
+    echo Invalid option: %1
+    goto help
+)
+
+if "%1"=="xp" (
+    set _WXP=WXP
+    shift
+)
+
+if "%1"=="lh" (
+    set _WLH=WLH
+    shift
+)
+
+if "%1"=="arm" (
+    set do_arm_build=%1
     shift
 )
 
@@ -70,7 +93,7 @@ set start_username=%USERNAME%
 
 rem Build 32 bit
 cd %build_dir%
-for %%w in (WXP WLH WIN7) do (
+for %%w in (%_WXP% %_WLH% WIN7) do (
     for %%r in (fre chk) do (
         set DDKBUILDENV=
         call \WinDDK\7600.16385.1\bin\setenv.bat \WinDDK\7600.16385.1\ %%w %%r no_oacr
@@ -82,7 +105,7 @@ for %%w in (WXP WLH WIN7) do (
 set path=%start_path%
 
 rem Build 64 bit
-for %%w in (WLH WIN7) do (
+for %%w in (%_WLH% WIN7) do (
     for %%r in (fre chk) do (
         set DDKBUILDENV=
         call \WinDDK\7600.16385.1\bin\setenv.bat \WinDDK\7600.16385.1\ %%w x64 %%r no_oacr
@@ -108,7 +131,7 @@ if %vcxp%==13 (
 ) else (
 goto help
 )
-call loadmsbenv.bat
+
 set t_rebuild_flag=
 if "%pvbuildoption%"=="-cZ" set t_rebuild_flag=c
 
@@ -121,6 +144,28 @@ for %%w in (8 8.1 10 10-2004) do (
             if exist *.err goto builderr
         )
     )
+)
+
+if not "%do_arm_build%"=="arm" goto end
+
+set package_to_build=%build_dir%
+for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
+
+if "%package_to_build%"=="virtio" (
+    echo "building for virtio - do ARM64 as well"
+    for %%w in (10-2004) do (
+        for %%r in (r d) do (
+            for %%x in (a) do (
+                title Windows %%w %%r %%x
+                call msb.bat %%w %%r %%x %t_rebuild_flag%
+                call msb_err.bat %%w %%r %%x
+                if exist *.err goto builderr
+            )
+        )
+    )
+) else (
+    echo[
+    echo Building for ARM64 is not supported on %package_to_build%
 )
 
 goto end
@@ -137,7 +182,7 @@ goto end
 echo.
 echo build_all.bat builds all of the driver kit files
 echo.
-echo "syntax: build_all.bat [<13|15|17|19>] [-cZ]"
+echo "syntax: build_all.bat [<13|15|17|19>] [-cZ] [xp] [lh] [arm]"
 echo example: build_all
 echo.
 
@@ -159,3 +204,7 @@ set prompt=$P$G
 set t_rebuild_flag=
 set pvbuildoption=
 set vcxp=
+set vcxp_latest=
+set _WXP=
+set _WLH=
+set do_arm_build=
