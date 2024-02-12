@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2022 SUSE LLC
+ * Copyright 2022-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -478,9 +478,11 @@ vfs_free_request(virtio_fs_request_t *vfs_req)
     }
     if (vfs_req->in_mdl != NULL) {
         MmFreePagesFromMdl(vfs_req->in_mdl);
+        ExFreePool(vfs_req->in_mdl);
     }
     if (vfs_req->out_mdl != NULL) {
         MmFreePagesFromMdl(vfs_req->out_mdl);
+        ExFreePool(vfs_req->out_mdl);
     }
     ExFreePoolWithTag(vfs_req, VFS_POOL_TAG);
 }
