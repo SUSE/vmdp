@@ -1,0 +1,29 @@
+HKR, Ndi\params\*RSS,              ParamDesc, 0, %RSS%
+HKR, Ndi\params\*RSS,              Type,      0, "enum"
+HKR, Ndi\params\*RSS,              Default,   0, "1"
+HKR, Ndi\params\*RSS,              Optional,  0, "0"
+HKR, Ndi\params\*RSS\enum,         "0",       0, %Disable%
+HKR, Ndi\params\*RSS\enum,         "1",       0, %Enable%
+
+HKR, Ndi\params\*NumRssQueues,     ParamDesc, 0, %RSS_QUEUES%
+HKR, Ndi\params\*NumRssQueues,     default,   0, "16"
+HKR, Ndi\params\*NumRssQueues,     min,       0, "1"
+HKR, Ndi\params\*NumRssQueues,     max,       0, "32"
+HKR, Ndi\params\*NumRssQueues,     step,      0, "1"
+HKR, Ndi\params\*NumRssQueues,     base,      0, "10"
+HKR, Ndi\params\*NumRssQueues,     type,      0, "int"
+
+HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport,       ParamDesc, 0, %TCPIPv6ExtHdrsSupport%
+HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport,       default,   0, "0"
+HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport,       type,      0, "enum"
+HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport\enum, "0",        0, %Disable%
+HKR, Ndi\params\RssTCPIPv6ExtHdrsSupport\enum, "1",        0, %Enable%
+
+HKR, Ndi\Params\*PriorityVLANTag,       ParamDesc,  0,     %Priority_Vlan_Tag%
+HKR, Ndi\Params\*PriorityVLANTag,       Default,    0,     "3"
+HKR, Ndi\Params\*PriorityVLANTag,       type,       0,     "enum"
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "0",        0,     %Disable%
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "1",        0,     %Priority_Enabled%
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "2",        0,     %VLan_Enabled%
+HKR, Ndi\Params\*PriorityVLANTag\enum,  "3",        0,     %Priority_Vlan%
+

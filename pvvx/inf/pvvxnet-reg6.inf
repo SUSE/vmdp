@@ -1,0 +1,162 @@
+HKR, Ndi\params\NumRcb,          ParamDesc, 0, "%ReceiveBuffers%"
+HKR, Ndi\params\NumRcb,          default,   0, "256"
+HKR, Ndi\params\NumRcb,          min,       0, "256"
+HKR, Ndi\params\NumRcb,          max,       0, "4096"
+HKR, Ndi\params\NumRcb,          step,      0, "1"
+HKR, Ndi\params\NumRcb,          base,      0, "10"
+HKR, Ndi\params\NumRcb,          type,      0, "int"
+
+HKR, Ndi\params\RcvLimit,        ParamDesc, 0, "%ReceiveLimit%"
+HKR, Ndi\params\RcvLimit,        default,   0, "64"
+HKR, Ndi\params\RcvLimit,        min,       0, "1"
+HKR, Ndi\params\RcvLimit,        max,       0, "256"
+HKR, Ndi\params\RcvLimit,        step,      0, "1"
+HKR, Ndi\params\RcvLimit,        base,      0, "10"
+HKR, Ndi\params\RcvLimit,        type,      0, "int"
+
+HKR, Ndi\params\StatInterval,    ParamDesc, 0, "%StatInterval%"
+HKR, Ndi\params\StatInterval,    default,   0, "0"
+HKR, Ndi\params\StatInterval,    min,       0, "0"
+HKR, Ndi\params\StatInterval,    max,       0, "3600"
+HKR, Ndi\params\StatInterval,    step,      0, "1"
+HKR, Ndi\params\StatInterval,    base,      0, "10"
+HKR, Ndi\params\StatInterval,    type,      0, "int"
+
+HKR, Ndi\params\ResourceTimeout, ParamDesc, 0, "%ResourceTimeout%"
+HKR, Ndi\params\ResourceTimeout, default,   0, "0"
+HKR, Ndi\params\ResourceTimeout, min,       0, "0"
+HKR, Ndi\params\ResourceTimeout, max,       0, "3600"
+HKR, Ndi\params\ResourceTimeout, step,      0, "1"
+HKR, Ndi\params\ResourceTimeout, base,      0, "10"
+HKR, Ndi\params\ResourceTimeout, type,      0, "int"
+
+HKR, Ndi\params\dbg_print_mask,  ParamDesc, 0, "%DBG_PRINTK_MASK%"
+HKR, Ndi\params\dbg_print_mask,  default,   0, "7"
+HKR, Ndi\params\dbg_print_mask,  min,       0, "0"
+HKR, Ndi\params\dbg_print_mask,  max,       0, "ffffffff"
+HKR, Ndi\params\dbg_print_mask,  step,      0, "1"
+HKR, Ndi\params\dbg_print_mask,  base,      0, "16"
+HKR, Ndi\params\dbg_print_mask,  type,      0, "dword"
+
+HKR, Ndi\params\rel_print_mask,  ParamDesc, 0, "%REL_PRINTK_MASK%"
+HKR, Ndi\params\rel_print_mask,  default,   0, "0"
+HKR, Ndi\params\rel_print_mask,  min,       0, "0"
+HKR, Ndi\params\rel_print_mask,  max,       0, "ffffffff"
+HKR, Ndi\params\rel_print_mask,  step,      0, "1"
+HKR, Ndi\params\rel_print_mask,  base,      0, "16"
+HKR, Ndi\params\rel_print_mask,  type,      0, "dword"
+
+HKR, Ndi\params\TCPChecksumOffloadIPv4,       ParamDesc,  0, %TCPIPv4Desc%
+HKR, Ndi\params\TCPChecksumOffloadIPv4,       default,    0, "0"
+HKR, Ndi\params\TCPChecksumOffloadIPv4,       type,       0, "enum"
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "0",        0, %Disable%
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "1",        0, %TX%
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "2",        0, %RX%
+HKR, Ndi\params\TCPChecksumOffloadIPv4\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\UDPChecksumOffloadIPv4,       ParamDesc,  0, %UDPIPv4Desc%
+HKR, Ndi\params\UDPChecksumOffloadIPv4,       default,    0, "0"
+HKR, Ndi\params\UDPChecksumOffloadIPv4,       type,       0, "enum"
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "0",        0, %Disable%
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "1",        0, %TX%
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "2",        0, %RX%
+HKR, Ndi\params\UDPChecksumOffloadIPv4\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\FragmentedReceives,       ParamDesc,  0, %FragmentedReceives%
+HKR, Ndi\params\FragmentedReceives,       default,    0, "1"
+HKR, Ndi\params\FragmentedReceives,       type,       0, "enum"
+HKR, Ndi\params\FragmentedReceives\enum,  "0",        0, %Disable%
+HKR, Ndi\params\FragmentedReceives\enum,  "1",        0, %Enable%
+;HKR, Ndi\params\FragmentedReceives\enum,  "2",        0, %EnableLarge%
+
+HKR, Ndi\params\IndirectDescriptors,        ParamDesc, 0, %IndirectDesc%
+HKR, Ndi\params\IndirectDescriptors,        default,   0, "1"
+HKR, Ndi\params\IndirectDescriptors,        type,      0, "enum"
+HKR, Ndi\params\IndirectDescriptors\enum,   "0",       0, %Disable%
+HKR, Ndi\params\IndirectDescriptors\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\PackedRings,        ParamDesc, 0, %UsePackedRings%
+HKR, Ndi\params\PackedRings,        default,   0, "0"
+HKR, Ndi\params\PackedRings,        type,      0, "enum"
+HKR, Ndi\params\PackedRings\enum,   "0",       0, %Disable%
+HKR, Ndi\params\PackedRings\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\TxSgCnt,        ParamDesc, 0, "%TxSgCnt%"
+HKR, Ndi\params\TxSgCnt,        default,   0, "25"
+HKR, Ndi\params\TxSgCnt,        min,       0, "20"
+HKR, Ndi\params\TxSgCnt,        max,       0, "36"
+HKR, Ndi\params\TxSgCnt,        step,      0, "1"
+HKR, Ndi\params\TxSgCnt,        base,      0, "10"
+HKR, Ndi\params\TxSgCnt,        type,      0, "int"
+
+;[pvvxnet_params.reg6]
+HKR, Ndi\params\TCPChecksumOffloadIPv6,       ParamDesc,  0, %TCPIPv6Desc%
+HKR, Ndi\params\TCPChecksumOffloadIPv6,       default,    0, "0"
+HKR, Ndi\params\TCPChecksumOffloadIPv6,       type,       0, "enum"
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "0",        0, %Disable%
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "1",        0, %TX%
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "2",        0, %RX%
+HKR, Ndi\params\TCPChecksumOffloadIPv6\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\UDPChecksumOffloadIPv6,       ParamDesc,  0, %UDPIPv6Desc%
+HKR, Ndi\params\UDPChecksumOffloadIPv6,       default,    0, "0"
+HKR, Ndi\params\UDPChecksumOffloadIPv6,       type,       0, "enum"
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "0",        0, %Disable%
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "1",        0, %TX%
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "2",        0, %RX%
+HKR, Ndi\params\UDPChecksumOffloadIPv6\enum,  "3",        0, %RX_TX%
+
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport,      ParamDesc, 0, %IPv6ExtHdrsSupport%
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport,      default,   0, "0"
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport,      type,      0, "enum"
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport\enum, "0",       0, %Disable%
+HKR, Ndi\params\LsoV2IPv6ExtHdrsSupport\enum, "1",       0, %Enable%
+
+HKR, Ndi\params\*LsoV2IPv4,        ParamDesc, 0, %LSOV2%
+HKR, Ndi\params\*LsoV2IPv4,        default,   0, "1"
+HKR, Ndi\params\*LsoV2IPv4,        type,      0, "enum"
+HKR, Ndi\params\*LsoV2IPv4\enum,   "0",       0, %Disable%
+HKR, Ndi\params\*LsoV2IPv4\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\*LsoV2IPv6,        ParamDesc, 0, %LSOV2IPv6%
+HKR, Ndi\params\*LsoV2IPv6,        default,   0, "1"
+HKR, Ndi\params\*LsoV2IPv6,        type,      0, "enum"
+HKR, Ndi\params\*LsoV2IPv6\enum,   "0",       0, %Disable%
+HKR, Ndi\params\*LsoV2IPv6\enum,   "1",       0, %Enable%
+
+HKR, Ndi\params\LsoDataSize,       ParamDesc, 0, %LSO_DATA_SIZE%
+HKR, Ndi\params\LsoDataSize,       default,   0, "61440"
+HKR, Ndi\params\LsoDataSize,       type,      0, "enum"
+HKR, Ndi\params\LsoDataSize\enum,  "8192",    0, 8192
+HKR, Ndi\params\LsoDataSize\enum,  "16384",   0, 16384
+HKR, Ndi\params\LsoDataSize\enum,  "32768",   0, 32768
+HKR, Ndi\params\LsoDataSize\enum,  "61440",   0, 61440
+
+HKR, Ndi\params\MTU,               ParamDesc, 0, "%MTU%"
+HKR, Ndi\params\MTU,               default,   0, "1500"
+HKR, Ndi\params\MTU,               min,       0, "576"
+HKR, Ndi\params\MTU,               max,       0, "61426"
+HKR, Ndi\params\MTU,               step,      0, "1"
+HKR, Ndi\params\MTU,               base,      0, "10"
+HKR, Ndi\params\MTU,               type,      0, "long"
+
+HKR, Ndi\Params\LinkSpeed,         ParamDesc, 0, %LinkSpeed%
+HKR, Ndi\Params\LinkSpeed,         Default,   0, "1000"
+HKR, Ndi\Params\LinkSpeed,         type,      0, "enum"
+HKR, Ndi\Params\LinkSpeed\enum,    "10000",   0, "10 Gbps"
+HKR, Ndi\Params\LinkSpeed\enum,    "1000",    0, "1 Gbps"
+HKR, Ndi\Params\LinkSpeed\enum,    "100",     0, "100 Mbps"
+HKR, Ndi\Params\LinkSpeed\enum,    "10",      0, "10 Mbps"
+
+HKR, Ndi\params\PMC,               ParamDesc, 0, %PMC%
+HKR, Ndi\params\PMC,               default,   0, "1"
+HKR, Ndi\params\PMC,               type,      0, "enum"
+HKR, Ndi\params\PMC\enum,          "0",       0, %Disable%
+HKR, Ndi\params\PMC\enum,          "1",       0, %W2K12%
+
+HKR, Ndi\params\SplitEvtchn,       ParamDesc, 0, %SPLIT_EVTCHN%
+HKR, Ndi\params\SplitEvtchn,       default,   0, "0"
+HKR, Ndi\params\SplitEvtchn,       type,      0, "enum"
+HKR, Ndi\params\SplitEvtchn\enum,  "0",       0, %Disable%
+HKR, Ndi\params\SplitEvtchn\enum,  "1",       0, %Enable%
+
