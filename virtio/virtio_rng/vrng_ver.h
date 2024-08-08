@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2022 SUSE LLC
+ * Copyright 2017-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,9 +28,9 @@
 #define _VRNG_VER_H
 
 
-#define VER_FILEVERSION             1,0,0,14
-#define VER_FILEVERSION_STR         "1.0.0.14\0"
+#define VER_FILEVERSION             1,0,0,15
+#define VER_FILEVERSION_STR         "1.0.0.15\0"
 
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2017-2023 SUSE All rights reserved.", "\0"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2017-2024 SUSE All rights reserved.", "\0"
 
 #endif
