@@ -85,7 +85,7 @@ if "%config_os%"=="generic" (
     set ddk_target_os=/p:DDK_TARGET_OS="%target_os%"
 )
 
-title msbuild %t_rebuild% %config_os% %p_platform% %config_rd%
+title VS20%vcxp% msbuild %t_rebuild% %config_os% %p_platform% %config_rd%
 if "%t_rebuild%"=="" goto normal_build
     echo msbuild %sln% /p:Configuration=%msb_config% /p:Platform=%p_platform% /t:%t_rebuild% %ddk_target_os%
     msbuild %sln% /p:Configuration=%msb_config% /p:Platform=%p_platform% /t:%t_rebuild% %ddk_target_os%

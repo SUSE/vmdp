@@ -37,23 +37,28 @@ set vxcp_latest=
 
 if "%1"=="13" (
     set vcxp=%1
-    call setvcxp %vcxp%
+    set setvcxp_bat=setvcxp.bat
     shift
 ) else if "%1"=="15" (
     set vcxp=%1
-    call setvcxp %vcxp%
+    set setvcxp_bat=setvcxp.bat
     shift
 ) else if "%1"=="17" (
     set vcxp=%1
-    call setvcxp %vcxp%
+    set setvcxp_bat=setvcxp.bat
     shift
 ) else if "%1"=="19" (
     set vcxp=%1
-    call setvcxp %vcxp%
+    set setvcxp_bat=switch_vcxproj.bat
+    shift
+) else if "%1"=="22" (
+    set vcxp=%1
+    set setvcxp_bat=switch_vcxproj.bat
     shift
 ) else (
     set vcxp=19
     set vcxp_latest=22
+    set setvcxp_bat=switch_vcxproj.bat
 )
 
 echo[
@@ -90,6 +95,11 @@ set start_dir=%cd%
 set build_dir=%cd%
 set start_path=%path%
 set start_username=%USERNAME%
+set t_rebuild_flag=
+if "%pvbuildoption%"=="-cZ" set t_rebuild_flag=c
+
+rem If specifically specified vs2022, only build for 10-2004
+if %vcxp%==22 goto biuld_vs_22
 
 rem Build 32 bit
 cd %build_dir%
@@ -128,16 +138,40 @@ if %vcxp%==13 (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat"
 ) else if %vcxp%==19 (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat"
+) else if %vcxp%==22 (
+    goto biuld_vs_22
 ) else (
-goto help
+    goto help
 )
 
-set t_rebuild_flag=
-if "%pvbuildoption%"=="-cZ" set t_rebuild_flag=c
+call %setvcxp_bat% %vcxp%
 
-for %%w in (8 8.1 10 10-2004) do (
+for %%w in (8 8.1 10) do (
     for %%r in (r d) do (
         for %%x in (3 6) do (
+            title Windows %%w %%r %%x
+            call msb.bat %%w %%r %%x %t_rebuild_flag%
+            call msb_err.bat %%w %%r %%x
+            if exist *.err goto builderr
+        )
+    )
+)
+echo Built using VS20%vcxp%
+
+:biuld_vs_22
+set path=%start_path%
+cd %start_dir%
+call unsetddk.bat
+call unsetmsb.bat
+cd %build_dir%
+set vcxp=22
+call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+
+call %setvcxp_bat% %vcxp%
+
+for %%w in (10-2004) do (
+    for %%r in (r d) do (
+        for %%x in (6) do (
             title Windows %%w %%r %%x
             call msb.bat %%w %%r %%x %t_rebuild_flag%
             call msb_err.bat %%w %%r %%x
