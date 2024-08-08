@@ -18,6 +18,7 @@
 *.sarif
 dist/
 dvl/
+packages/
 sdv/
 x64/
 Release/
