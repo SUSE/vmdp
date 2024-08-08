@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2014-2022 SUSE LLC
+; Copyright 2014-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@ Class       = System
 Provider    = %SUSE%
 DriverVer   = 12/07/2017,1.0.0.00
 CatalogFile = pvcrash_notify.cat
+PnpLockdown=1
 
 [DestinationDirs]
-pvcrash_notify.CopyFiles = 12
+pvcrash_notify.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -42,14 +43,9 @@ pvcrash_notify.CopyFiles = 12
 pvcrash_notify.sys = 1,,
 
 [Manufacturer]
-%SUSE% = pvcrash_notify,NTx86,NTamd64
+%SUSE% = pvcrash_notify,NT$ARCH$
 
-[pvcrash_notify.NTx86]
-%pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, ACPI\QEMU0001
-%pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011&SUBSYS_11001AF4&REV_01
-%pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011
-
-[pvcrash_notify.NTamd64]
+[pvcrash_notify.NT$ARCH$]
 %pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, ACPI\QEMU0001
 %pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011&SUBSYS_11001AF4&REV_01
 %pvcrash_notify.DeviceDesc% = pvcrash_notify_Install, PCI\VEN_1B36&DEV_0011
@@ -68,7 +64,7 @@ DisplayName     = %pvcrash_notify.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_BOOT_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\pvcrash_notify.sys
+ServiceBinary  = %DRIVER_DIRID%\pvcrash_notify.sys
 LoadOrderGroup = Extended base
 AddReg         = pvcrash_notify_Reg
 

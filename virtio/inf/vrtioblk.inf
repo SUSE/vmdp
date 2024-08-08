@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright (c) 2011-2013 Novell, Inc.
-; Copyright 2013-2022 SUSE LLC
+; Copyright 2013-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -32,9 +32,10 @@ Class       = SCSIAdapter
 Provider    = %NOVELL%
 DriverVer   = 08/14/2013,1.0.0.06
 CatalogFile = vrtioblk.cat
+PnpLockdown=1
 
 [DestinationDirs]
-VirtioBlk.CopyFiles = 12
+VirtioBlk.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -43,15 +44,9 @@ VirtioBlk.CopyFiles = 12
 vrtioblk.sys = 1,,
 
 [Manufacturer]
-%NOVELL%    = VirtioBlk,NTx86,NTamd64
+%NOVELL%    = VirtioBlk,NT$ARCH$
 
-[VirtioBlk.NTx86]
-%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001
-%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001&SUBSYS_00021AF4&REV_00
-%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1042
-%VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1042&SUBSYS_11001AF4&REV_01
-
-[VirtioBlk.NTamd64]
+[VirtioBlk.NT$ARCH$]
 %VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001
 %VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1001&SUBSYS_00021AF4&REV_00
 %VirtioBlk.DeviceDesc% = VirtioBlk_Install, PCI\VEN_1AF4&DEV_1042
@@ -74,7 +69,7 @@ DisplayName     = %VirtioBlk.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_BOOT_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\vrtioblk.sys
+ServiceBinary  = %DRIVER_DIRID%\vrtioblk.sys
 LoadOrderGroup = SCSI miniport
 AddReg         = VirtioBlk_Reg
 

@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2022 SUSE LLC
+; Copyright 2022-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@ Class       = System
 Provider    = %SUSE%
 DriverVer   = 04/20/2022,1.0.0.00
 CatalogFile = virtio_fs.cat
+PnpLockdown=1
 
 [DestinationDirs]
-virtio_fs.CopyFiles = 12
+virtio_fs.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -64,7 +65,7 @@ DisplayName    = %virtio_fs.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_DEMAND_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\virtio_fs.sys
+ServiceBinary  = %DRIVER_DIRID%\virtio_fs.sys
 LoadOrderGroup = Extended Base
 AddReg         = virtio_fs_Reg
 

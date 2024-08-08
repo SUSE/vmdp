@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2018-2020 SUSE LLC
+; Copyright 2018-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@ Class       = System
 Provider    = %SUSE%
 DriverVer   = 12/07/2017,1.0.0.00
 CatalogFile = fwcfg.cat
+PnpLockdown=1
 
 [DestinationDirs]
-fwcfg.CopyFiles = 12
+fwcfg.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -42,12 +43,9 @@ fwcfg.CopyFiles = 12
 fwcfg.sys = 1,,
 
 [Manufacturer]
-%SUSE% = fwcfg,NTx86,NTamd64
+%SUSE% = fwcfg,NT$ARCH$
 
-[fwcfg.NTx86]
-%fwcfg.DeviceDesc% = fwcfg_Install, ACPI\QEMU0002
-
-[fwcfg.NTamd64]
+[fwcfg.NT$ARCH$]
 %fwcfg.DeviceDesc% = fwcfg_Install, ACPI\QEMU0002
 
 [fwcfg.CopyFiles]
@@ -64,7 +62,7 @@ DisplayName     = %fwcfg.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_BOOT_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\fwcfg.sys
+ServiceBinary  = %DRIVER_DIRID%\fwcfg.sys
 
 [Strings]
 ; Localizable Strings

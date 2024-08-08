@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright (c) 2011-2013 Novell, Inc.
-; Copyright 2013-2022 SUSE LLC
+; Copyright 2013-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -32,9 +32,10 @@ ClassGUID = {4d36e972-e325-11ce-bfc1-08002be10318}
 Provider = %SUSE%
 DriverVer = 11/28/2012,1.0.0.16
 CatalogFile=virtio_net.cat
+PnpLockdown=1
 
 [DestinationDirs]
-VirtioNet.CopyFiles = 12
+VirtioNet.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -291,9 +292,9 @@ DisplayName     = %VirtioNet.Service.DispName%
 ServiceType     = 1 ;%SERVICE_KERNEL_DRIVER%
 StartType       = 3 ;%SERVICE_DEMAND_START%
 ErrorControl    = 1 ;%SERVICE_ERROR_NORMAL%
-ServiceBinary   = %12%\virtio_net.sys
+ServiceBinary   = %DRIVER_DIRID%\virtio_net.sys
 LoadOrderGroup  = NDIS
-AddReg          = TextModeFlags.Reg
+;AddReg          = TextModeFlags.Reg
 
 [VirtioNet.EventLog]
 AddReg = VirtioNet.AddEventLog.Reg
@@ -302,8 +303,8 @@ AddReg = VirtioNet.AddEventLog.Reg
 HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
 HKR, , TypesSupported,   0x00010001, 7
 
-[TextModeFlags.Reg]
-HKR, , TextModeFlags, 0x00010001, 0x0001
+;[TextModeFlags.Reg]
+;HKR, , TextModeFlags, 0x00010001, 0x0001
 
 [Strings]
 SUSE = "SUSE"

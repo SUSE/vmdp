@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2014-2022 SUSE LLC
+; Copyright 2014-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@ Class       = System
 Provider    = %SUSE%
 DriverVer   = 06/14/2013,1.0.0.00
 CatalogFile = virtio_serial.cat
+PnpLockdown=1
 
 [DestinationDirs]
-virtio_serial.CopyFiles = 12
+virtio_serial.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -42,15 +43,9 @@ virtio_serial.CopyFiles = 12
 virtio_serial.sys = 1,,
 
 [Manufacturer]
-%SUSE% = virtio_serial,NTx86,NTamd64
+%SUSE% = virtio_serial,NT$ARCH$
 
-[virtio_serial.NTx86]
-%virtio_serial.DeviceDesc% = virtio_serial_Install, PCI\VEN_1AF4&DEV_1003
-%virtio_serial.DeviceDesc% = virtio_serial_Install, PCI\VEN_1AF4&DEV_1003&SUBSYS_00031AF4&REV_00
-%virtio_serial.DeviceDesc% = virtio_serial_Install, PCI\VEN_1AF4&DEV_1043
-%virtio_serial.DeviceDesc% = virtio_serial_Install, PCI\VEN_1AF4&DEV_1043&SUBSYS_11001AF4&REV_01
-
-[virtio_serial.NTamd64]
+[virtio_serial.NT$ARCH$]
 %virtio_serial.DeviceDesc% = virtio_serial_Install, PCI\VEN_1AF4&DEV_1003
 %virtio_serial.DeviceDesc% = virtio_serial_Install, PCI\VEN_1AF4&DEV_1003&SUBSYS_00031AF4&REV_00
 %virtio_serial.DeviceDesc% = virtio_serial_Install, PCI\VEN_1AF4&DEV_1043
@@ -73,7 +68,7 @@ DisplayName     = %virtio_serial.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_BOOT_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\virtio_serial.sys
+ServiceBinary  = %DRIVER_DIRID%\virtio_serial.sys
 LoadOrderGroup = Extended base
 AddReg         = virtio_serial_Reg
 

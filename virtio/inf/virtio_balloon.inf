@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2011-2022 SUSE LLC
+; Copyright 2011-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@ Class       = System
 Provider    = %SUSE%
 DriverVer   = 05/09/2013,1.0.1.00
 CatalogFile = virtio_balloon.cat
+PnpLockdown=1
 
 [DestinationDirs]
-VirtioBalloon.CopyFiles = 12
+VirtioBalloon.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -42,16 +43,9 @@ VirtioBalloon.CopyFiles = 12
 virtio_balloon.sys = 1,,
 
 [Manufacturer]
-%SUSE%    = VirtioBalloon,NTx86,NTamd64
+%SUSE%    = VirtioBalloon,NT$ARCH$
 
-[VirtioBalloon.NTx86]
-%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002
-%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
-%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1045
-%VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
-
-
-[VirtioBalloon.NTamd64]
+[VirtioBalloon.NT$ARCH$]
 %VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002
 %VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
 %VirtioBalloon.DeviceDesc% = VirtioBalloon_Install, PCI\VEN_1AF4&DEV_1045
@@ -71,7 +65,7 @@ DisplayName     = %VirtioBalloon.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_BOOT_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\virtio_balloon.sys
+ServiceBinary  = %DRIVER_DIRID%\virtio_balloon.sys
 LoadOrderGroup = Boot Bus Extender
 AddReg         = VirtioBalloon_Reg
 
