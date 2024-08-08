@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright 2012 Novell, Inc.
-; Copyright 2012-2020 SUSE LLC
+; Copyright 2012-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -33,9 +33,10 @@ Class=SCSIAdapter
 Provider = %NOVELL%
 DriverVer = 01/17/2013,1.0.0.03
 CatalogFile=xenscsi.cat
+PnpLockdown=1
 
 [DestinationDirs]
-XenScsi.CopyFiles = 12
+XenScsi.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -72,7 +73,7 @@ DisplayName     = %XenScsi.Service.DispName%
 ServiceType     = %SERVICE_KERNEL_DRIVER%
 StartType       = %SERVICE_BOOT_START%
 ErrorControl    = %SERVICE_ERROR_NORMAL%
-ServiceBinary   = %12%\xenscsi.sys
+ServiceBinary   = %DRIVER_DIRID%\xenscsi.sys
 LoadOrderGroup  = SCSI miniport
 AddReg = XenScsi.Reg
 

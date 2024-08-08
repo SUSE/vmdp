@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright 2007-2012 Novell, Inc.
-; Copyright 2012-2020 SUSE LLC
+; Copyright 2012-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -33,9 +33,10 @@ ClassGUID={4d36e97d-e325-11ce-bfc1-08002be10318}
 Provider=%Novell% 
 DriverVer = 03/05/2013,2.4.2.00
 CatalogFile=xenbus.cat
+PnpLockdown=1
 
 [DestinationDirs] 
-XenBus.Files_12 = 12 
+XenBus.Files_12 = DRIVER_DIRID
 
 [SourceDisksNames]
 0=%DiskId%
@@ -75,7 +76,7 @@ DisplayName    = %XenBus.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER% 
 StartType      = %SERVICE_BOOT_START% 
 ErrorControl   = %SERVICE_ERROR_IGNORE% 
-ServiceBinary  = %12%\xenbus.sys 
+ServiceBinary  = %DRIVER_DIRID%\xenbus.sys
 LoadOrderGroup = Boot Bus Extender
 ;AddReg = XenBus.Reg
 

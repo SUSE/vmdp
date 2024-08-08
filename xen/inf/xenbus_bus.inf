@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright 2007-2012 Novell, Inc.
-; Copyright 2012-2020 SUSE LLC
+; Copyright 2012-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -33,9 +33,10 @@ ClassGUID={4d36e97d-e325-11ce-bfc1-08002be10318}
 Provider=%Novell% 
 DriverVer = 03/05/2013,2.4.2.00
 CatalogFile=xenbus.cat
+PnpLockdown=1
 
 [DestinationDirs] 
-XenBus.Files_12 = 12 
+XenBus.Files_13 = DRIVER_DIRID 
 
 [SourceDisksNames]
 0=%DiskId%
@@ -65,7 +66,7 @@ xenbus.sys=0,,
 %XenBusDesc%=XenBus_Inst, PCI\VEN_5853&DEV_0001
 
 [XenBus_Inst] 
-CopyFiles = XenBus.Files_12 
+CopyFiles = XenBus.Files_13 
 
 [XenBus_Inst.Services] 
 AddService = XenBus,0x00000002,XenBus_Service_Inst, 
@@ -75,7 +76,7 @@ DisplayName    = %XenBus.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER% 
 StartType      = %SERVICE_BOOT_START% 
 ErrorControl   = %SERVICE_ERROR_IGNORE% 
-ServiceBinary  = %12%\xenbus.sys 
+ServiceBinary  = %DRIVER_DIRID%\xenbus.sys 
 LoadOrderGroup = Boot Bus Extender
 ;AddReg = XenBus.Reg
 
@@ -83,7 +84,7 @@ LoadOrderGroup = Boot Bus Extender
 ;HKR,"Parameters","BusType",%REG_DWORD%,0x00000001
 ;HKR,"Parameters\PnpInterface","5",%REG_DWORD%,0x00000001
 
-[XenBus.Files_12] 
+[XenBus.Files_13] 
 xenbus.sys
 
 [Strings] 

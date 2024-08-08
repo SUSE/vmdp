@@ -2,7 +2,7 @@
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
 ; Copyright 2007-2012 Novell, Inc.
-; Copyright 2012-2020 SUSE LLC
+; Copyright 2012-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -32,9 +32,10 @@ ClassGUID = {4d36e972-e325-11ce-bfc1-08002be10318}
 Provider = %SUSE%
 DriverVer = 11/28/2012,2.4.0.16
 CatalogFile=xennet.cat
+PnpLockdown=1
 
 [DestinationDirs]
-XenNet.CopyFiles = 12
+XenNet.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -277,9 +278,9 @@ DisplayName     = %XenNet.Service.DispName%
 ServiceType     = 1 ;%SERVICE_KERNEL_DRIVER%
 StartType       = 3 ;%SERVICE_DEMAND_START%
 ErrorControl    = 1 ;%SERVICE_ERROR_NORMAL%
-ServiceBinary   = %12%\xennet.sys
+ServiceBinary   = %DRIVER_DIRID%\xennet.sys
 LoadOrderGroup  = NDIS
-AddReg          = TextModeFlags.Reg
+;AddReg          = TextModeFlags.Reg
 
 [XenNet.EventLog]
 AddReg = XenNet.AddEventLog.Reg
@@ -288,8 +289,8 @@ AddReg = XenNet.AddEventLog.Reg
 HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
 HKR, , TypesSupported,   0x00010001, 7
 
-[TextModeFlags.Reg]
-HKR, , TextModeFlags, 0x00010001, 0x0001
+;[TextModeFlags.Reg]
+;HKR, , TextModeFlags, 0x00010001, 0x0001
 
 [Strings]
 SUSE = "SUSE"
