@@ -92,6 +92,11 @@
 
 #define PVVXSVC_SERVICE_NAME_S  " -s "
 
+#define PVVXSVC_FIRSTBOOT_DIR   L"c:\\Program Files\\Guestfs\\Firstboot"
+#define PVVXSVC_FB_SCRIPTS      L"\\Program Files\\Guestfs\\Firstboot\\scripts\\5000-0004-retry-vmdp-setup.bat"
+#define PVVXSVC_FB_SCRIPTS_DONE L"\\Program Files\\Guestfs\\Firstboot\\scripts-done\\5000-0004-retry-vmdp-setup.bat"
+#define PVVXSVC_FB_SCRIPTS_DONE_DIR L"\\Program Files\\Guestfs\\Firstboot\\scripts-done"
+
 #define PVVXSVC_RUN_AS_SERVICE_F    0x0
 #define PVVXSVC_INSTALL_F           0x1
 #define PVVXSVC_REMOVE_F            0x2
@@ -99,6 +104,7 @@
 #define PVVXSVC_MEM_PERIOD_F        0x8
 #define PVVXSVC_MEM_STAT_F          0x10
 #define PVVXSVC_IS_RUNNING_F        0x20
+#define PVVXSVC_FIRSTBOOT_F         0x40
 
 #define MAX_SHUTDOWN_ATTEMPTS       300 /* 1 attempt per second for 5 minutes */
 extern SERVICE_STATUS g_pvvxsvc_shutdown_status;

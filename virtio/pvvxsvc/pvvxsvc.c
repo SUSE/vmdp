@@ -47,11 +47,13 @@ static SERVICE_STATUS *g_pvvxsvc_status[] = {
     &g_pvvxsvc_shutdown_status,
 };
 
-static void process_arglist(int argc, LPWSTR *wargv, DWORD *cmd, DWORD *mp);
+static void process_arglist(
+    int argc, LPWSTR *wargv, DWORD *cmd, DWORD *mp, DWORD *fb);
 static void pvvxsvc_msg_box(UINT id);
 static DWORD pvvxsvc_is_running(void);
 static VOID pvvxsvc_install(void);
 static LPTSTR pvvxsvc_get_last_error_text(LPTSTR lpszBuf, DWORD dwSize);
+static DWORD pvvxsvc_finish_first_boot(cmd);
 
 /*
  * Purpose:
@@ -74,6 +76,7 @@ wmain()
     LPWSTR *wargv;
     DWORD cmd;
     DWORD mp;
+    DWORD fb;
     int argc;
 
     DBG_OUTPUT(TEXT("==> wmain ****\n"));
@@ -84,7 +87,7 @@ wmain()
         return 0;
     }
 
-    process_arglist(argc, wargv, &cmd, &mp);
+    process_arglist(argc, wargv, &cmd, &mp, &fb);
     LocalFree(wargv);
     switch (cmd) {
     case PVVXSVC_RUN_AS_SERVICE_F:
@@ -93,6 +96,7 @@ wmain()
         pvvxsvc_install();
         return 1;
     case PVVXSVC_REMOVE_F:
+        pvvxsvc_finish_first_boot(fb);
         pvvxsvc_remove();
         return 1;
     case PVVXSVC_MEM_STAT_F:
@@ -130,10 +134,11 @@ wmain()
 }
 
 static void
-process_arglist(int argc, LPWSTR *wargv, DWORD *cmd, DWORD *mp)
+process_arglist(int argc, LPWSTR *wargv, DWORD *cmd, DWORD *mp, DWORD *fb)
 {
     int i;
 
+    *fb = 0;
     *cmd = PVVXSVC_RUN_AS_SERVICE_F;
     for (i = 1; i < argc; i++) {
         if (_wcsicmp(wargv[i], TEXT(PVVXSVC_INSTALL_P)) == 0) {
@@ -152,6 +157,11 @@ process_arglist(int argc, LPWSTR *wargv, DWORD *cmd, DWORD *mp)
             }
             *cmd |= PVVXSVC_MEM_STAT_F;
         } else if (_wcsicmp(wargv[i], TEXT(PVVXSVC_SERVICE_NAME_P)) == 0) {
+            if (_wcsnicmp(wargv[0],
+                          PVVXSVC_FIRSTBOOT_DIR,
+                          lstrlen(PVVXSVC_FIRSTBOOT_DIR)) == 0) {
+                *fb = PVVXSVC_FIRSTBOOT_F;
+            }
             if (i + 1 < argc) {
                 i++;
                 if (_wcsicmp(wargv[i], TEXT(PVVXSVC_INSTALL_P)) == 0
@@ -600,3 +610,73 @@ pvvxsvc_wait_for_status(DWORD status)
         CloseServiceHandle(sc_mgr);
     }
 }
+
+static DWORD
+pvvxsvc_finish_first_boot(DWORD fb)
+{
+    WIN32_FIND_DATA fd;
+    HANDLE fh;
+    HANDLE fv;
+    TCHAR startdir[MAX_PATH];
+    TCHAR curdir[MAX_PATH];
+    TCHAR vexe[MAX_PATH];
+
+    if (!(fb & PVVXSVC_FIRSTBOOT_F)) {
+        return 0;
+    }
+
+    fh = FindFirstFile(PVVXSVC_FB_SCRIPTS, &fd);
+    if (fh != INVALID_HANDLE_VALUE) {
+        FindClose(fh);
+        return 0;
+    }
+    fh = FindFirstFile(PVVXSVC_FB_SCRIPTS_DONE, &fd);
+    if (fh != INVALID_HANDLE_VALUE) {
+        FindClose(fh);
+        return 0;
+    }
+
+    GetCurrentDirectory(MAX_PATH, startdir);
+    if (SetCurrentDirectory(PVVXSVC_FB_SCRIPTS_DONE_DIR)) {
+        GetCurrentDirectory(MAX_PATH, curdir);
+        fh = FindFirstFile(TEXT("\\vmdp*exe"), &fd);
+        if (fh != INVALID_HANDLE_VALUE) {
+            if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                vexe[0] = 0;
+                PathAppend(vexe, TEXT("\\"));
+                PathAppend(vexe, fd.cFileName);
+                _wspawnl(_P_WAIT,
+                         vexe,
+                         vexe,
+                         TEXT("-y"),
+                         NULL);
+
+                fv = FindFirstFile(TEXT("vmdp*"), &fd);
+                if (fv != INVALID_HANDLE_VALUE) {
+                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                        PathAppend(curdir, fd.cFileName);
+                        SetCurrentDirectory(curdir);
+
+                        /* Simple way to indicate that this section of code
+                         * was run. The directory is not used for anything
+                         * other than to indicate this code was run.
+                         */
+                        CreateDirectory(TEXT("pvvxsvc_dir"), NULL);
+
+                        _wspawnl(_P_WAIT,
+                                 TEXT("setup.exe"),
+                                 TEXT("setup.exe"),
+                                 TEXT("/eula_accepted"),
+                                 TEXT("/no_reboot"),
+                                 NULL);
+                    }
+                    FindClose(fv);
+                }
+            }
+            FindClose(fh);
+        }
+    }
+    SetCurrentDirectory(startdir);
+    return 1;
+}
+
