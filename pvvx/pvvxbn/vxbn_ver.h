@@ -27,8 +27,8 @@
 #ifndef _VXBN_VER_H
 #define _VXBN_VER_H
 
-#define VER_FILEVERSION             2,6,0,09
-#define VER_FILEVERSION_STR         "2.6.0.09\0"
+#define VER_FILEVERSION             2,6,0,10
+#define VER_FILEVERSION_STR         "2.6.0.10\0"
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2013-2024 SUSE All rights reserved.", "\0"
 

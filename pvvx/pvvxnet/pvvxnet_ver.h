@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2013-2023 SUSE LLC
+ * Copyright 2013-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,19 +30,19 @@
 
 #if NDIS_SUPPORT_NDIS6
 #if defined ARCH_x86
-#define VER_FILEVERSION             2,6,1,39
-#define VER_FILEVERSION_STR         "2.6.1.39\0"
+#define VER_FILEVERSION             2,6,1,40
+#define VER_FILEVERSION_STR         "2.6.1.40\0"
 #else
-#define VER_FILEVERSION             2,6,1,39
-#define VER_FILEVERSION_STR         "2.6.1.39\0"
+#define VER_FILEVERSION             2,6,1,40
+#define VER_FILEVERSION_STR         "2.6.1.40\0"
 #endif
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06
 
 #else
-#define VER_FILEVERSION             2,6,1,39
-#define VER_FILEVERSION_STR         "2.6.1.39\0"
+#define VER_FILEVERSION             2,6,1,40
+#define VER_FILEVERSION_STR         "2.6.1.40\0"
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06
@@ -51,6 +51,6 @@
 #define VNIF_VENDOR_DRIVER_VERSION  ((VNIF_MAJOR_DRIVER_VERSION << 16) | \
                                     VNIF_MINOR_DRIVER_VERSION)
 
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2013-2023 SUSE All rights reserved.", "\0"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2013-2024 SUSE All rights reserved.", "\0"
 
 #endif
