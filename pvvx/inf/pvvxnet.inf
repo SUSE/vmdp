@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2013-2023 SUSE LLC
+; Copyright 2013-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@ ClassGUID = {4d36e972-e325-11ce-bfc1-08002be10318}
 Provider = %SUSE%
 DriverVer = 06/14/2013,1.0.0.00
 CatalogFile=pvvxnet.cat
+PnpLockdown=1
 
 [DestinationDirs]
-pvvxnet.CopyFiles = 12
+pvvxnet.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -361,9 +362,9 @@ DisplayName     = %pvvxnet.Service.DispName%
 ServiceType     = 1 ;%SERVICE_KERNEL_DRIVER%
 StartType       = 3 ;%SERVICE_DEMAND_START%
 ErrorControl    = 1 ;%SERVICE_ERROR_NORMAL%
-ServiceBinary   = %12%\pvvxnet.sys
+ServiceBinary   = %DRIVER_DIRID%\pvvxnet.sys
 LoadOrderGroup  = NDIS
-AddReg          = TextModeFlags.Reg
+;AddReg          = TextModeFlags.Reg
 
 [pvvxnet.EventLog]
 AddReg = pvvxnet.AddEventLog.Reg
@@ -372,8 +373,8 @@ AddReg = pvvxnet.AddEventLog.Reg
 HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
 HKR, , TypesSupported,   0x00010001, 7
 
-[TextModeFlags.Reg]
-HKR, , TextModeFlags, 0x00010001, 0x0001
+;[TextModeFlags.Reg]
+;HKR, , TextModeFlags, 0x00010001, 0x0001
 
 [Strings]
 SUSE = "SUSE"

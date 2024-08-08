@@ -1,7 +1,7 @@
 ;
 ; SPDX-License-Identifier: BSD-2-Clause
 ;
-; Copyright 2013-2023 SUSE LLC
+; Copyright 2013-2024 SUSE LLC
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions
@@ -31,9 +31,10 @@ ClassGUID={4D36E97B-E325-11CE-BFC1-08002BE10318}
 Provider    = %SUSE%
 DriverVer   = 06/14/2013,1.0.0.00
 CatalogFile = pvvxscsi.cat
+PnpLockdown=1
 
 [DestinationDirs]
-pvvxscsi.CopyFiles = 12
+pvvxscsi.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -42,42 +43,9 @@ pvvxscsi.CopyFiles = 12
 pvvxscsi.sys = 1,,
 
 [Manufacturer]
-%SUSE% = pvvxscsi,NTx86.5.1,NTx86.5.2,NTx86.6,NTamd64.5.1,NTamd64.5.2,NTamd64.6
+%SUSE% = pvvxscsi,NT$ARCH$
 
-[pvvxscsi.NTx86.5.1]
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
-
-[pvvxscsi.NTamd64.5.1]
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
-
-[pvvxscsi.NTx86.5.2]
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, XEN\TYPE_vscsi
-
-[pvvxscsi.NTamd64.5.2]
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, XEN\TYPE_vscsi
-
-[pvvxscsi.NTx86.6]
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01
-%pvvxscsi.DeviceDesc% = pvvxscsi_Install, XEN\TYPE_vscsi
-
-[pvvxscsi.NTamd64.6]
+[pvvxscsi.NT$ARCH$]
 %pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004
 %pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00
 %pvvxscsi.DeviceDesc% = pvvxscsi_Install, PCI\VEN_1AF4&DEV_1048
@@ -101,7 +69,7 @@ DisplayName     = %pvvxscsi.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_BOOT_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\pvvxscsi.sys
+ServiceBinary  = %DRIVER_DIRID%\pvvxscsi.sys
 LoadOrderGroup = SCSI miniport
 AddReg         = pvvxscsi_Reg
 

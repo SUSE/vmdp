@@ -31,9 +31,10 @@ Class       = System
 Provider    = %SUSE%
 DriverVer   = 06/14/2013,1.0.0.00
 CatalogFile = pvvxbn.cat
+PnpLockdown=1
 
 [DestinationDirs]
-pvvxbn.CopyFiles = 12
+pvvxbn.CopyFiles = DRIVER_DIRID
 
 [SourceDisksNames]
 1 = %DiskId%,,,""
@@ -42,44 +43,9 @@ pvvxbn.CopyFiles = 12
 pvvxbn.sys = 1,,
 
 [Manufacturer]
-%SUSE% = pvvxbn,NTx86.5.1,NTx86.5.2,NTx86.6,NTamd64.5.1,NTamd64.5.2,NTamd64.6
+%SUSE% = pvvxbn,NT$ARCH$
 
-[pvvxbn.NTx86.5.1]
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
-%pvvxbn.DeviceDesc% = pvvxbn_Install, root\xenbus
-
-[pvvxbn.NTamd64.5.1]
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
-%pvvxbn.DeviceDesc% = pvvxbn_Install, root\xenbus
-
-[pvvxbn.NTx86.5.2]
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_5853&DEV_0001
-
-[pvvxbn.NTamd64.5.2]
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_5853&DEV_0001
-
-[pvvxbn.NTx86.6]
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045&SUBSYS_11001AF4&REV_01
-%pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_5853&DEV_0001
-
-[pvvxbn.NTamd64.6]
+[pvvxbn.NT$ARCH$]
 %pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002
 %pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1002&SUBSYS_00051AF4&REV_00
 %pvvxbn.DeviceDesc% = pvvxbn_Install, PCI\VEN_1AF4&DEV_1045
@@ -100,7 +66,7 @@ DisplayName     = %pvvxbn.Service.DispName%
 ServiceType    = %SERVICE_KERNEL_DRIVER%
 StartType      = %SERVICE_BOOT_START%
 ErrorControl   = %SERVICE_ERROR_NORMAL%
-ServiceBinary  = %12%\pvvxbn.sys
+ServiceBinary  = %DRIVER_DIRID%\pvvxbn.sys
 LoadOrderGroup = Boot Bus Extender
 AddReg         = pvvxbn_Reg
 
