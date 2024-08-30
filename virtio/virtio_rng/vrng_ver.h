@@ -28,8 +28,8 @@
 #define _VRNG_VER_H
 
 
-#define VER_FILEVERSION             1,0,0,15
-#define VER_FILEVERSION_STR         "1.0.0.15\0"
+#define VER_FILEVERSION             1,0,0,16
+#define VER_FILEVERSION_STR         "1.0.0.16\0"
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2017-2024 SUSE All rights reserved.", "\0"
 

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -61,10 +61,12 @@ static NTSTATUS
 vrng_q_init(IN FDO_DEVICE_EXTENSION *fdx)
 {
     NTSTATUS status;
-    USHORT control_vector;
     USHORT queues_vector;
 
     RPRINTK(DPRTL_INIT, ("--> %s\n", __func__));
+
+    queues_vector = fdx->int_info[0].message_signaled ? 0 :
+        VIRTIO_MSI_NO_VECTOR;
 
     if (!fdx->vq) {
         fdx->vq = VIRTIO_DEVICE_QUEUE_SETUP(&fdx->vdev,
@@ -72,12 +74,12 @@ vrng_q_init(IN FDO_DEVICE_EXTENSION *fdx)
                                             NULL,
                                             NULL,
                                             0,
-                                            VIRTIO_MSI_NO_VECTOR);
+                                            queues_vector);
         RPRINTK(DPRTL_INIT, ("  vq %p\n", fdx->vq));
     } else {
         VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev,
                                      fdx->vq,
-                                     VIRTIO_MSI_NO_VECTOR,
+                                     queues_vector,
                                      FALSE);
     }
 

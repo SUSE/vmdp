@@ -36,7 +36,6 @@ PnpLockdown=1
 [DestinationDirs]
 DefaultDestDir = DRIVER_DIRID
 virtio_rng_Provider_CopyFiles = DRIVER_DIRID
-;virtio_rng_Wdf_CoInstaller_CopyFiles = 11
 
 [SourceDisksNames]
 1 = %DiskName%,,,""
@@ -57,7 +56,6 @@ viorngum.dll=1
 [virtio_rng_Device.NT]
 CopyFiles = virtio_rng_CopyFiles
 CopyFiles=virtio_rng_Provider_CopyFiles
-;AddReg = virtio_rng_Provider_AddReg
 
 [virtio_rng_Device.NT.HW]
 AddReg = virtio_rng_AddReg
@@ -68,7 +66,7 @@ virtio_rng.sys
 [virtio_rng_AddReg]
 HKR,Interrupt Management,,0x00000010
 HKR,Interrupt Management\MessageSignaledInterruptProperties,,0x00000010
-HKR,Interrupt Management\MessageSignaledInterruptProperties,MSISupported,0x00010001,0
+HKR,Interrupt Management\MessageSignaledInterruptProperties,MSISupported,0x00010001,1
 HKR,Interrupt Management\MessageSignaledInterruptProperties,MessageNumberLimit,0x00010001,1
 
 [virtio_rng_Device.NT.Services]
@@ -85,13 +83,6 @@ LoadOrderGroup = Extended Base
 ; viorngum RNG Provider
 [virtio_rng_Provider_CopyFiles]
 viorngum.dll
-
-;[virtio_rng_Provider_AddReg]
-;HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Providers\%PROVIDER_NAME%\UM,Image,,viorngum.dll
-;HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Providers\%PROVIDER_NAME%\UM\00000006,Flags,%REG_DWORD%,0x00000001
-;HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Providers\%PROVIDER_NAME%\UM\00000006,Functions,%REG_MULTI_SZ%,RNG
-;HKLM,SYSTEM\CurrentControlSet\Control\Cryptography\Configuration\Local\Default\00000006\RNG,Providers,%REG_MULTI_SZ_APPEND%,%PROVIDER_NAME%
-
 
 [Strings]
 SUSE = "SUSE"
