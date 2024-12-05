@@ -155,7 +155,7 @@ HKR, Ndi\params\PMC\enum,          "0",       0, %Disable%
 HKR, Ndi\params\PMC\enum,          "1",       0, %W2K12%
 
 HKR, Ndi\params\SplitEvtchn,       ParamDesc, 0, %SPLIT_EVTCHN%
-HKR, Ndi\params\SplitEvtchn,       default,   0, "0"
+HKR, Ndi\params\SplitEvtchn,       default,   0, "1"
 HKR, Ndi\params\SplitEvtchn,       type,      0, "enum"
 HKR, Ndi\params\SplitEvtchn\enum,  "0",       0, %Disable%
 HKR, Ndi\params\SplitEvtchn\enum,  "1",       0, %Enable%
