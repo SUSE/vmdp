@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2013-2021 SUSE LLC
+ * Copyright 2013-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -111,6 +111,15 @@ void (*VNIFDeregisterHardwareResources)(struct _VNIF_ADAPTER *adapter);
 UINT (*VNIF_GET_NUM_PATHS)(struct _VNIF_ADAPTER *adapter);
 NDIS_STATUS (*VNIF_SETUP_PATH_INFO_EX)(struct _VNIF_ADAPTER *adapter);
 
+#if NDIS_SUPPORT_NDIS685
+void (*vnif_enable_adapter_notifications)(struct _VNIF_ADAPTER *adapter,
+                                          UINT path_id,
+                                          LONG poll_request);
+void (*vnif_disable_adapter_notifications)(struct _VNIF_ADAPTER *adapter,
+                                           UINT path_id,
+                                           LONG poll_request);
+#endif
+
 #ifdef DBG
 void (*VNIF_DUMP)(struct _VNIF_ADAPTER *adapter, UINT path_id, PUCHAR str,
                   uint32_t rxtx, uint32_t force);
@@ -190,6 +199,10 @@ vnifv_setup(void)
     VNIFDeregisterHardwareResources = VNIFV_DeregisterHardwareResources;
     VNIF_GET_NUM_PATHS = vnifv_get_num_paths;
     VNIF_SETUP_PATH_INFO_EX = vnifv_setup_path_info_ex;
+#if NDIS_SUPPORT_NDIS685
+    vnif_enable_adapter_notifications = vnifv_enable_adapter_notifications;
+    vnif_disable_adapter_notifications = vnifv_disable_adapter_notifications;
+#endif
 #ifdef DBG
     VNIF_DUMP = VNIFV_DUMP;
     vnif_rcv_stats_dump = vnifv_rcv_stats_dump;
@@ -271,6 +284,10 @@ vnifx_setup(void)
     VNIFDeregisterHardwareResources = VNIFX_DeregisterHardwareResources;
     VNIF_GET_NUM_PATHS = vnifx_get_num_paths;
     VNIF_SETUP_PATH_INFO_EX = vnifx_setup_path_info_ex;
+#if NDIS_SUPPORT_NDIS685
+    vnif_enable_adapter_notifications = vnifx_enable_adapter_notifications;
+    vnif_disable_adapter_notifications = vnifx_disable_adapter_notifications;
+#endif
 #ifdef DBG
     VNIF_DUMP = VNIFX_DUMP;
     vnif_rcv_stats_dump = vnifx_rcv_stats_dump;

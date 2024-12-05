@@ -113,9 +113,9 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 /* Windows 10-2004 */
 #elif defined TARGET_OS_Win10_2004
 #ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Net Driver for Windows 10-11"
+#define VER_FILEDESCRIPTION_STR     "Net Driver for Windows 11"
 #else
-#define VER_FILEDESCRIPTION_STR     "Net Driver for Windows 10-11/Server 22-25"
+#define VER_FILEDESCRIPTION_STR     "Net Driver for Windows 11/Server 22-25"
 #endif
 
 #else

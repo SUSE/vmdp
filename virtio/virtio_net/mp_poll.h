@@ -1,8 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,33 +24,19 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _VIRTIO_NET_VER_H
-#define _VIRTIO_NET_VER_H
+#ifndef _MP_POLL_H
+#define _MP_POLL_H
 
+#if NDIS_SUPPORT_NDIS685
+NDIS_STATUS vnif_ndis_register_poll(struct _VNIF_ADAPTER *adapter);
 
-#if NDIS_SUPPORT_NDIS6
-#if defined ARCH_x86
-#define VER_FILEVERSION             2,6,1,40
-#define VER_FILEVERSION_STR         "2.6.1.40\0"
-#else
-#define VER_FILEVERSION             2,6,1,40
-#define VER_FILEVERSION_STR         "2.6.1.40\0"
-#endif
-
-#define VNIF_MAJOR_DRIVER_VERSION   0x02
-#define VNIF_MINOR_DRIVER_VERSION   0x06
+void
+vnif_continue_ndis_request_poll(struct _VNIF_ADAPTER *adapter,
+                                UINT path_id,
+                                LONG poll_requested);
 
 #else
-#define VER_FILEVERSION             2,6,1,40
-#define VER_FILEVERSION_STR         "2.6.1.40\0"
-
-#define VNIF_MAJOR_DRIVER_VERSION   0x02
-#define VNIF_MINOR_DRIVER_VERSION   0x06
+#define vnif_ndis_register_poll(_adapter) NDIS_STATUS_SUCCESS
 #endif
-
-#define VNIF_VENDOR_DRIVER_VERSION  ((VNIF_MAJOR_DRIVER_VERSION << 16) | \
-                                    VNIF_MINOR_DRIVER_VERSION)
-
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2011-2024 Novell, Inc. SUSE All rights reserved.", "\0"
 
 #endif

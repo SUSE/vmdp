@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -60,6 +60,75 @@ vnif_enable_interrupt_from_status(PVNIF_ADAPTER adapter,
         vq_enable_interrupt(adapter->path[path_id].u.vq.tx);
     }
 }
+
+#if NDIS_SUPPORT_NDIS685
+
+void
+vnifv_disable_adapter_notifications(PVNIF_ADAPTER adapter,
+                                    UINT path_id,
+                                    LONG poll_requested)
+{
+    vnif_disable_interrupt_from_status(adapter, path_id, poll_requested);
+}
+
+static BOOLEAN
+sync_enable_notifications(sync_ctx_t *sync)
+{
+    PVNIF_ADAPTER adapter;
+    UINT path_id;
+    LONG poll_requested;
+
+    adapter = sync->adapter;
+    path_id = sync->path_id;
+    poll_requested = sync->int_status;
+
+    DPRINTK(DPRTL_DPC,
+       ("---> %s: path_id %d req %d irql %d cpu %d.\n",
+       __func__, path_id, poll_requested, KeGetCurrentIrql(),
+        KeGetCurrentProcessorNumber()));
+
+    vnif_enable_interrupt_from_status(adapter, path_id, poll_requested);
+    vnif_continue_ndis_request_poll(adapter, path_id, poll_requested);
+
+    DPRINTK(DPRTL_DPC,
+       ("<-- %s: path_id %d req %d irql %d cpu %d.\n",
+       __func__, path_id, poll_requested, KeGetCurrentIrql(),
+        KeGetCurrentProcessorNumber()));
+    return TRUE;
+}
+
+void
+vnifv_enable_adapter_notifications(PVNIF_ADAPTER adapter,
+                                   UINT path_id,
+                                   LONG poll_requested)
+{
+    sync_ctx_t sync;
+    ULONG msg_id;
+
+    if (poll_requested == VNIF_RX_INT) {
+        msg_id = path_id << 1;
+    } else if (poll_requested == VNIF_TX_INT) {
+        msg_id = (path_id << 1) + 1;
+    } else {
+        msg_id = 0;
+    }
+    sync.adapter = adapter;
+    sync.path_id = path_id;
+    sync.int_status = poll_requested;
+
+    DPRINTK(DPRTL_DPC,
+       ("---> %s: path_id %d req %d irql %d cpu %d.\n",
+       __func__, path_id, poll_requested, KeGetCurrentIrql(),
+        KeGetCurrentProcessorNumber()));
+
+    NdisMSynchronizeWithInterruptEx(adapter->u.v.interrupt_handle,
+                                    msg_id, sync_enable_notifications, &sync);
+    DPRINTK(DPRTL_DPC,
+       ("<--- %s: path_id %d req %d irql %d cpu %d.\n",
+       __func__, path_id, poll_requested, KeGetCurrentIrql(),
+        KeGetCurrentProcessorNumber()));
+}
+#endif
 
 static VOID
 MPDisableMSIInterrupt(
@@ -174,7 +243,7 @@ vnif_miniport_interrupt_dpc(
 
         if (int_status & VNIF_TX_INT) {
             vnif_txrx_interrupt_dpc(adapter,
-                                    VNF_ADAPTER_TX_DPC_IN_PROGRESS,
+                                    VNIF_TX_INT,
                                     path_id,
                                     max_nbls_to_indicate);
         }
@@ -182,7 +251,7 @@ vnif_miniport_interrupt_dpc(
         /* int_status will also be 0 when RX is processed on the target CPU. */
         if ((int_status & VNIF_RX_INT) || int_status == 0) {
             vnif_txrx_interrupt_dpc(adapter,
-                                    VNF_ADAPTER_RX_DPC_IN_PROGRESS,
+                                    VNIF_RX_INT,
                                     path_id,
                                     max_nbls_to_indicate);
         }
@@ -318,6 +387,13 @@ MPInterrupt(
     InterlockedOr(&adapter->path[0].u.vq.interrupt_status, (LONG)int_status);
     vnif_disable_interrupt_from_status(adapter, 0, int_status);
 
+#if NDIS_SUPPORT_NDIS685
+    if (adapter->b_use_ndis_poll == TRUE) {
+        *QueueDefaultInterruptDpc = FALSE;
+        NdisRequestPoll(adapter->path[0].rx_poll_context.nph, NULL);
+    }
+#endif
+
     DPRINTK(DPRTL_INT, ("MPInterrupt out %d\n", KeGetCurrentProcessorNumber()));
     return TRUE;
 }
@@ -385,10 +461,25 @@ MPMsiInterrupt(
         DPRINTK(DPRTL_INT, ("   int source %d\n", interrupt_source));
 
 
-        vnif_schedule_msi_dpc(adapter,
-                              MessageId,
-                              path_id,
-                              QueueDefaultInterruptDpc);
+#if NDIS_SUPPORT_NDIS685
+        if (adapter->b_use_ndis_poll == TRUE) {
+            if (interrupt_source & VNIF_RX_INT) {
+                NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph,
+                                NULL);
+            }
+            if (interrupt_source & VNIF_TX_INT) {
+                NdisRequestPoll(adapter->path[path_id].tx_poll_context.nph,
+                                NULL);
+            }
+        } else {
+#endif
+            vnif_schedule_msi_dpc(adapter,
+                                  MessageId,
+                                  path_id,
+                                  QueueDefaultInterruptDpc);
+#if NDIS_SUPPORT_NDIS685
+        }
+#endif
 
         if (adapter->adapter_flags & VNF_ADAPTER_POLLING) {
             DPRINTK(DPRTL_ON, ("%s %x: clearing polling flag.\n",

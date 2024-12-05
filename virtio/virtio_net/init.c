@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -92,10 +92,12 @@ static NDIS_STRING reg_dbg_print_mask_name =
 #if NDIS_SUPPORT_NDIS620
 static NDIS_STRING reg_rss = NDIS_STRING_CONST("*RSS");
 static NDIS_STRING reg_num_rss_qs = NDIS_STRING_CONST("*NumRssQueues");
-static NDIS_STRING reg_num_paths = NDIS_STRING_CONST("NumPaths");
 static NDIS_STRING reg_rss_tcp_ipv6_ext_hdrs_name =
     NDIS_STRING_CONST("RssTCPIPv6ExtHdrsSupport");
 static NDIS_STRING reg_8021pq = NDIS_STRING_CONST("*PriorityVLANTag");
+#endif
+#if NDIS_SUPPORT_NDIS685
+static NDIS_STRING reg_ndis_poll = NDIS_STRING_CONST("*NdisPoll");
 #endif
 
 static NDIS_STRING reg_split_evtchn = NDIS_STRING_CONST("SplitEvtchn");
@@ -359,7 +361,7 @@ vnif_free_path_info(PVNIF_ADAPTER adapter)
     }
 }
 
-static void
+void
 vnif_set_num_paths(PVNIF_ADAPTER adapter)
 {
     UINT num_cpus;
@@ -402,13 +404,8 @@ static NDIS_STATUS
 vnif_setup_path_info(PVNIF_ADAPTER adapter)
 {
     NDIS_STATUS status;
-#if NDIS_SUPPORT_NDIS620
-    PROCESSOR_NUMBER target_processor;
-#endif
     UINT i;
     UINT r;
-
-    vnif_set_num_paths(adapter);
 
     VNIF_ALLOCATE_MEMORY(
         adapter->path,
@@ -512,11 +509,6 @@ VNIFSetupNdisAdapter(PVNIF_ADAPTER adapter)
         NdisInitializeEvent(&adapter->RemoveEvent);
 
         status = VNIFSetupNdisAdapterEx(adapter);
-        if (status != NDIS_STATUS_SUCCESS) {
-            break;
-        }
-
-        status = VNIFRegisterNdisInterrupt(adapter);
         if (status != NDIS_STATUS_SUCCESS) {
             break;
         }
@@ -635,7 +627,7 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
     PUCHAR net_addr;
     PUCHAR str;
     UNICODE_STRING ustr;
-    ULONG max_multi_queues;
+    ULONG reg_num_rcv_queues;
     uint32_t calc_chksum;
     UINT length;
 
@@ -1175,7 +1167,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
 
 #endif
 
-    adapter->num_paths = 1;
     adapter->num_rcv_queues = 1;
     adapter->b_rss_supported = FALSE;
 #if NDIS_SUPPORT_NDIS620
@@ -1213,23 +1204,24 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
                                   NdisParameterInteger);
 
             if (status == NDIS_STATUS_SUCCESS) {
-                max_multi_queues = returned_value->ParameterData.IntegerData;
-                if (max_multi_queues > VNIF_MAX_NUM_RSS_QUEUES) {
-                    max_multi_queues = VNIF_MAX_NUM_RSS_QUEUES;
+                reg_num_rcv_queues = returned_value->ParameterData.IntegerData;
+                if (reg_num_rcv_queues > VNIF_MAX_NUM_RSS_QUEUES) {
+                    reg_num_rcv_queues = VNIF_MAX_NUM_RSS_QUEUES;
                 }
                 RPRINTK(DPRTL_INIT,
                     ("VNIF: NdisReadConfiguration reg_num_rss_qs val: %d:%d\n",
                      returned_value->ParameterData.IntegerData,
-                     max_multi_queues));
+                     reg_num_rcv_queues));
             } else {
                 RPRINTK(DPRTL_INIT,
                 ("VNIF: NdisReadConfiguration failed: reg_num_rss_qs\n"));
-                max_multi_queues = adapter->num_hw_queues;
+                reg_num_rcv_queues = adapter->num_hw_queues;
                 status = NDIS_STATUS_SUCCESS;
             }
             /* Don't let num_rcv_queues be greater than cpus. */
+
             adapter->num_rcv_queues = min(adapter->num_rcv_queues,
-                                          max_multi_queues);
+                                          reg_num_rcv_queues);
 
             if (adapter->num_rcv_queues == 1) {
                 /* No need to enable RSS if there is only 1 receive queue. */
@@ -1276,9 +1268,31 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
     }
 #endif
 
-    adapter->b_use_split_evtchn = FALSE;
+    adapter->b_use_ndis_poll = FALSE;
+#if NDIS_SUPPORT_NDIS685
+    NdisReadConfiguration(
+        &status,
+        &returned_value,
+        config_handle,
+        &reg_ndis_poll,
+        NdisParameterInteger);
+    if (status == NDIS_STATUS_SUCCESS) {
+        if (returned_value->ParameterData.IntegerData == 0) {
+            adapter->b_use_ndis_poll = FALSE;
+        } else {
+            adapter->b_use_ndis_poll = TRUE;
+        }
+    } else {
+        RPRINTK(DPRTL_INIT,
+                ("VNIF: NdisReadConfiguration Nis_poll status %x\n", status));
+        adapter->b_use_ndis_poll = FALSE;
+        status = NDIS_STATUS_SUCCESS;
+    }
+#endif
+
 #if defined XENNET || defined PVVXNET
     if (g_running_hypervisor == HYPERVISOR_XEN) {
+        adapter->b_use_split_evtchn = FALSE;
         NdisReadConfiguration(
             &status,
             &returned_value,
@@ -1435,6 +1449,9 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
             adapter->num_rcv_queues - adapter->b_rss_supported));
 #endif
     PRINTK(("\tnum paths = %d\n", adapter->num_paths));
+#if NDIS_SUPPORT_NDIS685
+    PRINTK(("\tNdis Poll supported = %d\n", adapter->b_use_ndis_poll));
+#endif
 #if NDIS_SUPPORT_NDIS6 == 0
 #ifdef VNIF_RCV_DELAY
     PRINTK(("\trcv delay = %d\n", adapter->rcv_delay));

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,6 +27,42 @@
 
 #include "miniport.h"
 
+
+#if NDIS_SUPPORT_NDIS685
+
+static VOID
+vnif_unmask_evtchn_from_status(PVNIF_ADAPTER adapter,
+                               UINT path_id,
+                               LONG poll_requested)
+{
+    if (poll_requested & VNIF_TX_INT) {
+        /* If TX and RX are combined, just enable the TX evtchn. */
+        DPRINTK(DPRTL_TXDPC, ("VNIF: %s enable tx[%d].\n", __func__, path_id));
+        VNIF_UNMASK(adapter->path[path_id].u.xq.tx_evtchn);
+    }  else {
+        DPRINTK(DPRTL_RXDPC, ("VNIF: %s enable rx[%d].\n", __func__, path_id));
+        VNIF_UNMASK(adapter->path[path_id].u.xq.rx_evtchn);
+    }
+}
+
+void
+vnifx_disable_adapter_notifications(PVNIF_ADAPTER adapter,
+                                    UINT path_id,
+                                    LONG poll_requested)
+{
+}
+
+void
+vnifx_enable_adapter_notifications(PVNIF_ADAPTER adapter,
+                                   UINT path_id,
+                                   LONG poll_requested)
+{
+    vnif_unmask_evtchn_from_status(adapter, path_id, poll_requested);
+    vnif_continue_ndis_request_poll(adapter, path_id, poll_requested);
+}
+
+#endif
+
 VOID
 vnifx_interrupt_dpc(
   IN PKDPC Dpc,
@@ -35,6 +71,8 @@ vnifx_interrupt_dpc(
   IN PVOID SystemArgument2)
 {
     vnif_xq_path_t *path = (vnif_xq_path_t *) DeferredContext;
+    PVNIF_ADAPTER adapter;
+    UINT path_id;
 
     if (path == NULL) {
         DPRINTK(DPRTL_ON, ("VNIF: %s path == NULL.\n", __func__));
@@ -45,22 +83,33 @@ vnifx_interrupt_dpc(
         return;
     }
 
+    adapter = path->adapter;
+    path_id = path->path_id;
+
     DPRINTK(DPRTL_DPC, ("VNIF: %s - IN.\n", __func__));
 
-    vnif_txrx_interrupt_dpc(path->adapter,
-                            VNF_ADAPTER_TX_DPC_IN_PROGRESS,
-                            path->path_id,
-                            NDIS_INDICATE_ALL_NBLS);
-    vnif_txrx_interrupt_dpc(path->adapter,
-                            VNF_ADAPTER_RX_DPC_IN_PROGRESS,
-                            path->path_id,
-                            NDIS_INDICATE_ALL_NBLS);
+#if NDIS_SUPPORT_NDIS685
+    if (adapter->b_use_ndis_poll == TRUE) {
+        NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph, NULL);
+    } else {
+#endif
+        vnif_txrx_interrupt_dpc(adapter,
+                                VNIF_TX_INT,
+                                path_id,
+                                NDIS_INDICATE_ALL_NBLS);
+        vnif_txrx_interrupt_dpc(adapter,
+                                VNIF_RX_INT,
+                                path_id,
+                                NDIS_INDICATE_ALL_NBLS);
 
-    /*
-     * Xenbus will mask the evtchn before scheduling the DPC.
-     * Unmask here to allow xen to inject more interrupts.
-     */
-    VNIF_UNMASK(path->tx_evtchn);
+        /*
+         * Xenbus will mask the evtchn before scheduling the DPC.
+         * Unmask here to allow xen to inject more interrupts.
+         */
+        VNIF_UNMASK(path->tx_evtchn);
+#if NDIS_SUPPORT_NDIS685
+    }
+#endif
 
     DPRINTK(DPRTL_DPC, ("VNIF: %s - OUT.\n", __func__));
 }
@@ -68,17 +117,6 @@ vnifx_interrupt_dpc(
 static __inline VOID
 vnifx_split_interrupt_dpc(vnif_xq_path_t *path, ULONG txrx_ind)
 {
-    PVNIF_ADAPTER adapter;
-
-    if (path == NULL) {
-        RPRINTK(DPRTL_UNEXPD, ("VNIF: %s path == NULL.\n", __func__));
-        return;
-    }
-    if (path->adapter == NULL) {
-        RPRINTK(DPRTL_UNEXPD, ("VNIF: %s adapter == NULL.\n", __func__));
-        return;
-    }
-
     vnif_txrx_interrupt_dpc(path->adapter,
                             txrx_ind,
                             path->path_id,
@@ -88,8 +126,8 @@ vnifx_split_interrupt_dpc(vnif_xq_path_t *path, ULONG txrx_ind)
      * Xenbus will mask the evtchn before scheduling the DPC.
      * Unmask here to allow xen to inject more interrupts.
      */
-    if (txrx_ind == VNF_ADAPTER_RX_DPC_IN_PROGRESS) {
-        DPRINTK(DPRTL_RXDPC, ("VNIF: %s path_id %d cpu %d.\n",
+    if (txrx_ind == VNIF_RX_INT) {
+        DPRINTK(DPRTL_RXDPC, ("VNIF: %s rx path_id %d cpu %d.\n",
                               __func__,
                               path->path_id,
                               vnif_get_current_processor(NULL)));
@@ -106,10 +144,40 @@ vnifx_tx_interrupt_dpc(
   IN PVOID SystemArgument1,
   IN PVOID SystemArgument2)
 {
-    DPRINTK(DPRTL_TXDPC, ("VNIF: %s - In.\n", __func__));
+    vnif_xq_path_t *path = (vnif_xq_path_t *)DeferredContext;
+    PVNIF_ADAPTER adapter;
+    UINT path_id;
 
-    vnifx_split_interrupt_dpc((vnif_xq_path_t *)DeferredContext,
-                              VNF_ADAPTER_TX_DPC_IN_PROGRESS);
+    if (path == NULL) {
+        RPRINTK(DPRTL_UNEXPD, ("VNIF: %s path == NULL.\n", __func__));
+        return;
+    }
+    if (path->adapter == NULL) {
+        RPRINTK(DPRTL_UNEXPD, ("VNIF: %s adapter == NULL.\n", __func__));
+        return;
+    }
+
+    adapter = path->adapter;
+    path_id = path->path_id;
+
+    DPRINTK(DPRTL_TXDPC, ("VNIF: %s - In.\n", __func__));
+#if NDIS_SUPPORT_NDIS685
+
+    if (adapter->b_use_ndis_poll == TRUE) {
+        DPRINTK(DPRTL_TXDPC,
+                ("    %s: request poll - path_id %d/%d irql %d cpu %d\n",
+                 __func__, path_id,
+                 adapter->path[path_id].tx_poll_context.path_rcv_q_id,
+                 KeGetCurrentIrql(),
+                 KeGetCurrentProcessorNumber()));
+
+        NdisRequestPoll(adapter->path[path_id].tx_poll_context.nph, NULL);
+    } else {
+#endif
+        vnifx_split_interrupt_dpc(path, VNIF_TX_INT);
+#if NDIS_SUPPORT_NDIS685
+    }
+#endif
 
     DPRINTK(DPRTL_TXDPC, ("VNIF: %s - Out.\n", __func__));
 }
@@ -121,10 +189,41 @@ vnifx_rx_interrupt_dpc(
   IN PVOID SystemArgument1,
   IN PVOID SystemArgument2)
 {
+    vnif_xq_path_t *path = (vnif_xq_path_t *) DeferredContext;
+    PVNIF_ADAPTER adapter;
+    UINT path_id;
+
+    if (path == NULL) {
+        RPRINTK(DPRTL_UNEXPD, ("VNIF: %s path == NULL.\n", __func__));
+        return;
+    }
+    if (path->adapter == NULL) {
+        RPRINTK(DPRTL_UNEXPD, ("VNIF: %s adapter == NULL.\n", __func__));
+        return;
+    }
+
+    adapter = path->adapter;
+    path_id = path->path_id;
+
     DPRINTK(DPRTL_RXDPC, ("VNIF: %s - In.\n", __func__));
 
-    vnifx_split_interrupt_dpc((vnif_xq_path_t *)DeferredContext,
-                              VNF_ADAPTER_RX_DPC_IN_PROGRESS);
+#if NDIS_SUPPORT_NDIS685
+
+    if (adapter->b_use_ndis_poll == TRUE) {
+        DPRINTK(DPRTL_RXDPC,
+           ("    %s: request poll - path_id %d irql %d cpu %d\n",
+            __func__,
+            path_id,
+            KeGetCurrentIrql(),
+            KeGetCurrentProcessorNumber()));
+
+        NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph, NULL);
+    } else {
+#endif
+        vnifx_split_interrupt_dpc(path, VNIF_RX_INT);
+#if NDIS_SUPPORT_NDIS685
+    }
+#endif
 
     DPRINTK(DPRTL_RXDPC, ("VNIF: %s - Out.\n", __func__));
 }
@@ -203,7 +302,7 @@ vnifx_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
         tx->size = (uint16_t)send_len;
         tx->flags = flags;
         (*prod)++;
-        DPRINTK(DPRTL_TX, ("%s: path %d id %d gref %d txref %d prod %d\n",
+        DPRINTK(DPRTL_TRC, ("%s: path %d id %d gref %d txref %d prod %d\n",
                            __func__,
                            path_id,
                            id,

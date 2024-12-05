@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -153,6 +153,11 @@ typedef struct _vnif_virtio_s {
 #define VNIF_GET_NUM_PATHS vnifx_get_num_paths
 
 #define VNIF_SETUP_PATH_INFO_EX vnifx_setup_path_info_ex
+
+#if NDIS_SUPPORT_NDIS685
+#define vnif_enable_adapter_notifications vnifx_enable_adapter_notifications
+#define vnif_disable_adapter_notifications vnifx_disable_adapter_notifications
+#endif
 
 #ifndef NDIS_SUPPORT_NDIS6
 #define DriverEntryEx MPX_DriverEntryEx

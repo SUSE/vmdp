@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -407,6 +407,13 @@ VNIFInitialize(PVNIF_ADAPTER adapter,
     if (status != NDIS_STATUS_SUCCESS) {
         return status;
     }
+
+    status = VNIFRegisterNdisInterrupt(adapter);
+    if (status != NDIS_STATUS_SUCCESS) {
+        break;
+    }
+
+    vnif_set_num_paths(adapter);
 
     VNIFSetOffloadDefaults(adapter);
     VNIFReadRegParameters(adapter);

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2022 SUSE LLC
+ * Copyright 2019-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -150,19 +150,6 @@ typedef struct _rcb_ring_pool {
     PNET_BUFFER_LIST    rcb_nbl;
 #endif
 } rcb_ring_pool_t;
-
-typedef struct _rcv_to_process_q {
-    LIST_ENTRY          rcv_to_process;
-    NDIS_SPIN_LOCK      rcv_to_process_lock;
-    KDPC                rcv_q_dpc;
-    LONG                n_busy_rcv;
-    PROCESSOR_NUMBER    rcv_processor;
-    UINT                path_id;
-    BOOLEAN             rcv_should_queue_dpc;
-#ifdef RSS_DEBUG
-    LONG               seq;
-#endif
-} rcv_to_process_q_t;
 
 #endif
 

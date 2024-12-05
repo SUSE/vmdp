@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">pvvxnet</TARGETNAME>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">DRIVER</TARGETTYPE>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ndis.lib             $(DDK_LIB_PATH)\ntstrsafe.lib</TARGETLIBS>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">.;..\..\xen\xennet;..\..\virtio\virtio_net;..\include;..\..\xen\include;..\..\virtio\include;..\..\virtio\include\virtio</INCLUDES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">..\..\virtio\virtio_net\miniport.c      ..\..\virtio\virtio_net\init.c      ..\..\virtio\virtio_net\oid.c      ..\..\virtio\virtio_net\mp_utils.c      ..\..\xen\xennet\mp_xutils.c      ..\..\xen\xennet\mp_xinterface.c      ..\..\virtio\virtio_net\mp_main6.c      ..\..\virtio\virtio_net\mp_init6.c      ..\..\virtio\virtio_net\mp_nic6.c      ..\..\virtio\virtio_net\mp_vutils.c      ..\..\virtio\virtio_net\mp_vinterface.c      ..\..\virtio\virtio_net\mp_vnic6.c      ..\..\virtio\virtio_net\mp_rss.c      ..\..\virtio\virtio_net\mp_poll.c      ..\pvvxbn\hypervsr_is.c       ..\..\virtio\virtio_base\virtio_ring.c      ..\..\virtio\virtio_base\virtio_ring_packed.c      ..\..\virtio\virtio_base\virtio_pci.c       ..\..\virtio\virtio_base\virtio_pci_legacy.c      ..\..\virtio\virtio_base\virtio_pci_modern.c     ..\..\virtio\virtio_base\virtio_utils.c      mp_main.c      ..\pvvxbn\xenbus_apis.c      pvvxnet.rc</SOURCES>
+  </PropertyGroup>
+</Project>

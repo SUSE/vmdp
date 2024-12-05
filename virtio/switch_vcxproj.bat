@@ -14,6 +14,9 @@ for %%d in (fwcfg pvcrash_notify pvvxsvc virtiofs_svc virtio_balloon virtio_blk 
     ) else (
         copy %%d.vcxproj.%1 %%d.vcxproj
         copy %%d.vcxproj.user.%1 %%d.vcxproj.user
+        if %%d==virtio_net (
+            copy sources.props.%1 sources.props
+        )
         if "%%d%"=="virtio_rng" (
             copy /y cng\um\viorngum.vcxproj.%1 cng\um\viorngum.vcxproj
             copy /y cng\um\viorngum.vcxproj.user.%1 cng\um\viorngum.vcxproj.user

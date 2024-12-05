@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -144,6 +144,15 @@ extern NDIS_STATUS (*VNIFRegisterNdisInterrupt)(struct _VNIF_ADAPTER *adapter);
 extern void (*VNIFDeregisterHardwareResources)(struct _VNIF_ADAPTER *adapter);
 extern UINT (*VNIF_GET_NUM_PATHS)(struct _VNIF_ADAPTER *adapter);
 extern NDIS_STATUS (*VNIF_SETUP_PATH_INFO_EX)(struct _VNIF_ADAPTER *adapter);
+#if NDIS_SUPPORT_NDIS685
+extern void (*vnif_enable_adapter_notifications)(struct _VNIF_ADAPTER *adapter,
+                                                 UINT path_id,
+                                                 LONG poll_request);
+extern void (*vnif_disable_adapter_notifications)(
+                 struct _VNIF_ADAPTER *adapter,
+                 UINT path_id,
+                 LONG poll_request);
+#endif
 #ifdef DBG
 extern void (*VNIF_DUMP)(struct _VNIF_ADAPTER *adapter, UINT path_id,
                          PUCHAR str, uint32_t rxtx, uint32_t force);

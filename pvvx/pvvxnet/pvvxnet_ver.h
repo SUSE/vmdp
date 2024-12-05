@@ -30,19 +30,19 @@
 
 #if NDIS_SUPPORT_NDIS6
 #if defined ARCH_x86
-#define VER_FILEVERSION             2,6,1,40
-#define VER_FILEVERSION_STR         "2.6.1.40\0"
+#define VER_FILEVERSION             2,6,1,42
+#define VER_FILEVERSION_STR         "2.6.1.42\0"
 #else
-#define VER_FILEVERSION             2,6,1,40
-#define VER_FILEVERSION_STR         "2.6.1.40\0"
+#define VER_FILEVERSION             2,6,1,42
+#define VER_FILEVERSION_STR         "2.6.1.42\0"
 #endif
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06
 
 #else
-#define VER_FILEVERSION             2,6,1,40
-#define VER_FILEVERSION_STR         "2.6.1.40\0"
+#define VER_FILEVERSION             2,6,1,42
+#define VER_FILEVERSION_STR         "2.6.1.42\0"
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06

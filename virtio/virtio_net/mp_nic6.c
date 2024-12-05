@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -857,13 +857,19 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
     UINT            nb_len;
     uint16_t        flags;
 
+    DPRINTK(DPRTL_TX,
+            ("---> %s: path_id %d %p irql %d cpu %d.\n",
+             __func__, path_id, nb_list,
+             KeGetCurrentIrql(), KeGetCurrentProcessorNumber()));
+
     status = NDIS_STATUS_PENDING;
     send_status = NDIS_STATUS_SUCCESS;
 
     if (bFromQueue) {
-        DPRINTK(DPRTL_TX, ("** Processing from Queue.\n"));
         nb_to_send = VNIF_GET_NET_BUFFER_LIST_NEXT_SEND(nb_list);
         VNIF_GET_NET_BUFFER_LIST_NEXT_SEND(nb_list) = NULL;
+        DPRINTK(DPRTL_TX, ("** Processing from Queue nbl %p nts %p.\n",
+                           nb_list, nb_to_send));
     } else {
         nb_to_send = NET_BUFFER_LIST_FIRST_NB(nb_list);
     }
@@ -963,8 +969,8 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
         if (len) {
             VNIF_TRACK_TX_SET(tcb->len, len);
 
-            DPRINTK(DPRTL_TX, ("%s[%d]: add tcb %p\n",
-                                __func__, path_id, tcb));
+            DPRINTK(DPRTL_TX, ("  %s[%d]: add tcb %p nbl %p\n",
+                                __func__, path_id, tcb, nb_list));
 
             /* Send the packet. */
             VNIF_GET_TX_REQ_PROD_PVT(adapter, path_id, &i);
@@ -1003,11 +1009,16 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
 
         if (!bFromQueue) {
             /* We didn't process nb_list form the queue, so put it on. */
-            DPRINTK(DPRTL_UNEXPD,
-                ("VNIFSendNetBufferList: InsHeadQueue SendWait nbl %p\n",
+            DPRINTK(DPRTL_UNEXPD, ("%s: InsHeadQueue SendWait %d nbl %p\n",
+                __func__, adapter->nWaitSend,
                 VNIF_GET_NET_BUFFER_LIST_LINK(nb_list)));
-            InsertHeadQueue(&adapter->path[path_id].send_wait_queue,
-                VNIF_GET_NET_BUFFER_LIST_LINK(nb_list));
+            if (adapter->nWaitSend == 0) {
+                InsertHeadQueue(&adapter->path[path_id].send_wait_queue,
+                    VNIF_GET_NET_BUFFER_LIST_LINK(nb_list));
+            } else {
+                InsertTailQueue(&adapter->path[path_id].send_wait_queue,
+                    VNIF_GET_NET_BUFFER_LIST_LINK(nb_list));
+            }
             adapter->nWaitSend++;
         }
         adapter->path[path_id].sending_nbl = NULL;
@@ -1027,7 +1038,8 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
         }
         adapter->path[path_id].sending_nbl = NULL;
     } else {
-        DPRINTK(DPRTL_UNEXPDTX, ("** Didn't finish sending the nb_to_send.\n"));
+        DPRINTK(DPRTL_UNEXPDTX,("** Didn't finish sending the nb_to_send %p.\n",
+                                nb_to_send));
     }
 
     /*
@@ -1064,7 +1076,9 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
 
     vnif_notify_always_tx(adapter, path_id);
 
-    DPRINTK(DPRTL_TX,  ("<-- VNIFSendNetBufferList\n"));
+    DPRINTK(DPRTL_TX,  ("<--- %s: path_id %d irql %d cpu %d status %x.\n",
+       __func__, path_id, KeGetCurrentIrql(), KeGetCurrentProcessorNumber(),
+        status));
     return status;
 
 }
@@ -1156,13 +1170,16 @@ vnif_send_status(PVNIF_ADAPTER adapter, PNET_BUFFER NetBuffer, int16_t status)
     }
 }
 
-int
-VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
+void
+vnif_drain_tx_path_and_send(PVNIF_ADAPTER adapter,
+                            UINT path_id,
+                            UINT nbls_to_complete,
+                            PNET_BUFFER_LIST *complete_nb_lists,
+                            PNET_BUFFER_LIST *tail_nb_list,
+                            UINT *nb_list_cnt)
 {
     NDIS_STATUS         status = NDIS_STATUS_SUCCESS;
     PNET_BUFFER_LIST    nb_list;
-    PNET_BUFFER_LIST    last_nb_list = NULL;
-    PNET_BUFFER_LIST    complete_nb_lists = NULL;
     PQUEUE_ENTRY pEntry;
     TCB *tcb;
     TCB *tcb_to_free;
@@ -1172,8 +1189,8 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
     UINT cnt;
     UINT txstatus;
 
-    DPRINTK(DPRTL_TX, ("---> VNIFCheckSendCompletion\n"));
-    NdisDprAcquireSpinLock(&adapter->path[path_id].tx_path_lock);
+    DPRINTK(DPRTL_TX, ("---> %s\n", __func__));
+    NdisAcquireSpinLock(&adapter->path[path_id].tx_path_lock);
 
     cnt = 0;
     prod = 0;
@@ -1182,9 +1199,9 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
     /* Any packets being sent? Any packet waiting in the send queue? */
     if (adapter->nBusySend == 0 &&
         IsQueueEmpty(&adapter->path[path_id].send_wait_queue)) {
-        DPRINTK(DPRTL_TX, ("<--- VNIFCheckSendCompletion: nothing to chk\n"));
-        NdisDprReleaseSpinLock(&adapter->path[path_id].tx_path_lock);
-        return 0;
+        DPRINTK(DPRTL_TX, ("<--- %s: nothing to chk\n", __func__));
+        NdisReleaseSpinLock(&adapter->path[path_id].tx_path_lock);
+        return;
     }
 
     /* Check the first TCB on the send list */
@@ -1193,12 +1210,17 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
         KeMemoryBarrier();
 
         VNIF_GET_TX_RSP_CONS(adapter, path_id, &cons);
-        while ((tcb = vnif_get_tx(adapter, path_id, &cons, prod, cnt,
-                                  &len, &txstatus)) != NULL) {
+        while (*nb_list_cnt < nbls_to_complete
+                    && (tcb = vnif_get_tx(adapter,
+                                          path_id,
+                                          &cons,
+                                          prod,
+                                          cnt,
+                                          &len,
+                                          &txstatus)) != NULL) {
 #ifdef DBG
             if (!VNIF_IS_READY(adapter)) {
-                DPRINTK(DPRTL_ON,
-                    ("VNIFCheckSendCompletion: not ready %p\n", tcb));
+                DPRINTK(DPRTL_ON, ("%s: not ready %p\n", __func__, tcb));
             }
 #endif
             cnt++;
@@ -1216,21 +1238,25 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
             tcb_to_free = tcb;
             nb_list = vnif_free_send_net_buffer(adapter, tcb);
 
-            DPRINTK(DPRTL_TX, ("%s[%d]: tcb %p, nbl %p, cnt %d.\n",
-                __func__, path_id, tcb, nb_list, cnt));
-
             if (nb_list != NULL) {
+                (*nb_list_cnt)++;
+                DPRINTK(DPRTL_TX,
+                        ("drain_tx[p%d/c%d]: tcb %p, nbl %p, cnt %d.\n",
+                         path_id,
+                         KeGetCurrentProcessorNumber(),
+                         tcb, nb_list, cnt));
+
                 NET_BUFFER_LIST_STATUS(nb_list) = NDIS_STATUS_SUCCESS;
-                if (complete_nb_lists == NULL) {
-                    complete_nb_lists = nb_list;
+                if (*complete_nb_lists == NULL) {
+                    *complete_nb_lists = nb_list;
                 } else {
-                    NET_BUFFER_LIST_NEXT_NBL(last_nb_list) = nb_list;
+                    NET_BUFFER_LIST_NEXT_NBL(*tail_nb_list) = nb_list;
                 }
                 NET_BUFFER_LIST_NEXT_NBL(nb_list) = NULL;
-                last_nb_list = nb_list;
+                *tail_nb_list = nb_list;
             }
         }
-        VNIF_SET_TX_RSP_CONS(adapter, path_id, prod);
+        VNIF_SET_TX_RSP_CONS(adapter, path_id, cons);
 
         /*
          * Set a new event, then check for race with update of tx_cons.
@@ -1242,9 +1268,11 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
          */
         VNIF_SET_TX_EVENT(adapter, path_id, prod);
         KeMemoryBarrier();
-    } while (VNIF_HAS_UNCONSUMED_RESPONSES(adapter->path[path_id].tx,
-                                           cons,
-                                           prod));
+    } while (*nb_list_cnt < nbls_to_complete
+                && VNIF_HAS_UNCONSUMED_RESPONSES(
+                        adapter->path[path_id].tx,
+                        cons,
+                        prod));
 
     vnif_free_send_tcbs(adapter, tcb_to_free, path_id);
 
@@ -1259,11 +1287,10 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
             /* We cannot remove it now, we just need to get the head */
             pEntry = GetHeadQueue(&adapter->path[path_id].send_wait_queue);
             ASSERT(pEntry);
+            DPRINTK(DPRTL_TX, ("%s: GetHeadQueue SendWait %p\n",
+                               __func__, pEntry));
             DPRINTK(DPRTL_TX,
-                ("VNIFCheckSendCompletion: GetHeadQueue SendWait %p\n",
-                pEntry));
-            DPRINTK(DPRTL_TX,
-                (":\t SendWait empty %d, SendFree empty %d, Sending %p\n",
+                ("\tSendWait empty %d, SendFree empty %d, Sending %p\n",
                 IsQueueEmpty(&adapter->path[path_id].send_wait_queue),
                 IsListEmpty(&adapter->path[path_id].tcb_free_list),
                 adapter->path[path_id].sending_nbl));
@@ -1281,7 +1308,35 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
             }
         }
     }
-    NdisDprReleaseSpinLock(&adapter->path[path_id].tx_path_lock);
+    NdisReleaseSpinLock(&adapter->path[path_id].tx_path_lock);
+    DPRINTK(DPRTL_TX, ("<--- %s\n", __func__));
+}
+
+int
+VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
+{
+    NDIS_STATUS         status = NDIS_STATUS_SUCCESS;
+    PNET_BUFFER_LIST    nb_list;
+    PNET_BUFFER_LIST    tail_nb_list = NULL;
+    PNET_BUFFER_LIST    complete_nb_lists = NULL;
+    PQUEUE_ENTRY pEntry;
+    TCB *tcb;
+    TCB *tcb_to_free;
+    UINT cons, prod;
+    UINT i;
+    UINT len;
+    UINT nb_list_cnt;
+    UINT txstatus;
+
+    DPRINTK(DPRTL_TX, ("---> VNIFCheckSendCompletion\n"));
+
+    nb_list_cnt = 0;
+    vnif_drain_tx_path_and_send(adapter,
+                            path_id,
+                            NDIS_INDICATE_ALL_NBLS,
+                            &complete_nb_lists,
+                            &tail_nb_list,
+                            &nb_list_cnt);
 
     /* Complete the NET_BUFFER_LISTs */
     if (complete_nb_lists != NULL) {
@@ -1292,7 +1347,7 @@ VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
 
     }
     DPRINTK(DPRTL_TX, ("<--- VNIFCheckSendCompletion\n"));
-    return (int)cnt;
+    return (int)nb_list_cnt;
 }
 
 VOID
@@ -1322,7 +1377,11 @@ MPSendNetBufferLists(
     PNET_BUFFER_LIST next_nb_list;
     BOOLEAN dispatch_level;
 
-    DPRINTK(DPRTL_TX, ("MPSendNetBufferLists IN.\n"));
+    DPRINTK(DPRTL_TX, ("%s irql %d cpu %d IN.\n",
+                       __func__,
+                       KeGetCurrentIrql(),
+                       KeGetCurrentProcessorNumber()));
+
     adapter = (PVNIF_ADAPTER)adptr_ctx;
 #ifdef DBG
     if (adapter == NULL) {
@@ -1400,13 +1459,14 @@ MPSendNetBufferLists(
                     NET_BUFFER_LIST_FIRST_NB(cur_nb_list);
                 NET_BUFFER_LIST_STATUS(cur_nb_list) = NDIS_STATUS_SUCCESS;
                 DPRINTK(DPRTL_TX,
-                    ("** MPSendNetBufferLists: InsertTailQueue SendWait %p\n",
-                    VNIF_GET_NET_BUFFER_LIST_LINK(cur_nb_list)));
+                    ("** %s: InsertTailQueue SendWait %p\n",
+                    __func__, VNIF_GET_NET_BUFFER_LIST_LINK(cur_nb_list)));
                 DPRINTK(DPRTL_TX,
-                    ("\t SndWait empty %d, SndFree empty %d, Sending %p\n",
+                    ("\tSndWait empty %d, SndFree empty %d, Sending %p w %d\n",
                     IsQueueEmpty(&adapter->path[path_id].send_wait_queue),
                     IsListEmpty(&adapter->path[path_id].tcb_free_list),
-                    adapter->path[path_id].sending_nbl));
+                    adapter->path[path_id].sending_nbl,
+                     adapter->nWaitSend));
                 InsertTailQueue(&adapter->path[path_id].send_wait_queue,
                     VNIF_GET_NET_BUFFER_LIST_LINK(cur_nb_list));
                 adapter->nWaitSend++;
@@ -1744,23 +1804,305 @@ vnif_get_rcb_pkt_info(PVNIF_ADAPTER adapter,
     }
 }
 
-static __inline void
-vnif_queue_rcv_dpc_if_needed(PVNIF_ADAPTER adapter,
-                             UINT max_nbls_to_indicate,
-                             BOOLEAN needs_dpc)
+void
+vnif_request_rcv_q_work(PVNIF_ADAPTER adapter,
+                        UINT max_nbls_to_indicate,
+                        BOOLEAN request_work)
 {
+    UINT path_id;
     UINT i;
 
-    if (needs_dpc) {
+    if (request_work == TRUE) {
         for (i = 0; i < adapter->num_rcv_queues; i++) {
-            if (adapter->rcv_q[i].rcv_should_queue_dpc == TRUE) {
-                vnif_ndis_queue_dpc(adapter,
-                                    i,
-                                    max_nbls_to_indicate);
-                adapter->rcv_q[i].rcv_should_queue_dpc = FALSE;
+            if (adapter->rcv_q[i].rcv_q_should_request_work == TRUE) {
+#if NDIS_SUPPORT_NDIS685
+                if (adapter->b_use_ndis_poll == TRUE) {
+                    path_id = adapter->rcv_q[i].path_id;
+
+                    DPRINTK(DPRTL_RXDPC,
+                        ("%s: rcvq[%i] path_id[%d] call NdisRequestPoll\n",
+                        __func__,
+                        i,
+                         path_id));
+
+                    NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph,
+                                    NULL);
+                } else {
+#endif
+                    vnif_ndis_queue_dpc(adapter,
+                                        i,
+                                        max_nbls_to_indicate);
+#if NDIS_SUPPORT_NDIS685
+                }
+#endif
+                adapter->rcv_q[i].rcv_q_should_request_work = FALSE;
             }
         }
     }
+}
+
+void
+vnif_drain_rx_path(PVNIF_ADAPTER adapter,
+                   UINT path_id,
+                   UINT rcv_qidx,
+                   UINT *rcb_added_to_ring,
+                   UINT *rp,
+                   BOOLEAN *needs_dpc)
+{
+    PROCESSOR_NUMBER target_processor = {0};
+    rcv_to_process_q_t *rcv_q;
+    RCB *rcb;
+    uint32_t i;
+    UINT len;
+    UINT rcv_target_qidx;
+
+
+    VNIF_GET_RX_RSP_PROD(adapter, path_id, rp);
+    KeMemoryBarrier();
+
+    rcv_q = &adapter->rcv_q[rcv_qidx];
+
+    VNIF_GET_RX_RSP_CONS(adapter, path_id, &i);
+    while ((rcb = vnif_get_rx(adapter, path_id, *rp, &i, &len))
+           != NULL) {
+
+        len = (UINT)rcb->total_len;
+        if (vnif_continue_proccessing_rcb(adapter, rcb, len, path_id)
+                == FALSE) {
+            (*rcb_added_to_ring)++;
+            continue;
+        }
+
+        if (rcb->len < VNIF_TCPIP_HEADER_LEN) {
+            (*rcb_added_to_ring) += vnif_collapse_rx(adapter, rcb);
+        }
+
+        if (len < ETH_MIN_PACKET_SIZE) {
+            NdisZeroMemory(
+                rcb->page +
+                    (uintptr_t)adapter->buffer_offset + (uintptr_t)len,
+                ETH_MIN_PACKET_SIZE - (uintptr_t)len);
+        }
+
+        rcv_target_qidx = rcv_qidx;
+        vnif_get_rcb_pkt_info(adapter,
+                              rcb,
+                              &target_processor,
+                              &rcv_target_qidx,
+                              len);
+        if (rcv_target_qidx != rcv_qidx) {
+            NdisReleaseSpinLock(&rcv_q->rcv_to_process_lock);
+            NdisAcquireSpinLock(
+                &adapter->rcv_q[rcv_target_qidx].rcv_to_process_lock);
+            InsertTailList(&adapter->rcv_q[rcv_target_qidx].rcv_to_process,
+                           &rcb->list);
+
+            adapter->rcv_q[rcv_target_qidx].rcv_q_should_request_work = TRUE;
+            NdisReleaseSpinLock(
+                &adapter->rcv_q[rcv_target_qidx].rcv_to_process_lock);
+            NdisAcquireSpinLock(&rcv_q->rcv_to_process_lock);
+
+            /* Setup DPC */
+            DPRINTK(DPRTL_RSS,
+                    ("%s: pid %d rpid %d, tpid %d rqidx %d trqidx %d\n",
+                     __func__,
+                     path_id,
+                     rcv_q->path_id,
+                     adapter->rcv_q[rcv_target_qidx].path_id,
+                     rcv_qidx,
+                     rcv_target_qidx));
+            *needs_dpc = TRUE;
+
+            vnif_rss_dbg_seq(adapter,
+                             rcb,
+                             path_id,
+                             rcv_target_qidx,
+                             target_processor.Number,
+                             rcv_qidx);
+        } else {
+            DPRINTK(DPRTL_RXDPC,
+                    ("  InsertTailList rcb_idx %d rcb_pathid %d c %d\n",
+                    rcb->index, rcb->path_id,
+                    vnif_get_current_processor(NULL)));
+
+            InsertTailList(&rcv_q->rcv_to_process, &rcb->list);
+
+            vnif_rss_dbg_seq(adapter,
+                             rcb,
+                             path_id,
+                             rcv_qidx,
+                             target_processor.Number,
+                             rcv_qidx);
+        }
+
+        if (adapter->num_rcb > NET_RX_RING_SIZE) {
+            (*rcb_added_to_ring) += vnif_add_rcb_to_ring_from_list(
+                adapter,
+                path_id);
+        }
+        VNIFInterlockedIncrementStat(
+            adapter->pv_stats->rx_to_process_cnt);
+    }
+
+    VNIF_SET_RX_RSP_CONS(adapter, path_id, *rp);
+}
+
+PNET_BUFFER_LIST
+vnif_mv_rcbs_to_nbl(PVNIF_ADAPTER adapter,
+                    UINT path_id,
+                    UINT rcv_qidx,
+                    UINT nbls_to_indicate,
+                    PNET_BUFFER_LIST *nb_list,
+                    PNET_BUFFER_LIST *tail_nb_list,
+                    UINT *nb_list_cnt)
+{
+    RCB *rcb;
+    rcv_to_process_q_t *rcv_q;
+    PNET_BUFFER_LIST cur_nbl;
+    uint64_t st;
+    UINT len;
+#ifdef RSS_DEBUG
+    LONG seq = 0;
+#endif
+
+    VNIFStatQueryInterruptTime(st);
+
+    rcv_q = &adapter->rcv_q[rcv_qidx];
+    while (*nb_list_cnt < nbls_to_indicate
+           && !IsListEmpty(&rcv_q->rcv_to_process)) {
+        rcb = (RCB *) RemoveHeadList(&rcv_q->rcv_to_process);
+        len = (UINT)rcb->total_len;
+
+        vnif_rss_test_seq(__func__, rcb, path_id, rcv_qidx, &seq);
+
+        DPRINTK(DPRTL_RXDPC,
+            ("  Receiving rcb %d %d.\n", rcb->index, rcb->path_id));
+
+        VNIFInterlockedDecrementStat(adapter->pv_stats->rx_to_process_cnt);
+
+        cur_nbl = rcb->nbl;
+        if (cur_nbl == NULL) {
+            /* Should never happen. */
+            PRINTK(("2 Drop for nbl, len %d r_qidx %d p_id %d, rcb %d:%d\n",
+                    rcb->len,
+                    rcv_qidx,
+                    path_id,
+                    rcb->path_id,
+                    rcb->rcv_qidx));
+            vnif_drop_rcb(adapter, rcb, rcb->len);
+            continue;
+        }
+        rcb->rcv_qidx = rcv_qidx;
+        vnif_build_nb(adapter, rcb, cur_nbl);
+
+        (*nb_list_cnt)++;
+        if (*nb_list == NULL) {
+            *nb_list = cur_nbl;
+        } else {
+            NET_BUFFER_LIST_NEXT_NBL(*tail_nb_list) = cur_nbl;
+        }
+        VNIF_CLEAR_NB_FLAG(cur_nbl, (NET_BUFFER_LIST_FLAGS(cur_nbl)
+                                   & NBL_FLAGS_MINIPORT_RESERVED));
+        *tail_nb_list = cur_nbl;
+
+        if (adapter->cur_rx_tasks) {
+            vnif_rx_checksum(adapter, cur_nbl, rcb, len);
+        }
+
+        vnif_rss_set_nbl_info(adapter, cur_nbl, rcb);
+
+        VNIFInterlockedIncrement(adapter->nBusyRecv);
+        VNIFInterlockedIncrement(rcv_q->n_busy_rcv);
+
+        rcb->st = st;
+#ifdef DBG
+        if (adapter->pv_stats) {
+            rcb->seq = adapter->pv_stats->rcb_seq;
+        }
+        VNIFInterlockedIncrementStat(adapter->pv_stats->rcb_seq);
+#endif
+    }
+    return *nb_list;
+}
+
+PNET_BUFFER_LIST
+vvnif_mv_rcbs_to_nbl(PVNIF_ADAPTER adapter,
+                    UINT path_id,
+                    UINT rcv_qidx,
+                    UINT nbls_to_indicate,
+                    UINT *nb_list_cnt)
+{
+    RCB *rcb;
+    rcv_to_process_q_t *rcv_q;
+    PNET_BUFFER_LIST nb_list;
+    PNET_BUFFER_LIST cur_nbl;
+    PNET_BUFFER_LIST prev_nb_list;
+    uint64_t st;
+    UINT len;
+#ifdef RSS_DEBUG
+    LONG seq = 0;
+#endif
+
+    VNIFStatQueryInterruptTime(st);
+
+    nb_list = NULL;
+    prev_nb_list = NULL;
+    rcv_q = &adapter->rcv_q[rcv_qidx];
+    while (*nb_list_cnt < nbls_to_indicate
+           && !IsListEmpty(&rcv_q->rcv_to_process)) {
+        rcb = (RCB *) RemoveHeadList(&rcv_q->rcv_to_process);
+        len = (UINT)rcb->total_len;
+
+        vnif_rss_test_seq(__func__, rcb, path_id, rcv_qidx, &seq);
+
+        DPRINTK(DPRTL_RX,
+            ("  Receiving rcb %d %d.\n", rcb->index, rcb->path_id));
+
+        VNIFInterlockedDecrementStat(adapter->pv_stats->rx_to_process_cnt);
+
+        cur_nbl = rcb->nbl;
+        if (cur_nbl == NULL) {
+            /* Should never happen. */
+            PRINTK(("2 Drop for nbl, len %d r_qidx %d p_id %d, rcb %d:%d\n",
+                    rcb->len,
+                    rcv_qidx,
+                    path_id,
+                    rcb->path_id,
+                    rcb->rcv_qidx));
+            vnif_drop_rcb(adapter, rcb, rcb->len);
+            continue;
+        }
+        rcb->rcv_qidx = rcv_qidx;
+        vnif_build_nb(adapter, rcb, cur_nbl);
+
+        (*nb_list_cnt)++;
+        if (nb_list == NULL) {
+            nb_list = cur_nbl;
+        } else {
+            NET_BUFFER_LIST_NEXT_NBL(prev_nb_list) = cur_nbl;
+        }
+        VNIF_CLEAR_NB_FLAG(cur_nbl, (NET_BUFFER_LIST_FLAGS(cur_nbl)
+                                   & NBL_FLAGS_MINIPORT_RESERVED));
+        prev_nb_list = cur_nbl;
+
+        if (adapter->cur_rx_tasks) {
+            vnif_rx_checksum(adapter, cur_nbl, rcb, len);
+        }
+
+        vnif_rss_set_nbl_info(adapter, cur_nbl, rcb);
+
+        VNIFInterlockedIncrement(adapter->nBusyRecv);
+        VNIFInterlockedIncrement(rcv_q->n_busy_rcv);
+
+        rcb->st = st;
+#ifdef DBG
+        if (adapter->pv_stats) {
+            rcb->seq = adapter->pv_stats->rcb_seq;
+        }
+        VNIFInterlockedIncrementStat(adapter->pv_stats->rcb_seq);
+#endif
+    }
+    return nb_list;
 }
 
 /*
@@ -1778,26 +2120,18 @@ VNIFReceivePackets(PVNIF_ADAPTER adapter,
                    UINT path_id,
                    UINT max_nbls_to_indicate)
 {
-    PROCESSOR_NUMBER target_processor = {0};
-    PNET_BUFFER nb;
     PNET_BUFFER_LIST nb_list;
-    PNET_BUFFER_LIST cur_nbl;
-    PNET_BUFFER_LIST prev_nb_list;
+    PNET_BUFFER_LIST tail_nb_list;
     rcv_to_process_q_t *rcv_q;
     uint32_t rcv_flags;
     UINT nb_list_cnt;
     UINT rp;
     UINT old;
-    RCB *rcb;
-    UINT len;
     UINT rcb_added_to_ring;
     UINT rcv_qidx;
-    UINT rcv_target_qidx;
     int more_to_do;
-    uint32_t ring_size;
-    uint32_t i;
-    uint64_t st;
-    BOOLEAN needs_dpc;
+    UINT nbls_to_indicate;
+    BOOLEAN needs_rcv_q_work;
 #ifdef RSS_DEBUG
     LONG seq = 0;
 #endif
@@ -1829,201 +2163,56 @@ VNIFReceivePackets(PVNIF_ADAPTER adapter,
                        vnif_get_current_processor(NULL),
                        rcv_qidx));
 
-    ring_size = min(max_nbls_to_indicate, VNIF_RX_RING_SIZE(adapter));
+    nbls_to_indicate = min(max_nbls_to_indicate, VNIF_RX_RING_SIZE(adapter));
     rcv_q = &adapter->rcv_q[rcv_qidx];
-    rcv_q->rcv_should_queue_dpc = FALSE;
+    rcv_q->rcv_q_should_request_work = FALSE;
     rp = 0;
     nb_list = NULL;
-    prev_nb_list = NULL;
+    tail_nb_list = NULL;
     nb_list_cnt = 0;
     rcb_added_to_ring = 0;
     more_to_do = 0;
-    needs_dpc = FALSE;
+    needs_rcv_q_work = FALSE;
 
     if (path_id < adapter->num_paths) {
-        NdisDprAcquireSpinLock(&adapter->path[path_id].rx_path_lock);
+        NdisAcquireSpinLock(&adapter->path[path_id].rx_path_lock);
         VNIF_GET_RX_REQ_PROD(adapter, path_id, &old);
     }
 
-    NdisDprAcquireSpinLock(&rcv_q->rcv_to_process_lock);
+    NdisAcquireSpinLock(&rcv_q->rcv_to_process_lock);
 
     VNIF_INC_REF(adapter);
     if (path_id < adapter->num_paths) {
-        VNIFReceivePacketsStats(adapter, path_id, ring_size);
+        VNIFReceivePacketsStats(adapter, path_id, nbls_to_indicate);
     }
     DPRINTK(DPRTL_RX, ("VNIFReceivePackets: start rcv_qidx %d path_id %d %d.\n",
-                       rcv_qidx, path_id, ring_size));
+                       rcv_qidx, path_id, nbls_to_indicate));
     do {
         /*
          * Pull rx packtes off the ring and place them in them correct rcv q.
          */
         if (path_id < adapter->num_paths) {
-            VNIF_GET_RX_RSP_PROD(adapter, path_id, &rp);
-            KeMemoryBarrier();
-
-            VNIF_GET_RX_RSP_CONS(adapter, path_id, &i);
-            while ((rcb = vnif_get_rx(adapter, path_id, rp, &i, &len))
-                   != NULL) {
-
-                len = (UINT)rcb->total_len;
-                if (vnif_continue_proccessing_rcb(adapter, rcb, len, path_id)
-                        == FALSE) {
-                    rcb_added_to_ring++;
-                    continue;
-                }
-
-                if (rcb->len < VNIF_TCPIP_HEADER_LEN) {
-                    rcb_added_to_ring += vnif_collapse_rx(adapter, rcb);
-                }
-
-                if (len < ETH_MIN_PACKET_SIZE) {
-                    NdisZeroMemory(
-                        rcb->page +
-                            (uintptr_t)adapter->buffer_offset + (uintptr_t)len,
-                        ETH_MIN_PACKET_SIZE - (uintptr_t)len);
-                }
-
-                rcv_target_qidx = rcv_qidx;
-                vnif_get_rcb_pkt_info(adapter,
-                                      rcb,
-                                      &target_processor,
-                                      &rcv_target_qidx,
-                                      len);
-                if (rcv_target_qidx != rcv_qidx) {
-                    NdisDprReleaseSpinLock(&rcv_q->rcv_to_process_lock);
-                    NdisDprAcquireSpinLock(
-                        &adapter->rcv_q[rcv_target_qidx].rcv_to_process_lock);
-                    InsertTailList(
-                        &adapter->rcv_q[rcv_target_qidx].rcv_to_process,
-                        &rcb->list);
-
-#ifdef DBG
-                    if (adapter->rcv_q[rcv_target_qidx].rcv_processor.Number
-                        != target_processor.Number) {
-                        PRINTK(("%s: rcv_processor %d != target_processor %d\n",
-                           __func__,
-                           adapter->rcv_q[rcv_target_qidx].rcv_processor.Number,
-                           target_processor.Number));
-                        adapter->rcv_q[rcv_target_qidx].rcv_processor =
-                            target_processor;
-                    }
-#endif
-                    adapter->rcv_q[rcv_target_qidx].rcv_should_queue_dpc = TRUE;
-                    NdisDprReleaseSpinLock(
-                        &adapter->rcv_q[rcv_target_qidx].rcv_to_process_lock);
-                    NdisDprAcquireSpinLock(&rcv_q->rcv_to_process_lock);
-
-                    /* Setup DPC */
-                    DPRINTK(DPRTL_RSS,
-                            ("%s: pid %d rpid %d, tpid %d rqidx %d trqidx %d\n",
-                             __func__,
-                             path_id,
-                             rcv_q->path_id,
-                             adapter->rcv_q[rcv_target_qidx].path_id,
-                             rcv_qidx,
-                             rcv_target_qidx));
-                    needs_dpc = TRUE;
-
-                    vnif_rss_dbg_seq(adapter,
-                                     rcb,
-                                     path_id,
-                                     rcv_target_qidx,
-                                     target_processor.Number,
-                                     rcv_qidx);
-                } else {
-                    DPRINTK(DPRTL_RX,
-                            ("  InsertTailList rcb_idx %d rcb_pathid %d c %d\n",
-                            rcb->index, rcb->path_id,
-                            vnif_get_current_processor(NULL)));
-
-                    InsertTailList(&rcv_q->rcv_to_process, &rcb->list);
-
-                    vnif_rss_dbg_seq(adapter,
-                                     rcb,
-                                     path_id,
-                                     rcv_qidx,
-                                     target_processor.Number,
-                                     rcv_qidx);
-                }
-
-                if (adapter->num_rcb > NET_RX_RING_SIZE) {
-                    rcb_added_to_ring += vnif_add_rcb_to_ring_from_list(
-                        adapter,
-                        path_id);
-                }
-                VNIFInterlockedIncrementStat(
-                    adapter->pv_stats->rx_to_process_cnt);
-            }
-
-            VNIF_SET_RX_RSP_CONS(adapter, path_id, rp);
+           vnif_drain_rx_path(adapter,
+                              path_id,
+                              rcv_qidx,
+                              &rcb_added_to_ring,
+                              &rp,
+                              &needs_rcv_q_work);
         } /* Pull packets off the ring. */
 
-
-        VNIFStatQueryInterruptTime(st);
-
-        /*
-         * Build net buffer list from rx packets on the current rcv q.
-         */
-        while (nb_list_cnt < ring_size
-               && !IsListEmpty(&rcv_q->rcv_to_process)) {
-            rcb = (RCB *) RemoveHeadList(&rcv_q->rcv_to_process);
-            len = (UINT)rcb->total_len;
-
-            vnif_rss_test_seq(__func__, rcb, path_id, rcv_qidx, &seq);
-
-            DPRINTK(DPRTL_RX,
-                ("  Receiving rcb %d %d.\n", rcb->index, rcb->path_id));
-
-            VNIFInterlockedDecrementStat(adapter->pv_stats->rx_to_process_cnt);
-
-            cur_nbl = rcb->nbl;
-            if (cur_nbl == NULL) {
-                /* Should never happen. */
-                PRINTK(("2 Drop for nbl, len %d r_qidx %d p_id %d, rcb %d:%d\n",
-                        rcb->len,
-                        rcv_qidx,
-                        path_id,
-                        rcb->path_id,
-                        rcb->rcv_qidx));
-                vnif_drop_rcb(adapter, rcb, rcb->len);
-                continue;
-            }
-            rcb->rcv_qidx = rcv_qidx;
-            vnif_build_nb(adapter, rcb, cur_nbl);
-
-            nb_list_cnt++;
-            if (nb_list == NULL) {
-                nb_list = cur_nbl;
-            } else {
-                NET_BUFFER_LIST_NEXT_NBL(prev_nb_list) = cur_nbl;
-            }
-            VNIF_CLEAR_NB_FLAG(cur_nbl, (NET_BUFFER_LIST_FLAGS(cur_nbl)
-                                       & NBL_FLAGS_MINIPORT_RESERVED));
-            prev_nb_list = cur_nbl;
-
-            if (adapter->cur_rx_tasks) {
-                vnif_rx_checksum(adapter, cur_nbl, rcb, len);
-            }
-
-            vnif_rss_set_nbl_info(adapter, cur_nbl, rcb);
-
-            VNIFInterlockedIncrement(adapter->nBusyRecv);
-            VNIFInterlockedIncrement(rcv_q->n_busy_rcv);
-
-            rcb->st = st;
-#ifdef DBG
-            if (adapter->pv_stats) {
-                rcb->seq = adapter->pv_stats->rcb_seq;
-            }
-            VNIFInterlockedIncrementStat(adapter->pv_stats->rcb_seq);
-#endif
-        } /* Build net buffer list. */
+        nb_list = vnif_mv_rcbs_to_nbl(adapter,
+                                      path_id,
+                                      rcv_qidx,
+                                      nbls_to_indicate,
+                                      &nb_list,
+                                      &tail_nb_list,
+                                      &nb_list_cnt);
 
         if (path_id < adapter->num_paths) {
             VNIF_RING_FINAL_CHECK_FOR_RESPONSES(adapter->path[path_id].rx,
                                                 &more_to_do);
         }
-    } while (more_to_do && nb_list_cnt < ring_size);
+    } while (more_to_do && nb_list_cnt < nbls_to_indicate);
 
     rcv_flags = NDIS_RECEIVE_FLAGS_DISPATCH_LEVEL |
         NDIS_RECEIVE_FLAGS_PERFECT_FILTERED;
@@ -2041,25 +2230,28 @@ VNIFReceivePackets(PVNIF_ADAPTER adapter,
             __func__,
             nb_list_cnt,
             max_nbls_to_indicate));
-        rcv_q->rcv_should_queue_dpc = TRUE;
-        needs_dpc = TRUE;
+        rcv_q->rcv_q_should_request_work = TRUE;
+        needs_rcv_q_work = TRUE;
     }
 
-    vnif_queue_rcv_dpc_if_needed(adapter, max_nbls_to_indicate, needs_dpc);
+    vnif_request_rcv_q_work(adapter,
+                            max_nbls_to_indicate,
+                            needs_rcv_q_work);
 
-    NdisDprReleaseSpinLock(&rcv_q->rcv_to_process_lock);
+    NdisReleaseSpinLock(&rcv_q->rcv_to_process_lock);
 
     if (path_id < adapter->num_paths) {
         if (nb_list_cnt == 0) {
             VNIF_RX_NOTIFY(adapter, path_id, rcb_added_to_ring, old);
         }
-        NdisDprReleaseSpinLock(&adapter->path[path_id].rx_path_lock);
+        NdisReleaseSpinLock(&adapter->path[path_id].rx_path_lock);
     }
 
     if (nb_list_cnt) {
         if (path_id < adapter->num_paths) {
-            VNIFReceivePacketsPostStats(adapter, path_id,
-                                        ring_size, nb_list_cnt);
+            VNIFReceivePacketsPostStats(adapter,
+                                        path_id,
+                                        nbls_to_indicate, nb_list_cnt);
         }
 
         DPRINTK(DPRTL_RX, ("  IndicateRcv of %d on ridx %d path_id %d\n",
@@ -2102,12 +2294,9 @@ MPReturnNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
 #ifdef RSS_DEBUG
     LONG seq = 0;
 #endif
-    BOOLEAN dispatch_level;
 
     adapter = (PVNIF_ADAPTER)MiniportAdapterContext;
     DPRINTK(DPRTL_RX, ("==> MPReturnNetBufferLists\n"));
-
-    dispatch_level = NDIS_TEST_RETURN_AT_DISPATCH_LEVEL(ReturnFlags);
 
     old_path_id = (UINT)-1;
     for (nb_list = NetBufferLists; nb_list != NULL; nb_list = next_nb_list) {
@@ -2126,12 +2315,10 @@ MPReturnNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
 
         if (old_path_id != cur_path_id) {
             if (old_path_id != (UINT)-1) {
-                VNIF_RELEASE_SPIN_LOCK(&adapter->path[old_path_id].rx_path_lock,
-                                       dispatch_level);
+                NdisReleaseSpinLock(&adapter->path[old_path_id].rx_path_lock);
             }
             old_path_id = cur_path_id;
-            VNIF_ACQUIRE_SPIN_LOCK(&adapter->path[cur_path_id].rx_path_lock,
-                                   dispatch_level);
+            NdisAcquireSpinLock(&adapter->path[cur_path_id].rx_path_lock);
             adapter->path[cur_path_id].rx_should_notify++;
 #ifdef DBG
             acq++;
@@ -2151,8 +2338,7 @@ MPReturnNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
         VNIFInterlockedDecrement(adapter->rcv_q[cur_rcv_qidx].n_busy_rcv);
     }
     if (old_path_id != (UINT)-1) {
-        VNIF_RELEASE_SPIN_LOCK(&adapter->path[old_path_id].rx_path_lock,
-                               dispatch_level);
+        NdisReleaseSpinLock(&adapter->path[old_path_id].rx_path_lock);
     }
 
     for (cur_path_id = 0; cur_path_id < adapter->num_paths; cur_path_id++) {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -158,6 +158,11 @@ typedef struct _vnif_xen_s {
 #define VNIF_GET_NUM_PATHS vnifv_get_num_paths
 
 #define VNIF_SETUP_PATH_INFO_EX vnifv_setup_path_info_ex
+
+#if NDIS_SUPPORT_NDIS685
+#define vnif_enable_adapter_notifications vnifv_enable_adapter_notifications
+#define vnif_disable_adapter_notifications vnifv_disable_adapter_notifications
+#endif
 
 #ifdef DBG
 #define VNIF_DUMP VNIFV_DUMP

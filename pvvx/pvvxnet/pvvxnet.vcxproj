@@ -270,7 +270,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS685_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS660_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
@@ -320,7 +320,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS685_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS660_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <CETCompat>true</CETCompat>
@@ -367,7 +367,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS685_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GE_Win8;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;PVVXNET=1;PVVX;USE_INDIRECT_XENBUS_APIS;NDIS660_MINIPORT=1;MP_RSS_SUPPORTED=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>

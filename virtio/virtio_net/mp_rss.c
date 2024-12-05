@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2020 SUSE LLC
+ * Copyright 2019-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -193,9 +193,7 @@ vnif_rss_fill_cpu_mapping(vnif_rss_t *rss, UINT num_receive_queues)
 void
 vnif_rss_set_rcv_q_targets(VNIF_ADAPTER *adapter)
 {
-#if NDIS_SUPPORT_NDIS620
     PROCESSOR_NUMBER target_processor;
-#endif
     UINT rcvq;
     UINT cpu_idx;
 
@@ -207,7 +205,6 @@ vnif_rss_set_rcv_q_targets(VNIF_ADAPTER *adapter)
                      __func__, cpu_idx));
             rcvq = adapter->num_rcv_queues - 1;
         }
-#if NDIS_SUPPORT_NDIS620
         KeGetProcessorNumberFromIndex(cpu_idx, &target_processor);
         adapter->rcv_q[rcvq].rcv_processor = target_processor;
         adapter->rcv_q[rcvq].path_id = cpu_idx;
@@ -216,10 +213,18 @@ vnif_rss_set_rcv_q_targets(VNIF_ADAPTER *adapter)
                  __func__, cpu_idx, rcvq,
                  target_processor.Number,
                  target_processor.Group));
-        KeSetTargetProcessorDpcEx(&adapter->rcv_q[rcvq].rcv_q_dpc,
-                                  &target_processor);
-#else
-        KeSetTargetProcessorDpc(&adapter->rcv_q[i].rcv_q_dpc, (uint8_t)i);
+#if NDIS_SUPPORT_NDIS685
+        if (adapter->b_use_ndis_poll == TRUE
+                && adapter->path[cpu_idx].rx_poll_context.nph !=
+                    (NDIS_POLL_HANDLE)(-1)) {
+            NdisSetPollAffinity(adapter->path[cpu_idx].rx_poll_context.nph,
+                                &target_processor);
+        } else {
+#endif
+            KeSetTargetProcessorDpcEx(&adapter->rcv_q[rcvq].rcv_q_dpc,
+                                      &target_processor);
+#if NDIS_SUPPORT_NDIS685
+        }
 #endif
     }
 }
@@ -373,6 +378,7 @@ vnif_rss_move_rx(PVNIF_ADAPTER adapter)
 {
     RCB *rcb;
     UINT no_q_idx;
+    UINT rcvq_path_id;
     UINT i;
     UINT j;
 
@@ -394,9 +400,18 @@ vnif_rss_move_rx(PVNIF_ADAPTER adapter)
     }
     NdisReleaseSpinLock(&adapter->rcv_q[no_q_idx].rcv_to_process_lock);
 
-    KeInsertQueueDpc(&adapter->rcv_q[no_q_idx].rcv_q_dpc,
-                     (void *)adapter->rcv_q[no_q_idx].path_id,
-                     (void *)NDIS_INDICATE_ALL_NBLS);
+#if NDIS_SUPPORT_NDIS685
+    if (adapter->b_use_ndis_poll == TRUE) {
+        rcvq_path_id = adapter->rcv_q[no_q_idx].path_id,
+        NdisRequestPoll(adapter->path[rcvq_path_id].rx_poll_context.nph, NULL);
+    } else {
+#endif
+        KeInsertQueueDpc(&adapter->rcv_q[no_q_idx].rcv_q_dpc,
+                         (void *)adapter->rcv_q[no_q_idx].path_id,
+                         (void *)NDIS_INDICATE_ALL_NBLS);
+#if NDIS_SUPPORT_NDIS685
+    }
+#endif
 }
 
 NDIS_STATUS
@@ -599,8 +614,6 @@ void
 vnif_rss_query_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
                                     vnif_rss_hash_params_t *rss_hash_params)
 {
-    //CNdisPassiveReadAutoLock autoLock(RSSParameters->rwLock);
-
     NdisZeroMemory(rss_hash_params, sizeof(*rss_hash_params));
     rss_hash_params->rcv_hash_params.Header.Type =
         NDIS_OBJECT_TYPE_DEFAULT;
@@ -702,7 +715,6 @@ vnif_rss_set_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
 NDIS_STATUS
 vnif_rss_setup_queue_dpc_path(PVNIF_ADAPTER adapter, UINT path_id)
 {
-#if NDIS_SUPPORT_NDIS620
     NDIS_STATUS status;
     PROCESSOR_NUMBER proc_num;
 
@@ -720,10 +732,6 @@ vnif_rss_setup_queue_dpc_path(PVNIF_ADAPTER adapter, UINT path_id)
                          adapter->path[path_id].dpc_affinity.Group,
                          adapter->path[path_id].dpc_affinity.Mask));
     adapter->path[path_id].cpu_idx = proc_num.Number;
-#else
-    adapter->path[path_id].dpc_target_proc = 1i64 << i;
-    adapter->path[path_id].cpu_idx = path_id;
-#endif
 
     return NDIS_STATUS_SUCCESS;
 }
@@ -1291,7 +1299,6 @@ vnif_rss_dbg_dump_map(PVNIF_ADAPTER adapter)
             if (rcvq == VNIF_NO_RECEIVE_QUEUE) {
                 rcvq = 0;
             }
-    #if NDIS_SUPPORT_NDIS620
             KeGetProcessorNumberFromIndex(cpu_idx, &target_processor);
             if (adapter->rcv_q[rcvq].rcv_processor.Number
                     != target_processor.Number) {
@@ -1302,7 +1309,6 @@ vnif_rss_dbg_dump_map(PVNIF_ADAPTER adapter)
             RPRINTK(DPRTL_RSS,
                     ("%s: cpu_idx_mapping[%d] = rcv_q idx %d on dpc cpu %d\n",
                      __func__, cpu_idx, rcvq, target_processor.Number));
-    #endif
         }
     }
 

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -453,6 +453,13 @@ VNIFX_SetupAdapterInterface(PVNIF_ADAPTER adapter)
 
     vnifx_setup_watches(adapter);
 
+    if (adapter->b_use_ndis_poll == TRUE) {
+        status = vnif_ndis_register_poll(adapter);
+        if (status != NDIS_STATUS_SUCCESS) {
+            return NDIS_STATUS_FAILURE;
+        }
+    }
+
     vnifx_initial_connect(adapter);
 
     RPRINTK(DPRTL_INIT, ("%s: OUT %p, %s\n",
@@ -584,7 +591,7 @@ vinfx_setup_evtchns(PVNIF_ADAPTER Adapter, vnif_xq_path_t *path)
             if (err) {
                 break;
             }
-            RPRINTK(DPRTL_ON, ("%s: [%d] register_dpc_to_evtchn %d %d\n",
+            RPRINTK(DPRTL_ON, ("%s: [%d] split register_dpc_to_evtchn %d %d\n",
                                __func__, path->path_id,
                                path->tx_evtchn, path->rx_evtchn));
             register_dpc_to_evtchn(path->tx_evtchn,
@@ -1394,13 +1401,11 @@ VNIFX_DisconnectBackend(PVNIF_ADAPTER adapter)
      * Make sure we are out of the DPC and that NDIS doesn't have any
      * of our receives before continuing.
      */
-    if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS)
-            || adapter->nBusyRecv) {
+    if (adapter->nBusyRecv) {
         PRINTK(("VNIFDisconnect: wait on DPC or receives. f %x, r %d s %d\n",
             adapter->adapter_flags, adapter->nBusyRecv, adapter->nBusySend));
     }
-    while (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS) ||
-           adapter->nBusyRecv) {
+    while (adapter->nBusyRecv) {
         NdisMSleep(500000);  /* 1/2 second */
     }
 
@@ -1658,14 +1663,12 @@ MPSuspend(PVNIF_ADAPTER adapter, uint32_t reason)
          * Make sure we are out of the DPC and that NDIS doesn't have any
          * of our receives before returning.
          */
-        if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS)
-                || adapter->nBusyRecv) {
+        if (adapter->nBusyRecv) {
             PRINTK(("MPSuspend: wait on DPC or receives. f %x, s %d r %d\n",
                     adapter->adapter_flags,
                     adapter->nBusySend, adapter->nBusyRecv));
         }
-        while (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_DPC_IN_PROGRESS) ||
-               adapter->nBusyRecv) {
+        while (adapter->nBusyRecv) {
             NdisMSleep(500000);  /* 1/2 second */
         }
         VNIF_CANCEL_TIMER(adapter->rcv_timer, &cancelled);

@@ -71,5 +71,9 @@
 #define DPRTL_DPC           0x03000000
 #define DPRTL_RSS           0x04000000
 #define DPRTL_UNEXPDTX      0x08000000
+#define DPRTL_RXPOLL        0x10000000
+#define DPRTL_TXPOLL        0x20000000
+#define DPRTL_MAXRX         0x40000000
+#define DPRTL_MAXTX         0x80000000
 
 #endif

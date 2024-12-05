@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -749,6 +749,13 @@ VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
         return status;
     }
 
+    if (adapter->b_use_ndis_poll == TRUE) {
+        status = vnif_ndis_register_poll(adapter);
+        if (status != NDIS_STATUS_SUCCESS) {
+            return status;
+        }
+    }
+
     VNIF_CLEAR_FLAG(adapter, VNF_DISCONNECTED);
 
     virtio_device_add_status(&adapter->u.v.vdev, VIRTIO_CONFIG_S_DRIVER_OK);
@@ -860,6 +867,8 @@ VNIFV_QueryHWResources(PVNIF_ADAPTER adapter, PNDIS_RESOURCE_LIST res_list)
             adapter->u.v.interruopt_affinity = rdes->u.Interrupt.Affinity;
             adapter->b_multi_signaled =
                 !!(rdes->Flags & CM_RESOURCE_INTERRUPT_MESSAGE);
+            adapter->b_use_split_evtchn =
+                adapter->b_multi_signaled ? TRUE : FALSE;
 
             RPRINTK(DPRTL_ON, ("%s: MSI enabled [%d] message signled %d\n",
                     VNIF_DRIVER_NAME, i, adapter->b_multi_signaled));
@@ -1146,7 +1155,9 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
                     vq_enable_interrupt(adapter->path[i].tx);
                 }
                 VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_RESUMING);
-                VNIF_SET_FLAG(adapter, VNF_ADAPTER_POLLING);
+                if (adapter->b_use_ndis_poll == FALSE) {
+                    VNIF_SET_FLAG(adapter, VNF_ADAPTER_POLLING);
+                }
 #if NDIS_SUPPORT_NDIS6
                 VNIF_SET_TIMER(adapter->poll_timer, 1);
 #endif

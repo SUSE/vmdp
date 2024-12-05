@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -247,10 +247,18 @@ MPRestart(IN NDIS_HANDLE MiniportAdapterContext,
             RPRINTK(DPRTL_ON, ("  Number of RX[%d] to process: %d\n",
                                i,
                                num_rx_to_process));
-            vnif_txrx_interrupt_dpc(adapter,
-                                    VNF_ADAPTER_RX_DPC_IN_PROGRESS,
-                                    i,
-                                    NDIS_INDICATE_ALL_NBLS);
+#if NDIS_SUPPORT_NDIS685
+            if (adapter->b_use_ndis_poll == TRUE) {
+                NdisRequestPoll(adapter->path[i].rx_poll_context.nph, NULL);
+            } else {
+#endif
+                vnif_txrx_interrupt_dpc(adapter,
+                                        VNIF_RX_INT,
+                                        i,
+                                        NDIS_INDICATE_ALL_NBLS);
+#if NDIS_SUPPORT_NDIS685
+            }
+#endif
         }
     }
     KeLowerIrql(old_irql);

@@ -123,11 +123,11 @@ MPHandleInterrupt(IN NDIS_HANDLE MiniportAdapterContext)
     }
     do {
         vnif_txrx_interrupt_dpc(adapter,
-                                VNF_ADAPTER_TX_DPC_IN_PROGRESS,
+                                VNIF_TX_INT,
                                 0,
                                 NDIS_INDICATE_ALL_NBLS);
         vnif_txrx_interrupt_dpc(adapter,
-                                VNF_ADAPTER_RX_DPC_IN_PROGRESS,
+                                VNIF_RX_INT,
                                 0,
                                 NDIS_INDICATE_ALL_NBLS);
     } while (VNIF_RING_HAS_UNCONSUMED_RESPONSES(adapter->path[0].tx)

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2021 SUSE LLC
+ * Copyright 2019-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -65,6 +65,14 @@ typedef struct _vnif_xen_s {
 #define VNIF_UNMASK unmask_evtchn
 
 /* *************** mp_xutils.c ************ */
+#if NDIS_SUPPORT_NDIS685
+void vnifx_enable_adapter_notifications(struct _VNIF_ADAPTER *adapter,
+                                        UINT path_id,
+                                        LONG poll_requested);
+void vnifx_disable_adapter_notifications(struct _VNIF_ADAPTER *adapter,
+                                         UINT path_id,
+                                         LONG poll_requested);
+#endif
 KDEFERRED_ROUTINE vnifx_interrupt_dpc;
 KDEFERRED_ROUTINE vnifx_tx_interrupt_dpc;
 KDEFERRED_ROUTINE vnifx_rx_interrupt_dpc;

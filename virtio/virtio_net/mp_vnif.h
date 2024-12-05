@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2022 SUSE LLC
+ * Copyright 2019-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,15 +34,6 @@
 #define VNIF_NET_OK     0
 #define VNIF_NET_ERR    1
 
-#define VNIF_RX_INT         0x01
-#define VNIF_TX_INT         0x02
-#define VNIF_CTRL_INT       0x04
-#define VNIF_UNKNOWN_INT    0x08
-#define VNIF_DISABLE_INT    0x80
-#define VNIF_INVALID_INT    0xff
-#define VNIF_VALID_INT      \
-    (VNIF_RX_INT | VNIF_TX_INT | VNIF_CTRL_INT | VNIF_UNKNOWN_INT)
-
 typedef struct _virtio_net_ctrl_hdr_s {
     uint8_t class_of_command;
     uint8_t cmd;
@@ -54,17 +45,9 @@ typedef struct _vnif_vq_path_s {
     virtio_queue_t      *rx;
     virtio_queue_t      *tx;
     LONG                interrupt_status;
-    UINT                vq_idx;
     uint16_t            rx_msg;
     uint16_t            tx_msg;
 } vnif_vq_path_t;
-
-typedef struct _vnif_vq_common_path_s {
-    virtio_queue_t      *q;
-    LONG                interrupt_status;
-    UINT                vq_idx;
-    uint16_t            msg;
-} vnif_vq_common_path_t;
 
 typedef struct _vnif_virtio_s {
     virtio_device_t     vdev;
@@ -110,6 +93,14 @@ NDIS_STATUS VNIFV_RegisterNdisInterrupt(struct _VNIF_ADAPTER *adapter);
 void VNIFV_DeregisterHardwareResources(struct _VNIF_ADAPTER *adapter);
 UINT vnifv_get_num_paths(struct _VNIF_ADAPTER *adapter);
 NDIS_STATUS vnifv_setup_path_info_ex(struct _VNIF_ADAPTER *adapter);
+#if NDIS_SUPPORT_NDIS685
+void vnifv_enable_adapter_notifications(struct _VNIF_ADAPTER *adapter,
+                                        UINT path_id,
+                                        LONG poll_requested);
+void vnifv_disable_adapter_notifications(struct _VNIF_ADAPTER *adapter,
+                                         UINT path_id,
+                                         LONG poll_requested);
+#endif
 
 /* *************** mp_vinterface.c ************ */
 void VNIFV_ALLOCATE_SHARED_MEMORY(struct _VNIF_ADAPTER *adapter,

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2024 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,6 +38,7 @@
 #include <ntstrsafe.h>
 #include <mp_packet.h>
 #include <mp_rss.h>
+#include <mp_poll.h>
 #include <mp_nif.h>
 #include <win_cmp_strtol.h>
 #include <asm/win_cpuid.h>
@@ -54,6 +55,15 @@
 #ifndef NDIS_INDICATE_ALL_NBLS
 #define NDIS_INDICATE_ALL_NBLS      (~0ul)
 #endif
+
+#define VNIF_RX_INT         0x01
+#define VNIF_TX_INT         0x02
+#define VNIF_CTRL_INT       0x04
+#define VNIF_UNKNOWN_INT    0x08
+#define VNIF_DISABLE_INT    0x80
+#define VNIF_INVALID_INT    0xff
+#define VNIF_VALID_INT      \
+    (VNIF_RX_INT | VNIF_TX_INT | VNIF_CTRL_INT | VNIF_UNKNOWN_INT)
 
 #define VNIF_MAX_NODE_NAME_LEN  32
 
@@ -255,10 +265,6 @@
 #define VNF_ADAPTER_NEEDS_RSTART        0x00020000
 #define VNF_ADAPTER_RX_DISABLED         0x00040000
 #define VNF_ADAPTER_TX_DISABLED         0x00080000
-#define VNF_ADAPTER_RX_DPC_IN_PROGRESS  0x00100000
-#define VNF_ADAPTER_TX_DPC_IN_PROGRESS  0x00200000
-#define VNF_ADAPTER_DPC_IN_PROGRESS     (VNF_ADAPTER_RX_DPC_IN_PROGRESS \
-                                         | VNF_ADAPTER_TX_DPC_IN_PROGRESS)
 
 
 #define VNIF_IS_NOT_READY_MASK                                          \
@@ -302,11 +308,12 @@
 
 #define VNIF_SHOULD_EXIT_TXRX_DPC(_A, _txrx, _p)                        \
     (((_A)->adapter_flags & (VNIF_SHOULD_EXIT_DPC_MASK))                \
-        || ((_p) < (_A)->num_paths && ((_A)->path[(_p)].Flags & (_txrx))))
+        || ((_p) < (_A)->num_paths &&                                   \
+            ((_A)->path[(_p)].path_id_flags & (_txrx))))
 
 
 #define VNIF_RING_HAS_WORK(_A, _txrx, _p)                               \
-    ((_txrx) == VNF_ADAPTER_TX_DPC_IN_PROGRESS ?                        \
+    ((_txrx) == VNIF_TX_INT ?                                           \
         VNIF_RING_HAS_UNCONSUMED_RESPONSES((_A)->path[(_p)].tx) :       \
         VNIF_RING_HAS_UNCONSUMED_RESPONSES((_A)->path[(_p)].rx))
 
@@ -643,10 +650,10 @@ typedef ULONG VNIF_GSO_INFO;
                         (mid),                                          \
                         &(a)->path[(pid)].dpc_affinity,                 \
                         NULL);                                          \
-            *(qdpc) = FALSE;                                            \
-        } else {                                                        \
-            *(qdpc) = TRUE;                                             \
-        }                                                               \
+        *(qdpc) = FALSE;                                                \
+    } else {                                                            \
+        *(qdpc) = TRUE;                                                 \
+    }                                                                   \
 }
 #else
 #define vnif_schedule_msi_dpc(a, mid, pid, qdpc) *(qdpc) = TRUE
@@ -702,6 +709,28 @@ typedef struct vnif_pv_stats_s {
 #endif
 } vnif_pv_stats_t;
 
+#if NDIS_SUPPORT_NDIS685
+typedef struct vnif_poll_context_s {
+    struct _VNIF_ADAPTER    *adapter;
+    NDIS_POLL_HANDLE        nph;
+    UINT                    path_rcv_q_id;
+    LONG                    poll_requested;
+} vnif_poll_context_t;
+#endif
+
+typedef struct _rcv_to_process_q {
+    LIST_ENTRY          rcv_to_process;
+    NDIS_SPIN_LOCK      rcv_to_process_lock;
+    KDPC                rcv_q_dpc;
+    LONG                n_busy_rcv;
+    PROCESSOR_NUMBER    rcv_processor;
+    UINT                path_id;
+    BOOLEAN             rcv_q_should_request_work;
+#ifdef RSS_DEBUG
+    LONG                seq;
+#endif
+} rcv_to_process_q_t;
+
 typedef struct vnif_path_s {
     union {
         vnif_xq_path_t  xq;
@@ -718,12 +747,16 @@ typedef struct vnif_path_s {
     QUEUE_HEADER        send_wait_queue;
     PNET_BUFFER_LIST    sending_nbl;
 #endif
-    ULONG               Flags;
+    ULONG               path_id_flags;
     UINT                cpu_idx;
 #if NDIS_SUPPORT_NDIS620
     GROUP_AFFINITY      dpc_affinity;
 #else
     KAFFINITY           dpc_target_proc;
+#endif
+#if NDIS_SUPPORT_NDIS685
+    vnif_poll_context_t rx_poll_context;
+    vnif_poll_context_t tx_poll_context;
 #endif
     UINT                rx_should_notify;
 } vnif_path_t;
@@ -870,6 +903,7 @@ typedef struct _VNIF_ADAPTER {
     BOOLEAN             b_use_split_evtchn;
     BOOLEAN             b_indirect;
     BOOLEAN             b_use_packed_rings;
+    BOOLEAN             b_use_ndis_poll;
 
     UCHAR               running_ndis_major_ver;
     UCHAR               running_ndis_minor_ver;
@@ -1118,6 +1152,8 @@ VNIFReturnRecvPacket(IN PVNIF_ADAPTER adapter, IN PNDIS_PACKET Packet);
 
 #endif
 
+void vnif_set_num_paths(PVNIF_ADAPTER adapter);
+
 void vnif_init_rcb_free_list(PVNIF_ADAPTER adapter, UINT path_id);
 
 NDIS_STATUS
@@ -1183,8 +1219,37 @@ VNIFSetPacketFilter(IN PVNIF_ADAPTER adapter, IN ULONG PacketFilter);
 NDIS_STATUS
 VNIFSetVLANFilter(PVNIF_ADAPTER adapter, ULONG new_vlan_id);
 
+void
+vnif_drain_tx_path_and_send(PVNIF_ADAPTER adapter,
+                            UINT path_id,
+                            UINT nbls_to_complete,
+                            PNET_BUFFER_LIST *complete_nb_lists,
+                            PNET_BUFFER_LIST *tail_nb_list,
+                            UINT *nb_list_cnt);
+
 int
 VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id);
+
+void
+vnif_request_rcv_q_work(PVNIF_ADAPTER adapter,
+                        UINT max_nbls_to_indicate,
+                        BOOLEAN request_work);
+void
+vnif_drain_rx_path(PVNIF_ADAPTER adapter,
+                   UINT path_id,
+                   UINT rcv_qidx,
+                   UINT *rcb_added_to_ring,
+                   UINT *rp,
+                   BOOLEAN *needs_dpc);
+
+PNET_BUFFER_LIST
+vnif_mv_rcbs_to_nbl(PVNIF_ADAPTER adapter,
+                    UINT path_id,
+                    UINT rcv_qidx,
+                    UINT nbls_to_indicate,
+                    PNET_BUFFER_LIST *nb_list,
+                    PNET_BUFFER_LIST *tail_nb_list,
+                    UINT *nb_list_cnt);
 
 VOID
 VNIFReceivePackets(IN PVNIF_ADAPTER adapter,
@@ -1238,6 +1303,8 @@ void VNIFReturnRcbStats(PVNIF_ADAPTER adapter, RCB *rcb);
 NDIS_TIMER_FUNCTION VNIFPvStatTimerDpc;
 void vnif_dpc(PKDPC dpc, PVNIF_ADAPTER adapter, void *s1, void *s2);
 void VNIFIndicateLinkStatus(PVNIF_ADAPTER adapter, uint32_t status);
+BOOLEAN vnif_should_exit_txrx_dpc(PVNIF_ADAPTER adapter, ULONG txrx_ind,
+                                  UINT path_id);
 void vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter, ULONG txrx_ind,
                              UINT path_id, UINT max_nbls_to_indicate);
 void vnif_call_txrx_interrupt_dpc(PVNIF_ADAPTER adapter);

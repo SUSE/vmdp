@@ -29,7 +29,7 @@
 
 #include "miniport.h"
 
-static __inline BOOLEAN
+BOOLEAN
 vnif_should_exit_txrx_dpc(PVNIF_ADAPTER adapter, ULONG txrx_ind, UINT path_id)
 {
     NdisAcquireSpinLock(&adapter->adapter_flag_lock);
@@ -39,16 +39,17 @@ vnif_should_exit_txrx_dpc(PVNIF_ADAPTER adapter, ULONG txrx_ind, UINT path_id)
      * the same spinlock.
      */
     if (VNIF_SHOULD_EXIT_TXRX_DPC(adapter, txrx_ind, path_id)) {
-        DPRINTK(DPRTL_DPC,
-            ("%s %x: cpu %d path_id %d, exiting flags 0x%x.\n",
+        DPRINTK(DPRTL_UNEXPD,
+            ("%s %x: cpu %d path_id %d, txrx %x exiting flags 0x%x adptr_f %x.\n",
              __func__, adapter->CurrentAddress[MAC_LAST_DIGIT],
-             KeGetCurrentProcessorNumber(), path_id,
+             KeGetCurrentProcessorNumber(), path_id, txrx_ind,
+             adapter->path[path_id].path_id_flags,
              adapter->adapter_flags));
         NdisReleaseSpinLock(&adapter->adapter_flag_lock);
         return TRUE;
     }
 
-    adapter->path[path_id].Flags |= txrx_ind;
+    adapter->path[path_id].path_id_flags |= txrx_ind;
 
     NdisReleaseSpinLock(&adapter->adapter_flag_lock);
 
@@ -83,6 +84,8 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
         more_to_do = 0;
 
         if (path_id >= adapter->num_paths) {
+            DPRINTK(DPRTL_UNEXPD,
+                    ("%s: %d >= %d\n", __func__, path_id, adapter->num_paths));
             VNIFReceivePackets(adapter, path_id, max_nbls_to_indicate);
             break;
         }
@@ -93,7 +96,7 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
 
         VNIF_DUMP(adapter, path_id, "vnif_txrx_interrupt_dpc in", 3, 0);
 
-        if (txrx_ind == VNF_ADAPTER_TX_DPC_IN_PROGRESS) {
+        if (txrx_ind == VNIF_TX_INT) {
             did_work += VNIFCheckSendCompletion(adapter, path_id);
             more_to_do = VNIF_RING_HAS_UNCONSUMED_RESPONSES(
                 adapter->path[path_id].tx);
@@ -110,7 +113,7 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
         VNIF_DUMP(adapter, path_id, "vnif_txrx_interrupt_dpc out", 3, 0);
 
         NdisAcquireSpinLock(&adapter->adapter_flag_lock);
-        adapter->path[path_id].Flags &= ~(txrx_ind);
+        adapter->path[path_id].path_id_flags &= ~(txrx_ind);
         NdisReleaseSpinLock(&adapter->adapter_flag_lock);
 
     } while (more_to_do);
@@ -142,11 +145,11 @@ vnif_call_txrx_interrupt_dpc(PVNIF_ADAPTER adapter)
     loop_cnt = max(adapter->num_paths, adapter->num_rcv_queues);
     for (i = 0; i < loop_cnt; i++) {
         vnif_txrx_interrupt_dpc(adapter,
-                                VNF_ADAPTER_TX_DPC_IN_PROGRESS,
+                                VNIF_TX_INT,
                                 i,
                                 NDIS_INDICATE_ALL_NBLS);
         vnif_txrx_interrupt_dpc(adapter,
-                                VNF_ADAPTER_RX_DPC_IN_PROGRESS,
+                                VNIF_RX_INT,
                                 i,
                                 NDIS_INDICATE_ALL_NBLS);
     }
@@ -223,7 +226,7 @@ vnif_rx_path_dpc(
     vnif_rss_test_dpc(__func__, adapter);
 
     vnif_txrx_interrupt_dpc(adapter,
-                            VNF_ADAPTER_RX_DPC_IN_PROGRESS,
+                            VNIF_RX_INT,
                             path_id,
                             max_nbls_to_indicate);
 

@@ -393,7 +393,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_MINIPORT_DRIVER=1;;NDIS685_MINIPORT;;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS_MINIPORT_DRIVER=1;;NDIS660_MINIPORT;;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -481,7 +481,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS660_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|ARM64'">
@@ -489,7 +489,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);NDIS660_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'">
@@ -551,7 +551,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS660_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -595,7 +595,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS685_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);NDIS660_MINIPORT;MP_RSS_SUPPORTED=1;NDIS_MINIPORT_DRIVER=1;NDIS_WDM=1;TARGET_OS_GE_Win8</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
