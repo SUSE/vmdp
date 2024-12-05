@@ -50,7 +50,7 @@ pvvxblk.sys = 1,,
 %pvvxblk.DeviceDesc% = pvvxblk_Install, PCI\VEN_1AF4&DEV_1001&SUBSYS_00021AF4&REV_00
 %pvvxblk.DeviceDesc% = pvvxblk_Install, PCI\VEN_1AF4&DEV_1042
 %pvvxblk.DeviceDesc% = pvvxblk_Install, PCI\VEN_1AF4&DEV_1042&SUBSYS_11001AF4&REV_01
-%pvvxblk.DeviceDesc% = pvvxblk_Install, PCI\VEN_5853&DEV_0001
+%pvvxblk.DeviceDesc% = pvvxblk_Install, XEN\TYPE_vbd
 
 [pvvxblk.CopyFiles]
 pvvxblk.sys,,,2
