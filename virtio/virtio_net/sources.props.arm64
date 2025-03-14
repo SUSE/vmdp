@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">virtio_net</TARGETNAME>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">DRIVER</TARGETTYPE>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ndis.lib             $(DDK_LIB_PATH)\ntstrsafe.lib</TARGETLIBS>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">..\include;..\include\virtio;..\virtio_net</INCLUDES>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">miniport.c      mp_main.c      init.c      oid.c      mp_utils.c      mp_vutils.c      mp_vinterface.c      mp_main6.c      mp_init6.c      mp_nic6.c      mp_vnic6.c      mp_rss.c      mp_poll.c       ..\virtio_base\virtio_ring.c      ..\virtio_base\virtio_ring_packed.c      ..\virtio_base\virtio_pci.c     ..\virtio_base\virtio_pci_legacy.c      ..\virtio_base\virtio_pci_modern.c      ..\virtio_base\virtio_utils.c      virtio_net.rc</SOURCES>
+  </PropertyGroup>
+</Project>

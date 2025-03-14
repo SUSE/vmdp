@@ -1,8 +1,11 @@
 @echo off
 
+if "%1"=="" goto help
 if "%1"=="19" goto start
-if "%1"=="22" goto start
-goto help
+if "%1"=="x64" goto start
+if "%1"=="arm64" goto start
+rem if "%1"=="22" goto start
+rem goto help
 
 :start
 copy virtio.sln.%1 virtio.sln
@@ -27,6 +30,6 @@ for %%d in (fwcfg pvcrash_notify pvvxsvc virtiofs_svc virtio_balloon virtio_blk 
 goto end
 
 :help
-echo "usage: %0 <19|22>"
+echo "usage: %0 <19|x64|arm64>"
 
 :end

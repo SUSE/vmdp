@@ -167,7 +167,8 @@ cd %build_dir%
 set vcxp=22
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 
-call %setvcxp_bat% %vcxp%
+rem call %setvcxp_bat% %vcxp%
+call %setvcxp_bat% x64
 
 for %%w in (10-2004) do (
     for %%r in (r d) do (
@@ -186,6 +187,7 @@ set package_to_build=%build_dir%
 for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
 
 if "%package_to_build%"=="virtio" (
+    call %setvcxp_bat% arm64
     echo "building for virtio - do ARM64 as well"
     for %%w in (10-2004) do (
         for %%r in (r d) do (
@@ -197,6 +199,7 @@ if "%package_to_build%"=="virtio" (
             )
         )
     )
+    call %setvcxp_bat% x64
 ) else (
     echo[
     echo Building for ARM64 is not supported on %package_to_build%
