@@ -127,7 +127,7 @@ vnif_rss_set_generall_attributes(struct _VNIF_ADAPTER *adapter,
     NDIS_RECEIVE_SCALE_CAPABILITIES *rss_caps);
 
 NDIS_STATUS
-vnif_rss_setup_queue_dpc_path(struct _VNIF_ADAPTER *adapter, UINT path_id);
+vnif_rss_setup_queue_dpc_path(struct _VNIF_ADAPTER *adapter);
 
 void
 vnif_rss_set_rcv_q_targets(struct _VNIF_ADAPTER *adapter);

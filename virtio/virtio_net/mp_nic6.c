@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -1809,29 +1809,22 @@ vnif_request_rcv_q_work(PVNIF_ADAPTER adapter,
                         UINT max_nbls_to_indicate,
                         BOOLEAN request_work)
 {
-    UINT path_id;
     UINT i;
 
     if (request_work == TRUE) {
         for (i = 0; i < adapter->num_rcv_queues; i++) {
             if (adapter->rcv_q[i].rcv_q_should_request_work == TRUE) {
+                DPRINTK(DPRTL_RSS,
+                        ("%s: call queue/poll for rcvq %d on proc %d\n",
+                         __func__,
+                         i,
+                         adapter->rcv_q[i].rcv_processor.Number));
 #if NDIS_SUPPORT_NDIS685
                 if (adapter->b_use_ndis_poll == TRUE) {
-                    path_id = adapter->rcv_q[i].path_id;
-
-                    DPRINTK(DPRTL_RXDPC,
-                        ("%s: rcvq[%i] path_id[%d] call NdisRequestPoll\n",
-                        __func__,
-                        i,
-                         path_id));
-
-                    NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph,
-                                    NULL);
+                    NdisRequestPoll(adapter->rcv_q[i].rcvq_poll_context.nph, NULL);
                 } else {
 #endif
-                    vnif_ndis_queue_dpc(adapter,
-                                        i,
-                                        max_nbls_to_indicate);
+                    vnif_ndis_queue_dpc(adapter, i, max_nbls_to_indicate);
 #if NDIS_SUPPORT_NDIS685
                 }
 #endif
@@ -1920,7 +1913,7 @@ vnif_drain_rx_path(PVNIF_ADAPTER adapter,
                              target_processor.Number,
                              rcv_qidx);
         } else {
-            DPRINTK(DPRTL_RXDPC,
+            DPRINTK(DPRTL_RSS,
                     ("  InsertTailList rcb_idx %d rcb_pathid %d c %d\n",
                     rcb->index, rcb->path_id,
                     vnif_get_current_processor(NULL)));
@@ -1975,8 +1968,8 @@ vnif_mv_rcbs_to_nbl(PVNIF_ADAPTER adapter,
 
         vnif_rss_test_seq(__func__, rcb, path_id, rcv_qidx, &seq);
 
-        DPRINTK(DPRTL_RXDPC,
-            ("  Receiving rcb %d %d.\n", rcb->index, rcb->path_id));
+        DPRINTK(DPRTL_RSS,
+            ("  Receiving path %d rcb %d %d.\n", path_id, rcb->index, rcb->path_id));
 
         VNIFInterlockedDecrementStat(adapter->pv_stats->rx_to_process_cnt);
 

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -443,11 +443,6 @@ vnif_setup_path_info(PVNIF_ADAPTER adapter)
 #if NDIS_SUPPORT_NDIS620
         InitializeQueueHeader(&adapter->path[i].send_wait_queue);
 #endif
-
-        status = vnif_rss_setup_queue_dpc_path(adapter, i);
-        if (status != NDIS_STATUS_SUCCESS) {
-            return status;
-        }
     }
 
     status = VNIF_SETUP_PATH_INFO_EX(adapter);
@@ -1441,14 +1436,12 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
     PRINTK(("\tmulti-queue supported = %d\n", adapter->b_multi_queue));
 #endif
     PRINTK(("\tnum hw queues = %d\n", adapter->num_hw_queues));
+    PRINTK(("\tnum paths = %d\n", adapter->num_paths));
 #if NDIS_SUPPORT_NDIS620
     PRINTK(("\trss supported = %d\n", adapter->b_rss_supported));
 
-    /* Don't count the VNIVF_NO_RECEIVE_QUEUE if supported. */
-    PRINTK(("\trss num receive queues = %d\n",
-            adapter->num_rcv_queues - adapter->b_rss_supported));
+    PRINTK(("\trss num receive queues = %d\n", adapter->num_rcv_queues));
 #endif
-    PRINTK(("\tnum paths = %d\n", adapter->num_paths));
 #if NDIS_SUPPORT_NDIS685
     PRINTK(("\tNdis Poll supported = %d\n", adapter->b_use_ndis_poll));
 #endif

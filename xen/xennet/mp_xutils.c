@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -90,7 +90,9 @@ vnifx_interrupt_dpc(
 
 #if NDIS_SUPPORT_NDIS685
     if (adapter->b_use_ndis_poll == TRUE) {
-        NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph, NULL);
+        if (VNIF_IS_READY(adapter)) {
+            NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph, NULL);
+        }
     } else {
 #endif
         vnif_txrx_interrupt_dpc(adapter,
@@ -167,11 +169,13 @@ vnifx_tx_interrupt_dpc(
         DPRINTK(DPRTL_TXDPC,
                 ("    %s: request poll - path_id %d/%d irql %d cpu %d\n",
                  __func__, path_id,
-                 adapter->path[path_id].tx_poll_context.path_rcv_q_id,
+                 adapter->path[path_id].tx_poll_context.poll_path_id,
                  KeGetCurrentIrql(),
                  KeGetCurrentProcessorNumber()));
 
-        NdisRequestPoll(adapter->path[path_id].tx_poll_context.nph, NULL);
+        if (VNIF_IS_READY(adapter)) {
+            NdisRequestPoll(adapter->path[path_id].tx_poll_context.nph, NULL);
+        }
     } else {
 #endif
         vnifx_split_interrupt_dpc(path, VNIF_TX_INT);
@@ -217,7 +221,9 @@ vnifx_rx_interrupt_dpc(
             KeGetCurrentIrql(),
             KeGetCurrentProcessorNumber()));
 
-        NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph, NULL);
+        if (VNIF_IS_READY(adapter)) {
+            NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph, NULL);
+        }
     } else {
 #endif
         vnifx_split_interrupt_dpc(path, VNIF_RX_INT);

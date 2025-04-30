@@ -164,11 +164,17 @@ cd %start_dir%
 call unsetddk.bat
 call unsetmsb.bat
 cd %build_dir%
-set vcxp=22
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 
-rem call %setvcxp_bat% %vcxp%
-call %setvcxp_bat% x64
+set package_to_build=%build_dir%
+for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
+
+if "%package_to_build%"=="virtio" (
+    set vcxp=x64
+) else (
+    set vcxp=22
+)
+call %setvcxp_bat% %vcxp%
 
 for %%w in (10-2004) do (
     for %%r in (r d) do (
@@ -182,9 +188,6 @@ for %%w in (10-2004) do (
 )
 
 if not "%do_arm_build%"=="arm" goto end
-
-set package_to_build=%build_dir%
-for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
 
 if "%package_to_build%"=="virtio" (
     call %setvcxp_bat% arm64

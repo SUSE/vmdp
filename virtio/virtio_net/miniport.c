@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -185,6 +185,8 @@ MPHalt(IN NDIS_HANDLE MiniportAdapterContext)
         adapter->node_name, adapter->CurrentAddress[MAC_LAST_DIGIT]));
 
     VNIF_SET_FLAG(adapter, VNF_ADAPTER_HALT_IN_PROGRESS);
+
+    vnif_ndis_deregister_poll(adapter);
 
     VNIFQuiesce(adapter);
 

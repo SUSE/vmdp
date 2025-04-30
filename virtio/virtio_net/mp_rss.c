@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2024 SUSE LLC
+ * Copyright 2019-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -56,7 +56,7 @@ vnif_rss_set_generall_attributes(PVNIF_ADAPTER adapter,
     }
     rss_caps->NumberOfInterruptMessages = adapter->num_hw_queues;
 
-    /* One less for the VNIF_NO_RECEIVE_QUEUE. */
+    /* One less for the VNIF_NO_RECEIVE_QUEUE if added. */
     rss_caps->NumberOfReceiveQueues = adapter->num_rcv_queues - 1;
     return rss_caps;
 }
@@ -200,25 +200,38 @@ vnif_rss_set_rcv_q_targets(VNIF_ADAPTER *adapter)
     for (cpu_idx = 0; cpu_idx < adapter->rss.cpu_idx_mapping_sz; cpu_idx++) {
         rcvq = adapter->rss.cpu_idx_mapping[cpu_idx];
         if (rcvq == VNIF_NO_RECEIVE_QUEUE) {
-            RPRINTK(DPRTL_RSS,
+            RPRINTK(DPRTL_INIT,
                     ("%s: no cpu_idx_mapping for cpu_idx %d - use no_rcv_q\n",
                      __func__, cpu_idx));
             rcvq = adapter->num_rcv_queues - 1;
         }
         KeGetProcessorNumberFromIndex(cpu_idx, &target_processor);
         adapter->rcv_q[rcvq].rcv_processor = target_processor;
-        adapter->rcv_q[rcvq].path_id = cpu_idx;
-        RPRINTK(DPRTL_RSS,
+        RPRINTK(DPRTL_INIT,
                 ("%s: cpu_idx_mapping[%d] = rcv_q %d on target cpu %d g %d\n",
                  __func__, cpu_idx, rcvq,
                  target_processor.Number,
                  target_processor.Group));
+
+        adapter->rcv_q[rcvq].path_id = cpu_idx;
+
 #if NDIS_SUPPORT_NDIS685
-        if (adapter->b_use_ndis_poll == TRUE
-                && adapter->path[cpu_idx].rx_poll_context.nph !=
-                    (NDIS_POLL_HANDLE)(-1)) {
-            NdisSetPollAffinity(adapter->path[cpu_idx].rx_poll_context.nph,
-                                &target_processor);
+        if (adapter->b_use_ndis_poll == TRUE) {
+            if (rcvq < adapter->num_rcv_queues) {
+                if (adapter->rcv_q[rcvq].rcvq_poll_context.nph != NULL) {
+                    NdisSetPollAffinity(
+                        adapter->rcv_q[rcvq].rcvq_poll_context.nph,
+                        &target_processor);
+                }
+            } else {
+                if (cpu_idx >= adapter->num_rcv_queues) {
+                    PRINTK(("%s: cpu_idx %d out of range for num_rcv_q %d\n",
+                            __func__, cpu_idx, adapter->num_rcv_queues));
+                } else {
+                    PRINTK(("%s: rx rcvq[%d] poll handle is null.\n",
+                            __func__, rcvq));
+                }
+            }
         } else {
 #endif
             KeSetTargetProcessorDpcEx(&adapter->rcv_q[rcvq].rcv_q_dpc,
@@ -357,16 +370,27 @@ vnif_rss_is_valid_hash_info(PVNIF_ADAPTER adapter, ULONG hash_info)
     hash_func = NDIS_RSS_HASH_FUNC_FROM_HASH_INFO(hash_info);
 
     supported_types = NDIS_HASH_IPV4
+#if (NDIS_SUPPORT_NDIS680)
+        | NDIS_HASH_UDP_IPV4
+        | NDIS_HASH_UDP_IPV6
+#endif
         | NDIS_HASH_TCP_IPV4
         | NDIS_HASH_IPV6
         | NDIS_HASH_TCP_IPV6;
 
     if (adapter->hw_tasks & VNIF_RSS_TCP_IPV6_EXT_HDRS_SUPPORTED) {
         supported_types |= NDIS_HASH_IPV6_EX
+#if (NDIS_SUPPORT_NDIS680)
+                        | NDIS_HASH_UDP_IPV6_EX
+#endif
                         |  NDIS_HASH_TCP_IPV6_EX;
     }
 
     if ((hash_type & supported_types) && !(hash_type & ~supported_types)) {
+
+        if (hash_func == 0) {
+            return TRUE;
+        }
         return hash_func == NdisHashFunctionToeplitz;
     }
 
@@ -378,7 +402,7 @@ vnif_rss_move_rx(PVNIF_ADAPTER adapter)
 {
     RCB *rcb;
     UINT no_q_idx;
-    UINT rcvq_path_id;
+    UINT path_id;
     UINT i;
     UINT j;
 
@@ -402,8 +426,7 @@ vnif_rss_move_rx(PVNIF_ADAPTER adapter)
 
 #if NDIS_SUPPORT_NDIS685
     if (adapter->b_use_ndis_poll == TRUE) {
-        rcvq_path_id = adapter->rcv_q[no_q_idx].path_id,
-        NdisRequestPoll(adapter->path[rcvq_path_id].rx_poll_context.nph, NULL);
+        NdisRequestPoll(adapter->rcv_q[no_q_idx].rcvq_poll_context.nph, NULL);
     } else {
 #endif
         KeInsertQueueDpc(&adapter->rcv_q[no_q_idx].rcv_q_dpc,
@@ -434,13 +457,32 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
     RPRINTK(DPRTL_INIT, ("%s: %s\n", __func__, adapter->node_name));
     if (rss_params_len < sizeof(NDIS_RECEIVE_SCALE_PARAMETERS)) {
         *bytes_needed = sizeof(NDIS_RECEIVE_SCALE_PARAMETERS);
-        RPRINTK(DPRTL_CONFIG, ("\ttoo small %x.\n", rss_params_len));
+        PRINTK(("%s: NDIS_STATUS_INVALID_LENGTH %d < %d.\n",
+                __func__,
+                rss_params_len,
+                sizeof(NDIS_RECEIVE_SCALE_PARAMETERS)));
         return NDIS_STATUS_INVALID_LENGTH;
     }
 
-    if (!(rss_params->Flags & NDIS_RSS_PARAM_FLAG_HASH_INFO_UNCHANGED)
-        && !vnif_rss_is_valid_hash_info(adapter, rss_params->HashInformation)) {
-        RPRINTK(DPRTL_CONFIG, ("NDIS_STATUS_INVALID_PARAMETER hash info\n"));
+    if (adapter->rss.rss_mode == VNIF_RSS_HASHING
+            && !(rss_params->Flags & NDIS_RSS_PARAM_FLAG_DISABLE_RSS)
+            && (rss_params->HashInformation != 0)) {
+        PRINTK(("%s: NDIS_STATUS_NOT_SUPPORTED mode %d fl %x hash info 0x%x\n",
+                __func__,
+                adapter->rss.rss_mode,
+                rss_params->Flags,
+                rss_params->HashInformation));
+        return NDIS_STATUS_NOT_SUPPORTED;
+    }
+
+    if (!(rss_params->Flags & (NDIS_RSS_PARAM_FLAG_HASH_INFO_UNCHANGED
+                               | NDIS_RSS_PARAM_FLAG_DISABLE_RSS))
+            && !vnif_rss_is_valid_hash_info(adapter,
+                                            rss_params->HashInformation)) {
+        PRINTK(("%s: NDIS_STATUS_INVALID_PARAMETER hash info %x %x %d\n",
+                __func__, rss_params->Flags, rss_params->HashInformation,
+                !vnif_rss_is_valid_hash_info(adapter,
+                                             rss_params->HashInformation)));
         return NDIS_STATUS_INVALID_PARAMETER;
     }
 
@@ -495,8 +537,15 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
                                       + rss_params->IndirectionTableSize))
                 || !IS_POWER_OF_TWO(rss_params->IndirectionTableSize
                                     / sizeof(PROCESSOR_NUMBER)))) {
-        PRINTK(("[%s] invalid length (2), flags %x\n",
-                __func__, rss_params->Flags));
+        PRINTK(("[%s] NDIS_STATUS_INVALID_LENGTH (2), flags %x %d %d < %d %d\n",
+                __func__, rss_params->Flags,
+                sizeof(adapter->rss.indirection_tbl),
+                rss_params_len,
+                (rss_params->IndirectionTableOffset
+                                      + rss_params->IndirectionTableSize),
+                !IS_POWER_OF_TWO(rss_params->IndirectionTableSize
+                                    / sizeof(PROCESSOR_NUMBER))));
+
         return NDIS_STATUS_INVALID_LENGTH;
     }
 
@@ -505,15 +554,20 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
              > sizeof(adapter->rss.hash_secret_key))
                 || (rss_params_len < (rss_params->HashSecretKeyOffset
                                       + rss_params->HashSecretKeySize)))) {
-        PRINTK(("[%s] invalid length (3), flags %x\n",
-                __func__, rss_params->Flags));
+        PRINTK(("[%s] NDIS_STATUS_INVALID_LENGTH (3), flags %x %d > %d %d < %d\n",
+                __func__, rss_params->Flags,
+                rss_params->HashSecretKeySize,
+                sizeof(adapter->rss.hash_secret_key),
+                rss_params_len,
+                rss_params->HashSecretKeyOffset
+                    + rss_params->HashSecretKeySize));
         return NDIS_STATUS_INVALID_LENGTH;
     }
 
     proc_mask_size = rss_params->NumberOfProcessorMasks *
         rss_params->ProcessorMasksEntrySize;
     if (rss_params_len < rss_params->ProcessorMasksOffset + proc_mask_size) {
-        PRINTK(("%s Invalid len rss_params->NumberOfProcessorMasks %d sz %d\n",
+        PRINTK(("%s NDIS_STATUS_INVALID_LENGTH rss_params->NumberOfProcessorMasks %d sz %d\n",
               __func__,
                 rss_params->NumberOfProcessorMasks,
               rss_params->ProcessorMasksEntrySize));
@@ -525,7 +579,7 @@ vnif_rss_oid_gen_receive_scale_params(PVNIF_ADAPTER adapter,
 
     if (!(rss_params->Flags & NDIS_RSS_PARAM_FLAG_ITABLE_UNCHANGED)) {
         if (vnif_rss_alloc_cpu_idx_mapping(adapter) == FALSE) {
-            PRINTK(("[%s] vnif_alloc_cpu_idx_mapping failed\n", __func__));
+            PRINTK(("[%s] NDIS_STATUS_RESOURCES vnif_alloc_cpu_idx_mapping failed\n", __func__));
             return NDIS_STATUS_RESOURCES;
         }
         proc_num = (PROCESSOR_NUMBER *)
@@ -713,25 +767,41 @@ vnif_rss_set_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
 }
 
 NDIS_STATUS
-vnif_rss_setup_queue_dpc_path(PVNIF_ADAPTER adapter, UINT path_id)
+vnif_rss_setup_queue_dpc_path(PVNIF_ADAPTER adapter)
 {
     NDIS_STATUS status;
     PROCESSOR_NUMBER proc_num;
+    UINT path_id;
 
-    status = KeGetProcessorNumberFromIndex(path_id, &proc_num);
-    if (status != NDIS_STATUS_SUCCESS) {
-        PRINTK(("[%s] - KeGetProcessorNumberFromIndex failed idx %d - %d\n",
-                __func__, path_id, status));
-        return status;
+    for (path_id = 0; path_id < adapter->num_paths; path_id++) {
+        status = KeGetProcessorNumberFromIndex(path_id, &proc_num);
+        if (status != NDIS_STATUS_SUCCESS) {
+            PRINTK(("[%s] - KeGetProcessorNumberFromIndex failed idx %d - %d\n",
+                    __func__, path_id, status));
+            return status;
+        }
+
+        vnif_set_proc_num_to_group_affinity(proc_num,
+            adapter->path[path_id].dpc_affinity);
+        RPRINTK(DPRTL_INIT, ("[%s] path[%d] proc_num %d, group %x mask %x\n",
+                             __func__, path_id, proc_num.Number,
+                             adapter->path[path_id].dpc_affinity.Group,
+                             adapter->path[path_id].dpc_affinity.Mask));
+        adapter->path[path_id].cpu_idx = proc_num.Number;
+
+#if NDIS_SUPPORT_NDIS685
+        if (adapter->b_use_ndis_poll == TRUE) {
+            if (adapter->path[path_id].rx_poll_context.nph != NULL) {
+                NdisSetPollAffinity(adapter->path[path_id].rx_poll_context.nph,
+                                    &proc_num);
+            }
+            if (adapter->path[path_id].tx_poll_context.nph != NULL) {
+                NdisSetPollAffinity(adapter->path[path_id].tx_poll_context.nph,
+                                    &proc_num);
+            }
+        }
+#endif
     }
-
-    vnif_set_proc_num_to_group_affinity(proc_num,
-        adapter->path[path_id].dpc_affinity);
-    RPRINTK(DPRTL_INIT, ("[%s] path[%d] proc_num %d, group %x mask %x\n",
-                         __func__, path_id, proc_num.Number,
-                         adapter->path[path_id].dpc_affinity.Group,
-                         adapter->path[path_id].dpc_affinity.Mask));
-    adapter->path[path_id].cpu_idx = proc_num.Number;
 
     return NDIS_STATUS_SUCCESS;
 }

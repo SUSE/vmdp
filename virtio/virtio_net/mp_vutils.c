@@ -415,7 +415,9 @@ ULONG
 VNIFV_RX_RING_SIZE(VNIF_ADAPTER *adapter)
 {
     if (adapter->path != NULL) {
-        return adapter->path[0].u.vq.rx->num;
+        if (adapter->path[0].u.vq.rx != NULL) {
+            return adapter->path[0].u.vq.rx->num;
+        }
     }
     return 0;
 }
@@ -424,7 +426,9 @@ ULONG
 VNIFV_TX_RING_SIZE(VNIF_ADAPTER *adapter)
 {
     if (adapter->path != NULL) {
-        return adapter->path[0].u.vq.tx->num;
+        if (adapter->path[0].u.vq.tx != NULL) {
+            return adapter->path[0].u.vq.tx->num;
+        }
     }
     return 0;
 }

@@ -756,6 +756,11 @@ VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
         }
     }
 
+    status = vnif_rss_setup_queue_dpc_path(adapter);
+    if (status != NDIS_STATUS_SUCCESS) {
+        return status;
+    }
+
     VNIF_CLEAR_FLAG(adapter, VNF_DISCONNECTED);
 
     virtio_device_add_status(&adapter->u.v.vdev, VIRTIO_CONFIG_S_DRIVER_OK);

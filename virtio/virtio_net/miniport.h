@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -713,7 +713,7 @@ typedef struct vnif_pv_stats_s {
 typedef struct vnif_poll_context_s {
     struct _VNIF_ADAPTER    *adapter;
     NDIS_POLL_HANDLE        nph;
-    UINT                    path_rcv_q_id;
+    UINT                    poll_path_id;
     LONG                    poll_requested;
 } vnif_poll_context_t;
 #endif
@@ -725,6 +725,9 @@ typedef struct _rcv_to_process_q {
     LONG                n_busy_rcv;
     PROCESSOR_NUMBER    rcv_processor;
     UINT                path_id;
+#if NDIS_SUPPORT_NDIS685
+    vnif_poll_context_t rcvq_poll_context;
+#endif
     BOOLEAN             rcv_q_should_request_work;
 #ifdef RSS_DEBUG
     LONG                seq;

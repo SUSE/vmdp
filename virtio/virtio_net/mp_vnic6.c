@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -238,6 +238,9 @@ vnif_miniport_interrupt_dpc(
         int_status = 0;
     }
 
+    DPRINTK(DPRTL_INT, ("%s MessageId %d path %d cpu %d\n",
+            __func__, msg_id, path_id, vnif_get_current_processor(NULL)));
+
     do {
         more_to_do = 0;
 
@@ -390,7 +393,9 @@ MPInterrupt(
 #if NDIS_SUPPORT_NDIS685
     if (adapter->b_use_ndis_poll == TRUE) {
         *QueueDefaultInterruptDpc = FALSE;
-        NdisRequestPoll(adapter->path[0].rx_poll_context.nph, NULL);
+        if (VNIF_IS_READY(adapter)) {
+            NdisRequestPoll(adapter->path[0].rx_poll_context.nph, NULL);
+        }
     }
 #endif
 
@@ -463,13 +468,15 @@ MPMsiInterrupt(
 
 #if NDIS_SUPPORT_NDIS685
         if (adapter->b_use_ndis_poll == TRUE) {
-            if (interrupt_source & VNIF_RX_INT) {
-                NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph,
-                                NULL);
-            }
-            if (interrupt_source & VNIF_TX_INT) {
-                NdisRequestPoll(adapter->path[path_id].tx_poll_context.nph,
-                                NULL);
+            if (VNIF_IS_READY(adapter)) {
+                if (interrupt_source & VNIF_RX_INT) {
+                    NdisRequestPoll(adapter->path[path_id].rx_poll_context.nph,
+                                    NULL);
+                }
+                if (interrupt_source & VNIF_TX_INT) {
+                    NdisRequestPoll(adapter->path[path_id].tx_poll_context.nph,
+                                    NULL);
+                }
             }
         } else {
 #endif

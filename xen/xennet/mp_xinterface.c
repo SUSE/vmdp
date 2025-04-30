@@ -460,6 +460,11 @@ VNIFX_SetupAdapterInterface(PVNIF_ADAPTER adapter)
         }
     }
 
+    status = vnif_rss_setup_queue_dpc_path(adapter);
+    if (status != NDIS_STATUS_SUCCESS) {
+        return status;
+    }
+
     vnifx_initial_connect(adapter);
 
     RPRINTK(DPRTL_INIT, ("%s: OUT %p, %s\n",

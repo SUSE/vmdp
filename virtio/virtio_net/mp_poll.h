@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2024 SUSE LLC
+ * Copyright 2024-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,6 +29,7 @@
 
 #if NDIS_SUPPORT_NDIS685
 NDIS_STATUS vnif_ndis_register_poll(struct _VNIF_ADAPTER *adapter);
+void vnif_ndis_deregister_poll(struct _VNIF_ADAPTER *adapter);
 
 void
 vnif_continue_ndis_request_poll(struct _VNIF_ADAPTER *adapter,
@@ -37,6 +38,7 @@ vnif_continue_ndis_request_poll(struct _VNIF_ADAPTER *adapter,
 
 #else
 #define vnif_ndis_register_poll(_adapter) NDIS_STATUS_SUCCESS
+#define vnif_ndis_deregister_poll(_adapter)
 #endif
 
 #endif
