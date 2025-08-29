@@ -137,7 +137,7 @@ xenbus_shutdown_worker(PDEVICE_OBJECT DeviceObject, void *context)
     fdx->irp->IoStatus.Status = STATUS_SUCCESS;
     IoCompleteRequest(fdx->irp, IO_NO_INCREMENT);
 
-    fdx->power_state = PowerActionShutdownOff;
+    fdx->power_state = PowerSystemShutdown;
     RPRINTK(DPRTL_ON,
             ("xenbus_shutdown_worker out: pdx %p, irp %p\n", fdx, fdx->irp));
 }
@@ -150,10 +150,10 @@ xenbus_dpc_shutdown(PKDPC dpc, void *context, void *s1, void *s2)
     if (dev_ext == NULL) {
         PRINTK(("** Powering down for shutdown, NULL.\n"));
         HYPERVISOR_shutdown(SHUTDOWN_poweroff);
-    } else if (dev_ext->syspower == PowerActionShutdown) {
+    } else if (dev_ext->power_action == PowerActionShutdown) {
         PRINTK(("** Powering down for shutdown.\n"));
         HYPERVISOR_shutdown(SHUTDOWN_poweroff);
-    } else if (dev_ext->syspower == PowerActionShutdownReset) {
+    } else if (dev_ext->power_action == PowerActionShutdownReset) {
         PRINTK(("** Powering down for reboot.\n"));
         HYPERVISOR_shutdown(SHUTDOWN_reboot);
     }
@@ -215,7 +215,7 @@ FDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
     /* If powering off, shutdown any remaining NICs. */
     if (minor_func == IRP_MN_SET_POWER &&
-            powerState.SystemState == PowerActionShutdownOff &&
+            powerState.SystemState == PowerSystemShutdown &&
             powerType == SystemPowerState) {
         unregister_xenbus_watch(&vbd_watch);
         unregister_xenbus_watch(&vif_watch);
@@ -314,7 +314,7 @@ FDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 #endif
 
     if (minor_func == IRP_MN_SET_POWER &&
-            powerState.SystemState == PowerActionShutdownOff &&
+            powerState.SystemState == PowerSystemShutdown &&
             powerType == SystemPowerState &&
             ((pvctrl_flags & PVCTRL_DISABLE_FORCED_SHUTDOWN) == 0)) {
         if (action == PowerActionShutdown
@@ -362,7 +362,7 @@ PDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         switch (powerType) {
         case DevicePowerState:
             RPRINTK(DPRTL_PWR, ("    PDO_Power: DevicePowerState\n"));
-            if (powerState.SystemState == PowerActionShutdown &&
+            if (action == PowerActionShutdown &&
                     pdx->Type == vscsi &&
                     pdx->Otherend &&
                     pdx->ioctl) {
@@ -383,11 +383,11 @@ PDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
         case SystemPowerState:
             RPRINTK(DPRTL_PWR, ("    PDO_Power: SystemPowerState\n"));
-            pdx->syspower = action;
+            pdx->power_action = action;
             status = STATUS_SUCCESS;
 
             /* Halt the vnifs first. */
-            if (powerState.SystemState == PowerActionShutdownOff &&
+            if (powerState.SystemState == PowerSystemShutdown &&
                     pdx->Type == vnif &&
                     pdx->frontend_dev &&
                     pdx->ioctl) {
@@ -403,7 +403,7 @@ PDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
                 ioctl_data.arg = (uint16_t)SHUTDOWN_poweroff;
                 pdx->ioctl(pdx->frontend_dev, ioctl_data);
             }
-            if (powerState.SystemState == PowerActionShutdownOff &&
+            if (powerState.SystemState == PowerSystemShutdown &&
                     pdx->Type == vscsi &&
                     pdx->Otherend &&
                     pdx->ioctl &&

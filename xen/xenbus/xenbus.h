@@ -144,12 +144,14 @@ typedef struct _COMMON_DEVICE_EXTENSION {
     PNP_STATE pnpstate;
     DEVICE_POWER_STATE devpower;
     SYSTEM_POWER_STATE syspower;
+    POWER_ACTION power_action;
 
 } COMMON_DEVICE_EXTENSION, *PCOMMON_DEVICE_EXTENSION;
 
 typedef enum _XENBUS_DEVICE_ORIGIN {
     alloced,
     created,
+    origin_unknown,
 } XENBUS_DEVICE_ORIGIN;
 
 /* child PDOs device extension */

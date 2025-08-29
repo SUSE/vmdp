@@ -553,7 +553,7 @@ xenbus_determine_creation_type(PFDO_DEVICE_EXTENSION fdx,
         /* We didn't find any vscsi devices so we will create this one. */
         return created;
     }
-    return unknown;
+    return origin_unknown;
 }
 
 static NTSTATUS
