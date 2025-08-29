@@ -537,6 +537,14 @@ VNIFSetupNdisAdapter(PVNIF_ADAPTER adapter)
 }
 
 VOID
+vnif_free_adapter_allocations(PVNIF_ADAPTER adapter)
+{
+    VNIFFreeAdapterTx(adapter);
+    VNIFFreeAdapterRx(adapter);
+    VNIFFreeAdapterInterface(adapter);
+}
+
+VOID
 VNIFFreeAdapter(PVNIF_ADAPTER adapter, NDIS_STATUS status)
 {
     uint32_t i;
@@ -555,9 +563,7 @@ VNIFFreeAdapter(PVNIF_ADAPTER adapter, NDIS_STATUS status)
 
     VNIFDeregisterHardwareResources(adapter);
     VNIFCleanupInterface(adapter, status);
-    VNIFFreeAdapterTx(adapter);
-    VNIFFreeAdapterRx(adapter);
-    VNIFFreeAdapterInterface(adapter);
+    vnif_free_adapter_allocations(adapter);
     vnif_free_path_info(adapter);
     vnif_rss_free_info(adapter);
     VNIFFreeAdapterEx(adapter);

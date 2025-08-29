@@ -5,7 +5,7 @@ if "%1"=="19" goto start
 if "%1"=="x64" goto start
 if "%1"=="arm64" goto start
 rem if "%1"=="22" goto start
-rem goto help
+goto help
 
 :start
 copy virtio.sln.%1 virtio.sln

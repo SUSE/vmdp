@@ -1583,6 +1583,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
 {
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
     UINT i;
+    BOOLEAN doing_poll;
 
     RPRINTK(DPRTL_ON, ("MPResume: %p, %x\n", adapter, suspend_canceled));
     if (suspend_canceled) {
@@ -1614,12 +1615,27 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
             vnif_complete_lost_sends(adapter);
         }
 
-        VNIFFreeAdapterInterface(adapter);
+        vnif_free_adapter_allocations(adapter);
+
         status = VNIFFindAdapter(adapter);
         if (status == STATUS_SUCCESS) {
+            doing_poll = FALSE;
+            if (adapter->b_use_ndis_poll == TRUE) {
+                /* Disable the polling flag so VNIFSetupAdapterInterface
+                 * doesn't try to regiser polling.
+                 */
+                doing_poll = TRUE;
+                adapter->b_use_ndis_poll = FALSE;
+            }
+
             status = VNIFSetupAdapterInterface(adapter);
             if (status == STATUS_SUCCESS) {
                 VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_RESUMING);
+            }
+
+            /* Restore the polling flag if needed. */
+            if (doing_poll == TRUE) {
+                adapter->b_use_ndis_poll = TRUE;
             }
         }
 

@@ -1175,6 +1175,9 @@ VOID
 VNIFFreeAdapterRx(PVNIF_ADAPTER adapter);
 
 VOID
+vnif_free_adapter_allocations(PVNIF_ADAPTER adapter);
+
+VOID
 VNIFFreeAdapter(PVNIF_ADAPTER adapter, NDIS_STATUS status);
 
 VOID
