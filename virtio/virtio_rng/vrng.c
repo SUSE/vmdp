@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2020 SUSE LLC
+ * Copyright 2017-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,6 +25,7 @@
  */
 
 #include "vrng.h"
+#include <win_rtlq_flags.h>
 
 DRIVER_INITIALIZE DriverEntry;
 
@@ -308,10 +309,12 @@ vrng_get_startup_params(void)
     str.MaximumLength = sizeof(wbuffer);
     str.Buffer = wbuffer;
 
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = SYSTEM_START_OPTIONS_WSTR;
     paramTable[0].EntryContext = &str;
-    paramTable[0].DefaultType = REG_SZ;
+    paramTable[0].DefaultType =
+        (REG_SZ << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = L"";
     paramTable[0].DefaultLength = 0;
 
@@ -327,14 +330,16 @@ vrng_get_startup_params(void)
             return STATUS_UNSUCCESSFUL;
         }
     } else {
-        PRINTK(("vseerial: Failed to read registry startup values: 0x%x.\n",
+        PRINTK(("vrng: Failed to read registry startup values: 0x%x.\n",
             status));
     }
 
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = PVCTRL_DBG_PRINT_MASK_WSTR;
     paramTable[0].EntryContext = &dbg_print_mask;
-    paramTable[0].DefaultType = REG_DWORD;
+    paramTable[0].DefaultType =
+        (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = &dbg_print_mask;
     paramTable[0].DefaultLength = sizeof(uint32_t);
     status = RtlQueryRegistryValues(RTL_REGISTRY_SERVICES

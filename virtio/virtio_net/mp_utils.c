@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008-2017 Red Hat, Inc.
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,6 +28,7 @@
  */
 
 #include "miniport.h"
+#include <win_rtlq_flags.h>
 
 BOOLEAN
 vnif_should_exit_txrx_dpc(PVNIF_ADAPTER adapter, ULONG txrx_ind, UINT path_id)
@@ -1147,11 +1148,13 @@ vnif_get_ip_address_from_reg(PVNIF_ADAPTER adapter, WCHAR *ip_addr_buf)
     ip_reg_ustr.Length = 0;
     ip_reg_ustr.MaximumLength = PAGE_SIZE;
     ip_reg_ustr.Buffer = ip_addr_buf;
-    paramTable[0].Flags =
-        RTL_QUERY_REGISTRY_NOEXPAND | RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_NOEXPAND
+                        | RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = L"DhcpIPAddress";
     paramTable[0].EntryContext = &ip_reg_ustr;
-    paramTable[0].DefaultType = REG_SZ;
+    paramTable[0].DefaultType =
+        (REG_SZ << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = L"";
     paramTable[0].DefaultLength = 0;
 
@@ -1178,11 +1181,13 @@ vnif_get_ip_address_from_reg(PVNIF_ADAPTER adapter, WCHAR *ip_addr_buf)
     }
     ip_reg_ustr.MaximumLength = PAGE_SIZE - ip_reg_ustr.Length;
     ip_reg_ustr.Length = 0;
-    paramTable[0].Flags =
-        RTL_QUERY_REGISTRY_NOEXPAND | RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_NOEXPAND
+                        | RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = L"IPAddress";
     paramTable[0].EntryContext = &ip_reg_ustr;
-    paramTable[0].DefaultType = REG_MULTI_SZ;
+    paramTable[0].DefaultType =
+        (REG_MULTI_SZ << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = L"";
     paramTable[0].DefaultLength = 0;
 
@@ -1275,6 +1280,7 @@ vnif_send_arp(PVNIF_ADAPTER adapter)
         PRINTK(("%s: failed page allocation.\n", __func__));
         return;
     }
+    memset(ip_addr_buf, 0, PAGE_SIZE);
 
     status = vnif_get_ip_address_from_reg(adapter, ip_addr_buf);
 

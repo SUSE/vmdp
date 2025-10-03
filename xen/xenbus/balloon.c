@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 
 #include "xenbus.h"
 #include <win_maddr.h>
+#include <win_rtlq_flags.h>
 
 #if defined TARGET_OS_WinNET || \
     defined TARGET_OS_WinLH  || \
@@ -536,7 +537,8 @@ balloon_get_max_phys_pages_from_os(xen_ulong_t *max_pages)
 {
     RTL_QUERY_REGISTRY_TABLE paramTable[2] = {0};
     uint8_t buf[sizeof(reg_res_list_t)
-        + (sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR) * MAX_MEM_RES_DESCRIPTORS)];
+        + (sizeof(CM_PARTIAL_RESOURCE_DESCRIPTOR)
+           * MAX_MEM_RES_DESCRIPTORS)] = {0};
     CM_RESOURCE_LIST *res;
     reg_res_list_t *reg_res_list;
     uint64_t mem_bytes;
@@ -548,10 +550,12 @@ balloon_get_max_phys_pages_from_os(xen_ulong_t *max_pages)
 
     *max_pages = 0;
     reg_res_list = (reg_res_list_t *)buf;
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = L".Translated";
     paramTable[0].EntryContext = reg_res_list;
-    paramTable[0].DefaultType = REG_RESOURCE_LIST;
+    paramTable[0].DefaultType =
+        (REG_RESOURCE_LIST<< RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = NULL;
     paramTable[0].DefaultLength = sizeof(buf);
 

@@ -126,7 +126,6 @@ dev_ioctl(HANDLE h, DWORD ioctl, PVOID in_buf, DWORD in_len,
 {
     DWORD   ret_len;
     DWORD   obuf_len;
-    DWORD   err;
     BOOL    res;
 
     ret_len = 0;

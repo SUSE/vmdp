@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 
 #include "xenbus.h"
 #include "xen_support.h"
+#include <win_rtlq_flags.h>
 
 DRIVER_ADD_DEVICE XenbusAddDevice;
 
@@ -361,10 +362,12 @@ xenbus_get_startup_params(void)
     uint32_t index_offset;
     uint32_t updated_use_pv_drivers;
 
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = PVCTRL_DBG_PRINT_MASK_WSTR;
     paramTable[0].EntryContext = &dbg_print_mask;
-    paramTable[0].DefaultType = REG_DWORD;
+    paramTable[0].DefaultType =
+        (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = &dbg_print_mask;
     paramTable[0].DefaultLength = sizeof(uint32_t);
     status = RtlQueryRegistryValues(
@@ -389,10 +392,12 @@ xenbus_get_startup_params(void)
     str.MaximumLength = sizeof(wbuffer);
     str.Buffer = wbuffer;
 
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = SYSTEM_START_OPTIONS_WSTR;
     paramTable[0].EntryContext = &str;
-    paramTable[0].DefaultType = REG_SZ;
+    paramTable[0].DefaultType =
+        (REG_SZ << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = L"";
     paramTable[0].DefaultLength = 0;
 
@@ -416,10 +421,12 @@ xenbus_get_startup_params(void)
     }
 
     /* We are not in safe mode, check the registry for use_pv_driers. */
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = USE_PV_DRIVERS_WSTR;
     paramTable[0].EntryContext = &use_pv_drivers;
-    paramTable[0].DefaultType = REG_DWORD;
+    paramTable[0].DefaultType =
+        (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = &use_pv_drivers;
     paramTable[0].DefaultLength = sizeof(uint32_t);
     status = RtlQueryRegistryValues(
@@ -476,10 +483,12 @@ xenbus_get_startup_params(void)
     }
 
     delayed_resource_try_cnt = DELAYED_RESOURCE_TRY_CNT_DEFAULT;
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = XENBUS_TIMEOUT_WSTR;
     paramTable[0].EntryContext = &delayed_resource_try_cnt;
-    paramTable[0].DefaultType = REG_DWORD;
+    paramTable[0].DefaultType =
+        (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = &delayed_resource_try_cnt;
     paramTable[0].DefaultLength = sizeof(uint32_t);
     status = RtlQueryRegistryValues(
@@ -498,10 +507,12 @@ xenbus_get_startup_params(void)
     }
 
     pvctrl_flags = XENBUS_PVCTRL_USE_BALLOONING;
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = XENBUS_PVCTRL_FLAGS_WSTR;
     paramTable[0].EntryContext = &pvctrl_flags;
-    paramTable[0].DefaultType = REG_DWORD;
+    paramTable[0].DefaultType =
+        (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = &pvctrl_flags;
     paramTable[0].DefaultLength = sizeof(uint32_t);
     status = RtlQueryRegistryValues(
@@ -520,10 +531,12 @@ xenbus_get_startup_params(void)
     }
 
     max_disk_targets = XENBLK_DEFAULT_TARGETS;
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = XENBLK_MAX_DISKS_WSTR;
     paramTable[0].EntryContext = &max_disk_targets;
-    paramTable[0].DefaultType = REG_DWORD;
+    paramTable[0].DefaultType =
+        (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = &max_disk_targets;
     paramTable[0].DefaultLength = sizeof(uint32_t);
     status = RtlQueryRegistryValues(
@@ -542,10 +555,12 @@ xenbus_get_startup_params(void)
     }
 
     g_max_segments_per_request = XENBLK_DEFAULT_MAX_SEGS;
-    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+    paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = XENBLK_MAX_SEGS_PER_REQ_WSTR;
     paramTable[0].EntryContext = &g_max_segments_per_request;
-    paramTable[0].DefaultType = REG_DWORD;
+    paramTable[0].DefaultType =
+        (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
     paramTable[0].DefaultData = &g_max_segments_per_request;
     paramTable[0].DefaultLength = sizeof(uint32_t);
     status = RtlQueryRegistryValues(
@@ -571,10 +586,12 @@ xenbus_get_startup_params(void)
         /* Only support flexible grant entries if Xen 3.2 or greater. */
         if (version >= 0x30002) {
             gNR_GRANT_FRAMES = DEFAULT_NR_GRANT_FRAMES;
-            paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT;
+            paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
+                                | RTL_QUERY_REGISTRY_TYPECHECK;
             paramTable[0].Name = XENBUS_PVCTRL_GRANT_FRAMES_WSTR;
             paramTable[0].EntryContext = &gNR_GRANT_FRAMES;
-            paramTable[0].DefaultType = REG_DWORD;
+            paramTable[0].DefaultType =
+                (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
             paramTable[0].DefaultData = &gNR_GRANT_FRAMES;
             paramTable[0].DefaultLength = sizeof(uint32_t);
             status = RtlQueryRegistryValues(

@@ -1,8 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2008-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,33 +24,15 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _XENNET_VER_H
-#define _XENNET_VER_H
+#ifndef _WIN_RTLQ_FLAGS_H
+#define _WIN_RTLQ_FLAGS_H
 
-
-#if NDIS_SUPPORT_NDIS6
-#if defined ARCH_x86
-#define VER_FILEVERSION             2,6,1,05
-#define VER_FILEVERSION_STR         "2.6.1.05\0"
-#else
-#define VER_FILEVERSION             2,6,1,05
-#define VER_FILEVERSION_STR         "2.6.1.05\0"
+#ifndef RTL_QUERY_REGISTRY_TYPECHECK
+#define RTL_QUERY_REGISTRY_TYPECHECK 0
 #endif
 
-#define VNIF_MAJOR_DRIVER_VERSION   0x02
-#define VNIF_MINOR_DRIVER_VERSION   0x06
-
-#else
-#define VER_FILEVERSION             2,6,1,05
-#define VER_FILEVERSION_STR         "2.6.1.05\0"
-
-#define VNIF_MAJOR_DRIVER_VERSION   0x02
-#define VNIF_MINOR_DRIVER_VERSION   0x06
+#ifndef RTL_QUERY_REGISTRY_TYPECHECK_SHIFT
+#define RTL_QUERY_REGISTRY_TYPECHECK_SHIFT 0
 #endif
-
-#define VNIF_VENDOR_DRIVER_VERSION  ((VNIF_MAJOR_DRIVER_VERSION << 16) | \
-                                    VNIF_MINOR_DRIVER_VERSION)
-
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2025 SUSE. SUSE All rights reserved.", "\0"
 
 #endif

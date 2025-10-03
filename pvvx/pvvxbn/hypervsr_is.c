@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2015-2023 SUSE LLC
+ * Copyright 2015-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,6 +34,7 @@
 #include <ntddk.h>
 #include <winpv_defs.h>
 #include <asm/win_compat.h>
+#include <win_rtlq_flags.h>
 
 static LONG
 drv_get_reg_val(ULONG path,
@@ -48,12 +49,14 @@ drv_get_reg_val(ULONG path,
     NTSTATUS status;
 
     paramTable[0].Flags = RTL_QUERY_REGISTRY_DIRECT
-                        | RTL_QUERY_REGISTRY_REQUIRED;
+                        | RTL_QUERY_REGISTRY_REQUIRED
+                        | RTL_QUERY_REGISTRY_TYPECHECK;
     paramTable[0].Name = val_name;
 
     if (data_type == REG_DWORD) {
         paramTable[0].EntryContext = value;
-        paramTable[0].DefaultType = REG_DWORD;
+        paramTable[0].DefaultType =
+            (REG_DWORD << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
         paramTable[0].DefaultData = value;
         paramTable[0].DefaultLength = *val_len;
     } else if (data_type == REG_SZ) {
@@ -61,7 +64,8 @@ drv_get_reg_val(ULONG path,
         str.MaximumLength = (USHORT)*val_len;
         str.Buffer = value;
         paramTable[0].EntryContext = &str;
-        paramTable[0].DefaultType = REG_NONE;
+        paramTable[0].DefaultType =
+            (REG_SZ << RTL_QUERY_REGISTRY_TYPECHECK_SHIFT) | REG_NONE;
         paramTable[0].DefaultData = L"";
         paramTable[0].DefaultLength = 0;
     } else {

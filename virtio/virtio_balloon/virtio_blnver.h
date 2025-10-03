@@ -28,8 +28,8 @@
 #ifndef _VIRTIO_BLNVER_H
 #define _VIRTIO_BLNVER_H
 
-#define VER_FILEVERSION             2,6,0,08
-#define VER_FILEVERSION_STR         "2.6.0.08\0"
+#define VER_FILEVERSION             2,6,0,09
+#define VER_FILEVERSION_STR         "2.6.0.09\0"
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2011-2025 SUSE All rights reserved.", "\0"
 

@@ -29,8 +29,8 @@
 #define _XENBUS_VER_H
 
 
-#define VER_FILEVERSION             2,4,3,36
-#define VER_FILEVERSION_STR         "2.4.3.36\0"
+#define VER_FILEVERSION             2,4,3,37
+#define VER_FILEVERSION_STR         "2.4.3.37\0"
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2025 SUSE. SUSE All rights reserved.", "\0"
 

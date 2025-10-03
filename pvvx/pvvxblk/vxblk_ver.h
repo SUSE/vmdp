@@ -28,11 +28,11 @@
 #define _VXBLK_VER_H
 
 #ifdef IS_STORPORT
-#define VER_FILEVERSION             2,6,0,21
-#define VER_FILEVERSION_STR         "2.6.0.21\0"
+#define VER_FILEVERSION             2,6,0,22
+#define VER_FILEVERSION_STR         "2.6.0.22\0"
 #else
-#define VER_FILEVERSION             2,6,0,21
-#define VER_FILEVERSION_STR         "2.6.0.21\0"
+#define VER_FILEVERSION             2,6,0,22
+#define VER_FILEVERSION_STR         "2.6.0.22\0"
 #endif
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2013-2025 SUSE All rights reserved.", "\0"
