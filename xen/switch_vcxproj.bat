@@ -5,6 +5,7 @@ if "%1"=="22" goto start
 goto help
 
 :start
+copy xen.sln.%1 xen.sln
 for %%d in (xenbus xenblk xennet xenscsi) do (
     cd %%d
     copy %%d.vcxproj.%1 %%d.vcxproj

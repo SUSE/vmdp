@@ -17,22 +17,6 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Debug|Win32">
-      <Configuration>Win10-2004Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Debug|x64">
-      <Configuration>Win10-2004Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Release|Win32">
-      <Configuration>Win10-2004Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Release|x64">
-      <Configuration>Win10-2004Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Win10Debug|Win32">
       <Configuration>Win10Debug</Configuration>
       <Platform>Win32</Platform>
@@ -113,10 +97,6 @@
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>True</UseDebugLibraries>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|Win32'" Label="Configuration">
     <TargetVersion>WindowsV6.3</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
@@ -130,10 +110,6 @@
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|Win32'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>False</UseDebugLibraries>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
@@ -153,10 +129,6 @@
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|x64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>True</UseDebugLibraries>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|x64'" Label="Configuration">
     <TargetVersion>WindowsV6.3</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
@@ -170,10 +142,6 @@
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|x64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>False</UseDebugLibraries>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
@@ -195,9 +163,6 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
@@ -208,9 +173,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|x64'" Label="PropertySheets">
@@ -225,9 +187,6 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
@@ -238,9 +197,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|Win32'" Label="PropertySheets">
@@ -272,18 +228,6 @@
     </ResourceCompile>
     <ClCompile>
       <PreprocessorDefinitions>ARCH_x86_64;USE_INDIRECT_XENBUS_APIS;PVVX;PVVXBLK;CAN_USE_MSI;XENBLK_STORPORT;IS_STORPORT;VIRTIO_BLK_DRIVER;USE_STORPORT_DPC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SupportJustMyCode>false</SupportJustMyCode>
-    </ClCompile>
-    <Link>
-      <CETCompat>true</CETCompat>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|x64'">
-    <ResourceCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions);TARGET_OS_Win10_2004</PreprocessorDefinitions>
-    </ResourceCompile>
-    <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;USE_INDIRECT_XENBUS_APIS;PVVX;PVVXBLK;CAN_USE_MSI;XENBLK_STORPORT;IS_STORPORT;VIRTIO_BLK_DRIVER;USE_STORPORT_DPC;%(PreprocessorDefinitions);WIN10_TARGET_OS=2004</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
@@ -327,17 +271,6 @@
       <CETCompat>true</CETCompat>
     </Link>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'">
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;USE_INDIRECT_XENBUS_APIS;PVVX;PVVXBLK;CAN_USE_MSI;XENBLK_STORPORT;IS_STORPORT;VIRTIO_BLK_DRIVER;USE_STORPORT_DPC;%(PreprocessorDefinitions);WIN10_TARGET_OS=2004</PreprocessorDefinitions>
-    </ClCompile>
-    <Link>
-      <CETCompat>true</CETCompat>
-    </Link>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|x64'">
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -369,15 +302,6 @@
     </ResourceCompile>
     <ClCompile>
       <PreprocessorDefinitions>ARCH_x86;USE_INDIRECT_XENBUS_APIS;PVVX;PVVXBLK;CAN_USE_MSI;XENBLK_STORPORT;IS_STORPORT;VIRTIO_BLK_DRIVER;USE_STORPORT_DPC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SupportJustMyCode>false</SupportJustMyCode>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'">
-    <ResourceCompile>
-      <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions);TARGET_OS_Win10_2004</PreprocessorDefinitions>
-    </ResourceCompile>
-    <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;USE_INDIRECT_XENBUS_APIS;PVVX;PVVXBLK;CAN_USE_MSI;XENBLK_STORPORT;IS_STORPORT;VIRTIO_BLK_DRIVER;USE_STORPORT_DPC;%(PreprocessorDefinitions);WIN10_TARGET_OS=2004</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -413,14 +337,6 @@
     </ResourceCompile>
     <ClCompile>
       <PreprocessorDefinitions>ARCH_x86;USE_INDIRECT_XENBUS_APIS;PVVX;PVVXBLK;CAN_USE_MSI;XENBLK_STORPORT;IS_STORPORT;VIRTIO_BLK_DRIVER;USE_STORPORT_DPC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'">
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;USE_INDIRECT_XENBUS_APIS;PVVX;PVVXBLK;CAN_USE_MSI;XENBLK_STORPORT;IS_STORPORT;VIRTIO_BLK_DRIVER;USE_STORPORT_DPC;%(PreprocessorDefinitions);WIN10_TARGET_OS=2004</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|Win32'">

@@ -25,8 +25,8 @@ REM (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 REM THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 REM
 
-set config_os=Win10-2004
-set target_os=Win10-2004
+set config_os=Win11
+set target_os=Win11
 set config_rd=Release
 set p_platform=x64
 set t_rebuild=
@@ -35,9 +35,9 @@ set sln=
 :parse_params
 if "%1"=="" goto build_it
 
-if %1==10-2004 (
-    set config_os=Win10-2004
-    set target_os=Win10-2004
+if %1==11 (
+    set config_os=Win11
+    set target_os=Win11
 ) else if %1==10 (
     set config_os=Win10
     set target_os=Win10
@@ -97,8 +97,8 @@ msbuild %sln% /p:Configuration=%msb_config% /p:Platform=%p_platform% %ddk_target
 goto end
 
 :help
-echo "msb.bat [<sln>] [10-2004|10|8.1|8|g] [r|d] [6|3|a] [c]"
-echo   10-2004 - Win10-2004
+echo "msb.bat [<sln>] [11|10|8.1|8|g] [r|d] [6|3|a] [c]"
+echo   11 - Win11
 echo   10 - Win10
 echo   8.1 - Win8.1
 echo   8 - Win8
@@ -109,7 +109,7 @@ echo   6 - x64
 echo   3 - x86
 echo   a - ARM64
 echo   c - rebuild clean
-echo   default: Win10-2004 Release x64
+echo   default: Win11 Release x64
 
 :end
 set config_os=

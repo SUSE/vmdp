@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2009-2012 Novell, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,9 +29,9 @@
 #define _XENBLK_VER_H
 
 
-#define VER_FILEVERSION             2,4,2,25
-#define VER_FILEVERSION_STR         "2.4.2.25\0"
+#define VER_FILEVERSION             2,4,2,26
+#define VER_FILEVERSION_STR         "2.4.2.26\0"
 
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2023 SUSE, All rights reserved.", "\0"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2025 SUSE, All rights reserved.", "\0"
 
 #endif

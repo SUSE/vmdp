@@ -158,7 +158,7 @@ vserial_pdo_power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         switch (powerType) {
         case DevicePowerState:
             RPRINTK(DPRTL_PWR, ("    DevicePowerState\n"));
-            if (powerState.SystemState == PowerActionShutdown) {
+            if (stack->Parameters.Power.ShutdownType == PowerActionShutdown) {
                 RPRINTK(DPRTL_PWR,
                     ("    vserial_pdo_power:shutting down %s\n",
                     pdx->instance_id));

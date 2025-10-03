@@ -34,11 +34,11 @@
 #define VER_ORIGINALFILENAME_STR    "pvvxsvc.exe"
 
 #ifdef XENBUS_HAS_DEVICE
-#define VER_FILEVERSION             2,6,0,0002
-#define VER_FILEVERSION_STR         "2.6.0.0002\0"
+#define VER_FILEVERSION             2,6,0,0003
+#define VER_FILEVERSION_STR         "2.6.0.0003\0"
 #else
-#define VER_FILEVERSION             2,6,0,0002
-#define VER_FILEVERSION_STR         "2.6.0.0002\0"
+#define VER_FILEVERSION             2,6,0,0003
+#define VER_FILEVERSION_STR         "2.6.0.0003\0"
 #endif
 
 #undef VER_PRODUCTVERSION
@@ -120,13 +120,9 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define VER_FILEDESCRIPTION_STR     "PV service for Windows 10/Server 16-19"
 #endif
 
-/* Windows 10-2004 */
-#elif defined TARGET_OS_Win10_2004
-#ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "PV service for Windows 10-11"
-#else
-#define VER_FILEDESCRIPTION_STR     "PV service for Windows 10-11/Server 22-25"
-#endif
+/* Windows 11 */
+#elif defined TARGET_OS_Win11
+#define VER_FILEDESCRIPTION_STR     "PV service for Windows 11/Server 22-25"
 
 #else
 #define VER_FILEDESCRIPTION_STR     "PV service for Windows"

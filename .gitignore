@@ -31,6 +31,8 @@ Win10Debug/
 Win10Release/
 Win10-2004Debug/
 Win10-2004Release/
+Win11Debug/
+Win11Release/
 .vs/
 dirs.sdf
 sdv-map.h

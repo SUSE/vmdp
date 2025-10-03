@@ -5,6 +5,7 @@ if "%1"=="22" goto start
 goto help
 
 :start
+copy pvvx.sln pvvx.sln.%1
 for %%d in (pvvxbn pvvxblk pvvxnet pvvxscsi) do (
     cd %%d
         copy %%d.vcxproj %%d.vcxproj.%1

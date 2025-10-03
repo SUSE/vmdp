@@ -56,70 +56,66 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 /* Windows 2000 */
 #ifdef TARGET_OS_Win2K
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 2000"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 2000"
 
 /* Windows XP 32 bit  */
 #elif defined TARGET_OS_WinXP
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows XP"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows XP"
 
 /* Windows 2003 32 bit, Windows 2003 64 bit, and XP 64 bit */
 #elif defined TARGET_OS_WinNET
 #ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows Server 2003"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows Server 2003"
 #else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows XP/Server 2003"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows XP/Server 2003"
 #endif
 
 /* Windows Vista and Windows 2008 */
 #elif defined TARGET_OS_WinLH
 #ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows Vista/Server 2008"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows Vista/Server 2008"
 #else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows Vista/Server 2008"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows Vista/Server 2008"
 #endif
 
 /* Windows 7 */
 #elif defined TARGET_OS_Win7
 #ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 7"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 7"
 #else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 7/Server 2008 R2"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 7/Server 2008 R2"
 #endif
 
 /* Windows 8 */
 #elif defined TARGET_OS_Win8
 #ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 8"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 8"
 #else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 8/Server 2012"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 8/Server 2012"
 #endif
 
 /* Windows 8.1 */
 #elif defined TARGET_OS_Win8_1
 #ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 8.1"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 8.1"
 #else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 8.1/Server 2012 R2"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 8.1/Server 2012 R2"
 #endif
 
 /* Windows 10 */
 #elif defined TARGET_OS_Win10
 #ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 10"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 10"
 #else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 10/Server 16-19"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 10/Server 16-19"
 #endif
 
-/* Windows 10-2004 */
-#elif defined TARGET_OS_Win10_2004
-#ifdef ARCH_x86
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 10-11"
-#else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows 10-11/Server 22-25"
-#endif
+/* Windows 11 */
+#elif defined TARGET_OS_Win11
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows 11/Server 22-25"
 
 #else
-#define VER_FILEDESCRIPTION_STR     "Serial Driver for Windows"
+#define VER_FILEDESCRIPTION_STR     "RNG Driver for Windows"
 
 #endif
 

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,9 +28,9 @@
 #define _XENSCSI_VER_H
 
 
-#define VER_FILEVERSION             1,0,2,17
-#define VER_FILEVERSION_STR         "1.0.2.17\0"
+#define VER_FILEVERSION             1,0,2,18
+#define VER_FILEVERSION_STR         "1.0.2.18\0"
 
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2013-2021 SUSE All rights reserved.", "\0"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2013-2025 SUSE All rights reserved.", "\0"
 
 #endif

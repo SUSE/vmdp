@@ -3,6 +3,7 @@
 if "%1"=="" goto help
 rem if "%1"=="19" goto start
 rem if "%1"=="22" goto start
+rem if "%1"=="arm64" goto start
 rem goto help
 
 :start
@@ -20,11 +21,14 @@ for %%d in (fwcfg pvcrash_notify pvvxsvc virtiofs_svc virtio_balloon virtio_blk 
             copy /y cng\um\viorngum.vcxproj.user cng\um\viorngum.vcxproj.user.%1
         )
     )
+    if not %1==19 (
+        copy packages.config packages.config.%1
+    )
     cd ..
 )
 goto end
 
 :help
-echo "usage: %0 <19|22>"
+echo "usage: %0 <19|22|arm64>"
 
 :end

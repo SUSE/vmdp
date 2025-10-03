@@ -57,7 +57,6 @@ if "%1"=="13" (
     shift
 ) else (
     set vcxp=19
-    set vcxp_latest=22
     set setvcxp_bat=switch_vcxproj.bat
 )
 
@@ -98,8 +97,8 @@ set start_username=%USERNAME%
 set t_rebuild_flag=
 if "%pvbuildoption%"=="-cZ" set t_rebuild_flag=c
 
-rem If specifically specified vs2022, only build for 10-2004
-if %vcxp%==22 goto biuld_vs_22
+rem If specifically specified vs2022, only build for 11
+if %vcxp%==22 goto build_vs_22
 
 rem Build 32 bit
 cd %build_dir%
@@ -139,7 +138,7 @@ if %vcxp%==13 (
 ) else if %vcxp%==19 (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat"
 ) else if %vcxp%==22 (
-    goto biuld_vs_22
+    goto build_vs_22
 ) else (
     goto help
 )
@@ -158,7 +157,7 @@ for %%w in (8 8.1 10) do (
 )
 echo Built using VS20%vcxp%
 
-:biuld_vs_22
+:build_vs_22
 set path=%start_path%
 cd %start_dir%
 call unsetddk.bat
@@ -169,14 +168,10 @@ call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDe
 set package_to_build=%build_dir%
 for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
 
-if "%package_to_build%"=="virtio" (
-    set vcxp=x64
-) else (
-    set vcxp=22
-)
+set vcxp=22
 call %setvcxp_bat% %vcxp%
 
-for %%w in (10-2004) do (
+for %%w in (11) do (
     for %%r in (r d) do (
         for %%x in (6) do (
             title Windows %%w %%r %%x
@@ -192,7 +187,7 @@ if not "%do_arm_build%"=="arm" goto end
 if "%package_to_build%"=="virtio" (
     call %setvcxp_bat% arm64
     echo "building for virtio - do ARM64 as well"
-    for %%w in (10-2004) do (
+    for %%w in (11) do (
         for %%r in (r d) do (
             for %%x in (a) do (
                 title Windows %%w %%r %%x
@@ -202,7 +197,7 @@ if "%package_to_build%"=="virtio" (
             )
         )
     )
-    call %setvcxp_bat% x64
+    call %setvcxp_bat% 22
 ) else (
     echo[
     echo Building for ARM64 is not supported on %package_to_build%
@@ -222,7 +217,7 @@ goto end
 echo.
 echo build_all.bat builds all of the driver kit files
 echo.
-echo "syntax: build_all.bat [<13|15|17|19>] [-cZ] [xp] [lh] [arm]"
+echo "syntax: build_all.bat [<13|15|17|19|22>] [-cZ] [xp] [lh] [arm]"
 echo example: build_all
 echo.
 
@@ -244,7 +239,6 @@ set prompt=$P$G
 set t_rebuild_flag=
 set pvbuildoption=
 set vcxp=
-set vcxp_latest=
 set _WXP=
 set _WLH=
 set do_arm_build=

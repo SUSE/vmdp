@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,19 +31,19 @@
 
 #if NDIS_SUPPORT_NDIS6
 #if defined ARCH_x86
-#define VER_FILEVERSION             2,6,1,03
-#define VER_FILEVERSION_STR         "2.6.1.03\0"
+#define VER_FILEVERSION             2,6,1,04
+#define VER_FILEVERSION_STR         "2.6.1.04\0"
 #else
-#define VER_FILEVERSION             2,6,1,03
-#define VER_FILEVERSION_STR         "2.6.1.03\0"
+#define VER_FILEVERSION             2,6,1,04
+#define VER_FILEVERSION_STR         "2.6.1.04\0"
 #endif
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06
 
 #else
-#define VER_FILEVERSION             2,6,1,03
-#define VER_FILEVERSION_STR         "2.6.1.03\0"
+#define VER_FILEVERSION             2,6,1,04
+#define VER_FILEVERSION_STR         "2.6.1.04\0"
 
 #define VNIF_MAJOR_DRIVER_VERSION   0x02
 #define VNIF_MINOR_DRIVER_VERSION   0x06
@@ -52,6 +52,6 @@
 #define VNIF_VENDOR_DRIVER_VERSION  ((VNIF_MAJOR_DRIVER_VERSION << 16) | \
                                     VNIF_MINOR_DRIVER_VERSION)
 
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2021 Novell, Inc. SUSE All rights reserved.", "\0"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2007-2025 SUSE. SUSE All rights reserved.", "\0"
 
 #endif

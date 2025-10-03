@@ -37,8 +37,8 @@ set dvl_drv=
 if "%1"=="" goto help
 
 :l_loop
-if %1==10-2004 (
-    set config_os=%config_os% Win10-2004Release
+if %1==11 (
+    set config_os=%config_os% Win11Release
 ) else if %1==10 (
     set config_os=%config_os% Win10Release
 ) else if %1==8.1 (
@@ -70,7 +70,7 @@ shift
 if not "%1"=="" goto l_loop
 
 if "%dvl_drv%"=="" goto help
-if "%config_os%"=="" set config_os=Win10-2004Release Win10Release Win8.1Release Win8Release
+if "%config_os%"=="" set config_os=Win11Release Win10Release Win8.1Release Win8Release
 
 :build_it
 
@@ -127,13 +127,13 @@ for %%c in (%config_os%) do (
 goto end
 
 :help
-echo "msdvl.bat [all | [[10-2004 | 10 | 8.1 | 8] [full] <driver>]"
+echo "msdvl.bat [all | [[11 | 10 | 8.1 | 8] [full] <driver>]"
 echo   all - all platforms all drivers non-full
 echo   10 - Win10
 echo   8.1 - Win8.1
 echo   8 - Win8
 echo   "<driver> - [pvvxbus | pvvxblk | pvvxnet | pvvxscsi]"
-echo   "default: 10-2004 10 8.1 8 <driver>"
+echo   "default: 11 10 8.1 8 <driver>"
 echo "Must use the full option at least once"
 
 :end

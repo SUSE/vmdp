@@ -124,7 +124,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #endif
 
 /* Windows 10-2004 */
-#elif defined TARGET_OS_Win10_2004
+#elif defined TARGET_OS_Win11
 #ifdef ARCH_x86
 #define VER_FILEDESCRIPTION_STR     "Block Driver for Windows 10-2004 on Xen"
 #define VER_PRODUCTNAME_STR         "SUSE Drivers for Windows 10-2004 (32-bit) on Xen"

@@ -1,32 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.2454\build\native\Microsoft.Windows.WDK.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.2454\build\native\Microsoft.Windows.WDK.arm64.props')" />
-  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
-  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <Import Project="..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props')" />
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props')" />
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Win10-2004Debug|ARM64">
-      <Configuration>Win10-2004Debug</Configuration>
+    <ProjectConfiguration Include="Win11Debug|ARM64">
+      <Configuration>Win11Debug</Configuration>
       <Platform>ARM64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Release|ARM64">
-      <Configuration>Win10-2004Release</Configuration>
+    <ProjectConfiguration Include="Win11Release|ARM64">
+      <Configuration>Win11Release</Configuration>
       <Platform>ARM64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Debug|Win32">
-      <Configuration>Win10-2004Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Debug|x64">
-      <Configuration>Win10-2004Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Release|Win32">
-      <Configuration>Win10-2004Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Win10-2004Release|x64">
-      <Configuration>Win10-2004Release</Configuration>
-      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="PropertySheets">
@@ -42,7 +26,6 @@
     <ConversionToolVersion>1.0</ConversionToolVersion>
     <BUILD_ALT_DIR>$(Configuration.Replace(' ',''))</BUILD_ALT_DIR>
     <IntDir Condition="'$(Platform)'!='Win32'">$(BUILD_ALT_DIR)\$(Platform)\</IntDir>
-    <IntDir Condition="'$(Platform)'=='Win32'">$(BUILD_ALT_DIR)\x86\</IntDir>
     <OutDir>$(IntDir)</OutDir>
   </PropertyGroup>
   <ImportGroup Label="PreConfiguration">
@@ -52,51 +35,23 @@
     <ProjectGuid>{4E6A2CB6-CDFD-4C40-95BB-E9FFE86D6A4A}</ProjectGuid>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>False</UseDebugLibraries>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|x64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>True</UseDebugLibraries>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|ARM64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>True</UseDebugLibraries>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>False</UseDebugLibraries>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|ARM64'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>False</UseDebugLibraries>
   </PropertyGroup>
   <!-- Needed by any VcxProj -->
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets')" />
+    <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets')" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'" Label="PropertySheets">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|ARM64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|ARM64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'" Label="PropertySheets">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -108,62 +63,22 @@
     <ClInclude Include="vrng_power.h" />
     <ClInclude Include="vrng_ver.h" />
   </ItemGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|Win32'">
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_RNG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SupportJustMyCode>false</SupportJustMyCode>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|Win32'">
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_RNG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'">
     <ClCompile>
       <PreprocessorDefinitions>VIRTIO_DEVICE_RNG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <CETCompat>true</CETCompat>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Debug|ARM64'">
-    <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_RNG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SupportJustMyCode>false</SupportJustMyCode>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TARGET_OS_Win11;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link />
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'">
     <ClCompile>
       <PreprocessorDefinitions>VIRTIO_DEVICE_RNG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <CETCompat>true</CETCompat>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10-2004Release|ARM64'">
-    <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_RNG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TARGET_OS_Win11;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link />
   </ItemDefinitionGroup>
@@ -201,9 +116,9 @@
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.2454\build\native\Microsoft.Windows.SDK.cpp.arm64.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.2454\build\native\Microsoft.Windows.WDK.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.2454\build\native\Microsoft.Windows.WDK.arm64.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.arm64.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props'))" />
   </Target>
 </Project>
