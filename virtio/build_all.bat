@@ -34,61 +34,52 @@ del *.log
 set pvbuildoption=
 set do_arm_build=
 set vxcp_latest=
+set vcxp=19
+set setvcxp_bat=switch_vcxproj.bat
 
-if "%1"=="13" (
+:parse_params
+if "%1"=="" (
+    goto after_parse
+) else if "%1"=="13" (
     set vcxp=%1
     set setvcxp_bat=setvcxp.bat
-    shift
 ) else if "%1"=="15" (
     set vcxp=%1
     set setvcxp_bat=setvcxp.bat
-    shift
 ) else if "%1"=="17" (
     set vcxp=%1
     set setvcxp_bat=setvcxp.bat
-    shift
 ) else if "%1"=="19" (
     set vcxp=%1
     set setvcxp_bat=switch_vcxproj.bat
-    shift
 ) else if "%1"=="22" (
     set vcxp=%1
     set setvcxp_bat=switch_vcxproj.bat
-    shift
-) else (
-    set vcxp=19
-    set setvcxp_bat=switch_vcxproj.bat
-)
-
-echo[
-echo Build using VS20%vcxp%
-
-if "%1"=="-cZ" (
+) else if "%1"=="-cZ" (
     set pvbuildoption=%1
-    shift
-)
-
-if "%1"=="msb" (
+) else if "%1"=="msb" (
     echo Invalid option: %1
+    goto help
+) else if "%1"=="xp" (
+    set _WXP=WXP
+) else if "%1"=="lh" (
+    set _WLH=WLH
+) else if "%1"=="win7" (
+    set _WIN7=WIN7
+) else if "%1"=="arm" (
+    set do_arm_build=%1
+) else (
+    echo Unrecognized parameter: %1
     goto help
 )
 
-if "%1"=="xp" (
-    set _WXP=WXP
-    shift
-)
+shift
+goto parse_params
 
-if "%1"=="lh" (
-    set _WLH=WLH
-    shift
-)
+:after_parse
 
-if "%1"=="arm" (
-    set do_arm_build=%1
-    shift
-)
-
-if not "%1"=="" goto help
+echo[
+echo Build using VS20%vcxp%
 
 set start_dir=%cd%
 set build_dir=%cd%
@@ -102,7 +93,7 @@ if %vcxp%==22 goto build_vs_22
 
 rem Build 32 bit
 cd %build_dir%
-for %%w in (%_WXP% %_WLH% WIN7) do (
+for %%w in (%_WXP% %_WLH% %_WIN7%) do (
     for %%r in (fre chk) do (
         set DDKBUILDENV=
         call \WinDDK\7600.16385.1\bin\setenv.bat \WinDDK\7600.16385.1\ %%w %%r no_oacr
@@ -114,7 +105,7 @@ for %%w in (%_WXP% %_WLH% WIN7) do (
 set path=%start_path%
 
 rem Build 64 bit
-for %%w in (%_WLH% WIN7) do (
+for %%w in (%_WLH% %_WIN7%) do (
     for %%r in (fre chk) do (
         set DDKBUILDENV=
         call \WinDDK\7600.16385.1\bin\setenv.bat \WinDDK\7600.16385.1\ %%w x64 %%r no_oacr
@@ -168,6 +159,9 @@ call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDe
 set package_to_build=%build_dir%
 for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
 
+echo.
+echo Build using VS20%vcxp%
+
 set vcxp=22
 call %setvcxp_bat% %vcxp%
 
@@ -217,7 +211,7 @@ goto end
 echo.
 echo build_all.bat builds all of the driver kit files
 echo.
-echo "syntax: build_all.bat [<13|15|17|19|22>] [-cZ] [xp] [lh] [arm]"
+echo "syntax: build_all.bat [<13|15|17|19|22>] [-cZ] [xp] [lh] [win7] [arm]"
 echo example: build_all
 echo.
 
@@ -241,4 +235,5 @@ set pvbuildoption=
 set vcxp=
 set _WXP=
 set _WLH=
+set _WIN7=
 set do_arm_build=
