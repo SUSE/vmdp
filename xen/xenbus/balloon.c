@@ -701,6 +701,7 @@ balloon_init(void)
 
 
         num_physpages = 0;
+        vm_page_adjustment = 0;
         for (attempts = 0;
               num_physpages == 0
                 && attempts < XENBUS_DERIVE_OS_MEM_FROM_XENSTORE;
