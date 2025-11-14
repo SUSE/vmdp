@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2018-2020 SUSE LLC
+ * Copyright 2018-2025 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,13 +59,13 @@
 }
 #else
 #define EX_ALLOC_POOL(_flags, _len, _tag)                                   \
-    ExAllocatePoolWithTag((_flags), (_len), (_tag))
+    ExAllocatePoolZero((_flags), (_len), (_tag))
 
 #define EX_ALLOC_POOL_PRIORITY(_addr, _flags, _len, _tag, _priority)        \
-    (_addr) = ExAllocatePoolWithTagPriority((_flags),                       \
-                                            (_len),                         \
-                                            (_tag),                         \
-                                            (_priority))
+    (_addr) = ExAllocatePoolPriorityZero((_flags),                          \
+                                         (_len),                            \
+                                         (_tag),                            \
+                                         (_priority))
 #endif
 
 #endif
