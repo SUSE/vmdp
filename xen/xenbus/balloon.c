@@ -685,6 +685,7 @@ balloon_init(void)
      * hasn't been derived yet.  It will already be set when coming
      * back up from a migrate, so no need to get it again.
      */
+    vm_page_adjustment = 0;
     if (derive_os_mem == 0) {
 
         version = (xen_ulong_t)HYPERVISOR_xen_version(0, NULL);
@@ -701,7 +702,6 @@ balloon_init(void)
 
 
         num_physpages = 0;
-        vm_page_adjustment = 0;
         for (attempts = 0;
               num_physpages == 0
                 && attempts < XENBUS_DERIVE_OS_MEM_FROM_XENSTORE;
