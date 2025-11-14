@@ -218,7 +218,7 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -227,7 +227,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
@@ -239,7 +239,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -248,7 +248,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -257,7 +257,7 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|x64'">
@@ -265,7 +265,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <CETCompat>true</CETCompat>
@@ -276,7 +276,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|x64'">
@@ -284,7 +284,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -292,7 +292,7 @@
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
@@ -304,7 +304,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
@@ -316,7 +316,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
@@ -328,7 +328,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Link>
@@ -340,7 +340,7 @@
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -351,7 +351,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -362,7 +362,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -373,7 +373,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>

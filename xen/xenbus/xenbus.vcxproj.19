@@ -218,7 +218,7 @@
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -227,7 +227,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -236,7 +236,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -245,7 +245,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -254,7 +254,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -262,7 +262,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -270,7 +270,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -278,7 +278,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86_64;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -286,7 +286,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -298,7 +298,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -310,7 +310,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -322,7 +322,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <ResourceCompile>
@@ -334,7 +334,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -345,7 +345,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -356,7 +356,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -367,7 +367,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARCH_x86;TARGET_OS_GTE_WinLH;%(PreprocessorDefinitions);POOL_ZERO_DOWN_LEVEL_SUPPORT</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>

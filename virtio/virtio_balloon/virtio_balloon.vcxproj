@@ -220,7 +220,7 @@
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -229,7 +229,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -238,7 +238,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -247,7 +247,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -256,7 +256,7 @@
       <PreprocessorDefinitions>ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|Win32'">
@@ -264,7 +264,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|Win32'">
@@ -272,7 +272,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|Win32'">
@@ -280,7 +280,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -288,7 +288,7 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -297,7 +297,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -306,7 +306,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -315,7 +315,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -324,7 +324,7 @@
       <PreprocessorDefinitions>ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10Release|x64'">
@@ -332,7 +332,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win10;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1Release|x64'">
@@ -340,7 +340,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8_1;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win8Release|x64'">
@@ -348,7 +348,7 @@
       <PreprocessorDefinitions>TARGET_OS_Win8;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <ClCompile>
-      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;ARCH_x86_64</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions);TARGET_OS_GTE_WinLH;POOL_ZERO_DOWN_LEVEL_SUPPORT;ARCH_x86_64</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
