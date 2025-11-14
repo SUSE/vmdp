@@ -13,6 +13,9 @@ for %%d in (pvvxbn pvvxblk pvvxnet pvvxscsi) do (
     if %%d==pvvxnet (
         copy sources.props.%1 sources.props
     )
+    if not %1==19 (
+        copy packages.config.%1 packages.config
+    )
     cd ..
 )
 goto end
