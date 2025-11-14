@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020 SUSE LLC
+REM Copyright 2020-2025 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -33,6 +33,7 @@ set cp_platform=x64
 set do_full_sdv=no
 set dvl_drv=
 set config_os=
+set switched=
 
 if "%1"=="" goto help
 
@@ -82,6 +83,17 @@ if "%config_os%"=="" set config_os=Win11Release Win10Release Win8.1Release Win8R
 if not exist dvl mkdir dvl
 
 for %%c in (%config_os%) do (
+    if %%c==Win11Release (
+        if not %switched==22 (
+            call switch_vcxproj.bat 22
+            set switched=22
+        )
+    ) else (
+        if not %switched==19 (
+            call switch_vcxproj.bat 19
+            set switched=19
+        )
+    )
     if not exist dvl\%%c mkdir dvl\%%c
     if not exist dvl\%%c\%cp_platform% mkdir dvl\%%c\%cp_platform%
     for %%d in (%dvl_drv%) do (
@@ -91,10 +103,14 @@ for %%c in (%config_os%) do (
         del /s c:\codeql-home\databases\%%d.sarif
 
         title DVL %%d: %%c create database
-        c:\codeql-home\codeql\codeql.cmd database create -l=cpp -s=C:\vmdp\virtio\%%d -c "msbuild /t:rebuild "C:\vmdp\virtio\%%d\%%d.vcxproj" /p:Configuration=%%c /p:Platform=x64 /p:UseSharedCompilation=false" "C:\codeql-home\databases\%%d" -j 0
+        c:\codeql-home\codeql\codeql.cmd database create -l=cpp -s=%mstart_dir%\%%d -c "msbuild /t:rebuild "%mstart_dir%\%%d\%%d.vcxproj" /p:Configuration=%%c /p:Platform=x64 /p:UseSharedCompilation=false" "C:\codeql-home\databases\%%d" -j 0
 
         title DVL %%d: %%c analyze database
-        c:\codeql-home\codeql\codeql.cmd database analyze "C:\codeql-home\databases\%%d" windows_driver_recommended.qls --format=sarifv2.1.0 --output=C:\codeql-home\databases\%%d.sarif -j 0
+        if %%c==Win11Release (
+            c:\codeql-home\codeql\codeql.cmd database analyze "C:\codeql-home\databases\%%d" recommended.qls --format=sarifv2.1.0 --output=C:\codeql-home\databases\%%d.sarif -j 0
+        ) else (
+            c:\codeql-home\codeql\codeql.cmd database analyze "C:\codeql-home\databases\%%d" windows_driver_recommended.qls --format=sarifv2.1.0 --output=C:\codeql-home\databases\%%d.sarif -j 0
+        )
 
         copy /y C:\codeql-home\databases\%%d.sarif
 
@@ -151,3 +167,4 @@ set dvl_drv=
 set cp_platform=
 set p_platform=
 set do_full_sdv=
+set switched=
