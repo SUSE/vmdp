@@ -1,0 +1,22 @@
+[DRIVER_NAME.CopyFiles]
+DRIVER_NAME.sys,,,2
+
+[DRIVER_NAME.Service]
+DisplayName     = %DRIVER_NAME.Service.DispName%
+ServiceType     = 1 ;%SERVICE_KERNEL_DRIVER%
+StartType       = 3 ;%SERVICE_DEMAND_START%
+ErrorControl    = 1 ;%SERVICE_ERROR_NORMAL%
+ServiceBinary   = %DRIVER_DIRID%\DRIVER_NAME.sys
+LoadOrderGroup  = NDIS
+;AddReg          = TextModeFlags.Reg
+
+[DRIVER_NAME.EventLog]
+AddReg = DRIVER_NAME.AddEventLog.Reg
+
+[DRIVER_NAME.AddEventLog.Reg]
+HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
+HKR, , TypesSupported,   0x00010001, 7
+
+;[TextModeFlags.Reg]
+;HKR, , TextModeFlags, 0x00010001, 0x0001
+

@@ -1,0 +1,62 @@
+[DRIVER_NAME.CopyFiles]
+DRIVER_NAME.sys,,,2
+
+[DRIVER_NAME.Service]
+DisplayName     = %DRIVER_NAME.Service.DispName%
+ServiceType     = 1 ;%SERVICE_KERNEL_DRIVER%
+StartType       = 3 ;%SERVICE_DEMAND_START%
+ErrorControl    = 1 ;%SERVICE_ERROR_NORMAL%
+ServiceBinary   = %DRIVER_DIRID%\DRIVER_NAME.sys
+LoadOrderGroup  = NDIS
+;AddReg          = TextModeFlags.Reg
+
+[DRIVER_NAME.EventLog]
+AddReg = DRIVER_NAME.AddEventLog.Reg
+
+[DRIVER_NAME.AddEventLog.Reg]
+HKR, , EventMessageFile, 0x00020000, "%%SystemRoot%%\System32\netevent.dll"
+HKR, , TypesSupported,   0x00010001, 7
+
+;[TextModeFlags.Reg]
+;HKR, , TextModeFlags, 0x00010001, 0x0001
+
+[Strings]
+SUSE = "SUSE"
+DiskId = "SUSE Drivers for Windows"
+DRIVER_NAME.DeviceDesc = "SUSE Network Driver for Windows"
+DRIVER_NAME.Service.DispName = "SUSE Net Driver service for Windows"
+TCPIPv4Desc = "TCP Checksum Offload (IPv4)"
+UDPIPv4Desc = "UDP Checksum Offload (IPv4)"
+TCPIPv6Desc = "TCP Checksum Offload (IPv6)"
+UDPIPv6Desc = "UDP Checksum Offload (IPv6)"
+Disable = "Disabled"
+Enable = "Enabled"
+LSO = "Large Send Offload Version 1 (IPv4)"
+LSOV2 = "Large Send Offload V2 (IPv4)"
+LSOV2IPv6 = "Large Send Offload V2 (IPv6)"
+IPv6ExtHdrsSupport = "IPv6 Extension Headers Support"
+TCPIPv6ExtHdrsSupport = "TCP IPv6 Extension Headers Support"
+LSO_DATA_SIZE = "TCP Large Send Offload Size"
+MTU = "MTU"
+LinkSpeed = "Link Speed"
+TX = "Tx Enabled"
+RX = "Rx Enabled"
+RX_TX = "Rx and Tx Enabled"
+ReceiveBuffers  = "Receive Buffers"
+ReceiveLimit    = "Quick Receive Turnaround Threshold"
+StatInterval    = "Statistics Timer Interval (seconds)"
+ResourceTimeout = "Return Resource Timeout (seconds)"
+DBG_PRINTK_MASK = "Debug print mask (for debug driver)"
+REL_PRINTK_MASK = "Debug print mask (for release driver)"
+FragmentedReceives = "Fragmented Receives"
+PMC = "Power Management Capabilities"
+W2K12 = "Win2012"
+RSS = "Receive Side Scaling"
+RSS_QUEUES = "Maximum Number of RSS Queues"
+IndirectDesc = "Indirect Descriptors (virtio)"
+UsePackedRings = "Packed Rings (virtio)"
+TxSgCnt = "Maximum TX scatter gather elements (virtio)"
+Priority_Vlan_Tag = "Priority and VLAN Tagging"
+Priority_Enabled = "Priority Enabled"
+VLan_Enabled = "VLAN Enabled"
+Priority_Vlan = "Priority & VLAN Enabled"

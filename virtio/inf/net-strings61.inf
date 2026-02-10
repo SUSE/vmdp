@@ -1,0 +1,7 @@
+RSS = "Receive Side Scaling"
+RSS_QUEUES = "Maximum Number of RSS Queues"
+TCPIPv6ExtHdrsSupport = "TCP IPv6 Extension Headers Support"
+Priority_Vlan_Tag = "Priority and VLAN Tagging"
+Priority_Enabled = "Priority Enabled"
+VLan_Enabled = "VLAN Enabled"
+Priority_Vlan = "Priority & VLAN Enabled"

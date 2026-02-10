@@ -1,0 +1,11 @@
+[DRIVER_NAME.Ndi]
+Characteristics = 0x81 ; NCF_HAS_UI 0x80, NCF_VIRTUAL 1
+AddReg = DRIVER_NAME.Reg, DRIVER_NAME_params.reg
+CopyFiles = DRIVER_NAME.CopyFiles
+*IfType = 6
+*MediaType = 0
+*PhysicalMediaType = 0
+
+[DRIVER_NAME.Ndi.Services]
+AddService = DRIVER_NAME, 2, DRIVER_NAME.Service, DRIVER_NAME.EventLog
+

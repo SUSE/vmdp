@@ -1,0 +1,7 @@
+
+HKR, Ndi\params\SplitEvtchn,       ParamDesc, 0, %SPLIT_EVTCHN%
+HKR, Ndi\params\SplitEvtchn,       default,   0, "1"
+HKR, Ndi\params\SplitEvtchn,       type,      0, "enum"
+HKR, Ndi\params\SplitEvtchn\enum,  "0",       0, %Disable%
+HKR, Ndi\params\SplitEvtchn\enum,  "1",       0, %Enable%
+

@@ -1,0 +1,15 @@
+;[DRIVER_NAME_params.reg5]
+HKR, Ndi\params\LsoV1IPv4,         ParamDesc,  0, %LSO%
+HKR, Ndi\params\LsoV1IPv4,         default,    0, "0"
+HKR, Ndi\params\LsoV1IPv4,         type,       0, "enum"
+HKR, Ndi\params\LsoV1IPv4\enum,    "0",        0, %Disable%
+HKR, Ndi\params\LsoV1IPv4\enum,    "1",        0, %Enable%
+
+HKR, Ndi\params\LsoDataSize,       ParamDesc,  0, %LSO_DATA_SIZE%
+HKR, Ndi\params\LsoDataSize,       default,    0, "31744"
+HKR, Ndi\params\LsoDataSize,       type,       0, "enum"
+HKR, Ndi\params\LsoDataSize\enum,  "8192",     0, 8192
+HKR, Ndi\params\LsoDataSize\enum,  "16384",    0, 16384
+HKR, Ndi\params\LsoDataSize\enum,  "31744",    0, 31744
+HKR, Ndi\params\LsoDataSize\enum,  "61440",    0, 61440
+
