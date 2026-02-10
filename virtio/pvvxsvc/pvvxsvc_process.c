@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -161,7 +161,7 @@ pvvxsvc_check_self_removal(void)
                           0,
                           REG_SZ,
                           (PBYTE)TEXT("pvvxsvc.exe remove"),
-                          strlen("pvvxsvc.exe remove") * sizeof(TCHAR) + 2);
+                          (DWORD)strlen("pvvxsvc.exe remove") * sizeof(TCHAR) + 2);
             pvvxsvc_create_process();
         }
     }

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -309,7 +309,6 @@ MPQueryInformation(
     PNDIS_TASK_TCP_IP_CHECKSUM pTcpIpChecksumTask;
     PNDIS_TASK_TCP_LARGE_SEND tcp_large_send;
 #endif
-    UINT i;
     BOOLEAN do_copy = TRUE;
 
     if (Oid < 0x20101 || Oid > 0x202ff) {
@@ -404,7 +403,7 @@ MPQueryInformation(
 
     case OID_GEN_VENDOR_DESCRIPTION:
         infoptr = VNIF_VENDOR_DESC;
-        ulBytesAvailable = infolen = strlen(infoptr) + 1;
+        ulBytesAvailable = infolen = (ULONG)strlen(infoptr) + 1;
         break;
 
     /* driver version */
@@ -775,7 +774,6 @@ MPSetInformation(
     uint32_t new_rx_chksum_tasks;
     uint32_t new_tx_chksum_tasks;
     NDIS_DEVICE_POWER_STATE NewPowerState;
-    UINT i;
 
     if (VNIF_TEST_FLAG(adapter, VNF_ADAPTER_SURPRISE_REMOVED)) {
         return NDIS_STATUS_NOT_ACCEPTED;
@@ -1061,8 +1059,7 @@ MPSetInformation(
             adapter,
             (NDIS_RECEIVE_HASH_PARAMETERS *)InformationBuffer,
             InformationBufferLength,
-            BytesRead,
-            BytesNeeded);
+            BytesRead);
         break;
 #endif
 #else
@@ -1399,9 +1396,6 @@ VNIFSetMulticastList(
   OUT PULONG BytesRead,
   OUT PULONG BytesNeeded)
 {
-    NDIS_STATUS status = NDIS_STATUS_SUCCESS;
-    ULONG i;
-
     *BytesNeeded = ETH_LENGTH_OF_ADDRESS;
     *BytesRead = InformationBufferLength;
 
@@ -1433,7 +1427,6 @@ NDIS_STATUS
 VNIFSetVLANFilter(PVNIF_ADAPTER adapter, ULONG new_vlan_id)
 {
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
-    ULONG vlan_filter_set;
 
     if (adapter->vlan_id != new_vlan_id) {
         vnif_send_vlan_filter(adapter, P8021_NET_CTRL_VLAN_DEL);
@@ -1453,6 +1446,7 @@ VNIFSetVLANFilter(PVNIF_ADAPTER adapter, ULONG new_vlan_id)
 NDIS_STATUS
 MPMethodRequest(PVNIF_ADAPTER adapter, PNDIS_OID_REQUEST Request)
 {
+    UNREFERENCED_PARAMETER(adapter);
 
     NDIS_OID Oid;
     ULONG  MethodId;
@@ -1499,8 +1493,8 @@ MPOidRequest(IN NDIS_HANDLE  MiniportAdapterContext,
             NdisRequest->DATA.SET_INFORMATION.Oid,
             NdisRequest->DATA.SET_INFORMATION.InformationBuffer,
             NdisRequest->DATA.SET_INFORMATION.InformationBufferLength,
-            &NdisRequest->DATA.SET_INFORMATION.BytesRead,
-            &NdisRequest->DATA.SET_INFORMATION.BytesNeeded);
+            (PULONG)&NdisRequest->DATA.SET_INFORMATION.BytesRead,
+            (PULONG)&NdisRequest->DATA.SET_INFORMATION.BytesNeeded);
         break;
 
     case NdisRequestQueryInformation:
@@ -1509,8 +1503,8 @@ MPOidRequest(IN NDIS_HANDLE  MiniportAdapterContext,
             NdisRequest->DATA.QUERY_INFORMATION.Oid,
             NdisRequest->DATA.QUERY_INFORMATION.InformationBuffer,
             NdisRequest->DATA.QUERY_INFORMATION.InformationBufferLength,
-            &NdisRequest->DATA.QUERY_INFORMATION.BytesWritten,
-            &NdisRequest->DATA.QUERY_INFORMATION.BytesNeeded);
+            (PULONG)&NdisRequest->DATA.QUERY_INFORMATION.BytesWritten,
+            (PULONG)&NdisRequest->DATA.QUERY_INFORMATION.BytesNeeded);
         break;
 
     default:
@@ -1531,6 +1525,8 @@ MPOidRequest(IN NDIS_HANDLE  MiniportAdapterContext,
 VOID
 MPCancelOidRequest(IN NDIS_HANDLE MiniportAdapterContext, IN PVOID RequestId)
 {
+    UNREFERENCED_PARAMETER(MiniportAdapterContext);
+    UNREFERENCED_PARAMETER(RequestId);
 }
 
 void

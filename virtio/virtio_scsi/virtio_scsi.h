@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2012-2017 Red Hat, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -181,8 +181,8 @@
 #define VIRTIO_SCSI_UNDERRUN_MOD                100
 
 #ifdef DBG
-#define VBIF_SET_FLAG(_F, _V)       InterlockedOr(&(_F), (_V))
-#define VBIF_CLEAR_FLAG(_F, _V)     InterlockedAnd(&(_F), ~(_V))
+#define VBIF_SET_FLAG(_F, _V)       InterlockedOr((LONG *)&(_F), (_V))
+#define VBIF_CLEAR_FLAG(_F, _V)     InterlockedAnd((LONG *)&(_F), ~(_V))
 #define VBIF_ZERO_VALUE(_V)         _V = 0
 #define VBIF_SET_VALUE(_V, _S)      _V = _S
 #define VBIF_INC(_V)                InterlockedIncrement(&(_V))

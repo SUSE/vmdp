@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -156,7 +156,7 @@ blkfront_probe(struct blkfront_info *info)
 static unsigned int
 ilog2(unsigned int x)
 {
-    unsigned int res = -1;
+    unsigned int res = (unsigned int)-1;
 
     while (x) {
         res++;
@@ -296,6 +296,7 @@ talk_to_backend(struct blkfront_info *info)
         RPRINTK(DPRTL_ON, ("talk_to_backend %s: "
                            " One controller, max segs per request %d\n",
                            info->nodename, XENBLK_MAX_SGL_ELEMENTS));
+        ring_order = 0;
         info->ring_size = 1;
         info->max_segs_per_req = XENBLK_MAX_SGL_ELEMENTS;
     } else {
@@ -560,14 +561,14 @@ static NTSTATUS xenblk_setup_shadow(struct blkfront_info *info)
         if (shadow->frame == NULL) {
             return STATUS_UNSUCCESSFUL;
         }
-        shadow->req.id = (uint64_t)i + 1;
-        shadow->req.nr_segments = 0;
+        shadow->u.req.id = (uint64_t)i + 1;
+        shadow->u.req.nr_segments = 0;
         shadow->request = NULL;
         memset(shadow->frame, ~0, shadow_frames * sizeof(*frame));
         shadow++;
     }
     shadow--;
-    shadow->req.id = 0x0fffffff;
+    shadow->u.req.id = 0x0fffffff;
     return STATUS_SUCCESS;
 }
 
@@ -593,7 +594,7 @@ setup_blkring(struct blkfront_info *info, unsigned int old_ring_size)
         goto fail;
     }
 
-    err = xenbus_alloc_evtchn(info->otherend_id, &info->evtchn);
+    err = xenbus_alloc_evtchn(info->otherend_id, (int *)&info->evtchn);
     if (err) {
         PRINTK(("setup_blkring: xenbus_alloc_evtchn failed\n"));
         goto fail;
@@ -632,11 +633,12 @@ static XenbusState
 backend_changed(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(len);
+
     struct blkfront_info *info = (struct blkfront_info *)watch->context;
     char *buf;
     XENBLK_LOCK_HANDLE io_lh = {0};
     XenbusState backend_state;
-    xenbus_release_device_t release_data;
     uint32_t i;
     uint32_t found;
 
@@ -766,7 +768,6 @@ connect(struct blkfront_info *info)
 {
     uint64_t sectors;
     char *buf;
-    int err;
 
     RPRINTK(DPRTL_FRNT, ("blkfront %s: %s IN\n", __func__, info->otherend));
     RPRINTK(DPRTL_FRNT, ("  info %p, connected %d, irql %x, cpu %x\n",
@@ -858,8 +859,8 @@ GET_ID_FROM_FREELIST(struct blkfront_info *info)
 
     free = info->shadow_free;
     ASSERT(free < BLK_RING_SIZE);
-    info->shadow_free = (unsigned long)info->shadow[free].req.id;
-    info->shadow[free].req.id = 0x0fffffee; /* debug */
+    info->shadow_free = (unsigned long)info->shadow[free].u.req.id;
+    info->shadow[free].u.req.id = 0x0fffffee; /* debug */
 
     XENBLK_CLEAR_FLAG(info->xenblk_locks, (BLK_ID_L | BLK_GET_L));
     XENBLK_CLEAR_FLAG(info->cpu_locks, (1 << KeGetCurrentProcessorNumber()));
@@ -878,7 +879,7 @@ ADD_ID_TO_FREELIST(struct blkfront_info *info, unsigned long id)
     XENBLK_SET_FLAG(info->xenblk_locks, (BLK_ID_L | BLK_ADD_L));
     XENBLK_SET_FLAG(info->cpu_locks, (1 << KeGetCurrentProcessorNumber()));
 
-    info->shadow[id].req.id  = info->shadow_free;
+    info->shadow[id].u.req.id  = info->shadow_free;
     info->shadow[id].request = NULL;
     info->shadow_free = id;
 
@@ -918,6 +919,8 @@ kick_pending_request_queues(struct blkfront_info *info)
 static void
 blkif_restart_queue(IN PDEVICE_OBJECT DeviceObject, IN PVOID Context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     struct blkfront_info *info = (struct blkfront_info *)Context;
 
     if (info->connected == BLKIF_STATE_CONNECTED) {
@@ -974,7 +977,6 @@ do_blkif_ind_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
     XEN_LOCK_HANDLE lh;
     grant_ref_t gref_head;
     ULONG i;
-    ULONG j;
     ULONG sidx;
     unsigned long buffer_mfn;
     unsigned long id;
@@ -998,7 +1000,7 @@ do_blkif_ind_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
     XenAcquireSpinLock(&info->lock, &lh);
 
 #ifdef DBG
-    InterlockedIncrement(&info->depth);
+    InterlockedIncrement((LONG *)&info->depth);
     if (info->depth > info->max_depth) {
         info->max_depth = info->depth;
         PRINTK(("Max queue depth %d\n", info->max_depth));
@@ -1118,19 +1120,19 @@ do_blkif_ind_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
     info->ring.req_prod_pvt++;
 
     /* Keep a private copy so we can reissue requests when recovering. */
-    info->shadow[id].ind = *ind;
+    info->shadow[id].u.ind = *ind;
     info->shadow[id].num_ind = sidx;
     gnttab_free_grant_references(gref_head);
 
 #ifdef DBG
-    if (sidx != num_pages) {
+    if (sidx != (ULONG)num_pages) {
         DPRINTK(DPRTL_IO, ("** sidx %d != num_pages %d\n", sidx, num_pages));
     }
     info->shadow[id].seq = info->seq;
-    InterlockedIncrement(&info->seq);
+    InterlockedIncrement((LONG *)&info->seq);
 #endif
     info->shadow[id].srb_ext = srb_ext;
-    InterlockedIncrement(&srb_ext->use_cnt);
+    InterlockedIncrement((LONG *)&srb_ext->use_cnt);
 
     info->shadow[id].request = srb;
 #ifdef DBG
@@ -1138,7 +1140,7 @@ do_blkif_ind_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
         DPRINTK(DPRTL_TRC, ("Submitting the SCSIOP 16 request %x.\n",
                             srb->Cdb[0]));
     }
-    InterlockedIncrement(&info->req);
+    InterlockedIncrement((LONG *)&info->req);
 #endif
 
     /*
@@ -1172,12 +1174,10 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
     STOR_SCATTER_GATHER_LIST *sgl;
     uint32_t *ids;
     ULONG sidx;
-    ULONG i;
     unsigned long buffer_mfn;
     unsigned long len;
     unsigned long id;
     unsigned long page_offset;
-    unsigned long remaining_bytes;
     unsigned int starting_req_prod_pvt;
     unsigned int fsect;
     unsigned int lsect;
@@ -1229,7 +1229,7 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
     idx = 0;
 
 #ifdef DBG
-    InterlockedIncrement(&info->depth);
+    InterlockedIncrement((LONG *)&info->depth);
     if (info->depth > info->max_depth) {
         info->max_depth = info->depth;
         PRINTK(("Max queue depth %d\n", info->max_depth));
@@ -1250,7 +1250,7 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
     addr = xenblk_get_buffer_addr(srb, srb_ext);
     sidx = 1;
 
-    for (; num_ring_req; num_ring_req--) {
+    for (id = 0; num_ring_req; num_ring_req--) {
         if (num_pages <= BLKIF_MAX_SEGMENTS_PER_REQUEST) {
             num_segs = num_pages;
             num_pages = 0;
@@ -1328,14 +1328,14 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
         info->ring.req_prod_pvt++;
 
         /* Keep a private copy so we can reissue requests when recovering. */
-        info->shadow[id].req = *ring_req;
+        info->shadow[id].u.req = *ring_req;
 
 #ifdef DBG
         info->shadow[id].seq = info->seq;
-        InterlockedIncrement(&info->seq);
+        InterlockedIncrement((LONG *)&info->seq);
 #endif
         info->shadow[id].srb_ext = srb_ext;
-        InterlockedIncrement(&srb_ext->use_cnt);
+        InterlockedIncrement((LONG *)&srb_ext->use_cnt);
     }
     gnttab_free_grant_references(gref_head);
 
@@ -1345,7 +1345,7 @@ do_blkif_request(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb)
         DPRINTK(DPRTL_TRC, ("Submitting the SCSIOP 16 request %x.\n",
                             srb->Cdb[0]));
     }
-    InterlockedIncrement(&info->req);
+    InterlockedIncrement((LONG *)&info->req);
 #endif
 
     /*
@@ -1374,7 +1374,6 @@ XenBlkCompleteRequest(struct blkfront_info *info, SCSI_REQUEST_BLOCK *srb,
     unsigned int status)
 {
     xenblk_srb_extension *srb_ext;
-    unsigned int len;
 #ifdef XENBLK_REQUEST_VERIFIER
     uint32_t *pu32;
 #endif
@@ -1501,9 +1500,9 @@ blkif_complete_int(struct blkfront_info *info)
                     o = 0;
 
                 }
-                InterlockedIncrement(&info->cseq);
+                InterlockedIncrement((LONG *)&info->cseq);
 #endif
-                InterlockedDecrement(&info->shadow[id].srb_ext->use_cnt);
+                InterlockedDecrement((LONG *)&info->shadow[id].srb_ext->use_cnt);
 
                 if (info->shadow[id].request) {
 #ifdef DBG
@@ -1515,7 +1514,7 @@ blkif_complete_int(struct blkfront_info *info)
                         outoforder = 1;
                         info->queued_srb_ext++;
                     }
-                    InterlockedDecrement(&info->req);
+                    InterlockedDecrement((LONG *)&info->req);
 #endif
                     info->shadow[id].srb_ext->status = bret->status;
                     xenblk_add_tail(info, info->shadow[id].srb_ext);
@@ -1555,7 +1554,7 @@ blkif_complete_int(struct blkfront_info *info)
                              info->hsrb_ext->srb));
                     info->queued_srb_ext--;
                 }
-                InterlockedDecrement(&info->depth);
+                InterlockedDecrement((LONG *)&info->depth);
 #endif
                 srb = info->hsrb_ext->srb;
                 status = info->hsrb_ext->status;
@@ -1586,6 +1585,10 @@ blkif_complete_int(struct blkfront_info *info)
 void
 blkif_int_dpc(PKDPC dpc, PVOID dcontext, PVOID sa1, PVOID sa2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(dcontext);
+    UNREFERENCED_PARAMETER(sa2);
+
     struct blkfront_info *info = (struct blkfront_info *)sa1;
 
     if (info == NULL) {
@@ -1600,6 +1603,10 @@ blkif_int_dpc(PKDPC dpc, PVOID dcontext, PVOID sa1, PVOID sa2)
 void
 blkif_int(KDPC *dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     struct blkfront_info *info = (struct blkfront_info *)context;
 
     if (info == NULL) {
@@ -1669,7 +1676,6 @@ void
 blkif_disconnect_backend(XENBLK_DEVICE_EXTENSION *dev_ext)
 {
     uint32_t i;
-    uint32_t j;
     char *buf;
     enum xenbus_state backend_state;
     struct blkfront_info *info;
@@ -1874,7 +1880,7 @@ blkif_completion_checks(struct blk_shadow *s,
     for (i = 0; i < nr_segs; i++) {
         if (s->num_ind > s->srb_ext->sgl->NumberOfElements) {
             DPRINTK(DPRTL_IO, ("  indirect_gref[%d] %d\n",
-                               i, s->ind.indirect_grefs[i]));
+                               i, s->u.ind.indirect_grefs[i]));
         }
     }
 }
@@ -1891,12 +1897,12 @@ blkif_completion(struct blkfront_info *info, unsigned long id)
     uint32_t nr_segs;
 
     s = &info->shadow[id];
-    switch (s->req.operation) {
+    switch (s->u.req.operation) {
     case BLKIF_OP_DISCARD:
         break;
 
     case BLKIF_OP_INDIRECT: {
-        nr_segs = BLKIF_INDIRECT_PAGES(s->ind.nr_segments);
+        nr_segs = BLKIF_INDIRECT_PAGES(s->u.ind.nr_segments);
         ind_segs = info->indirect_segs[id];
         blkif_completion_checks(s, ind_segs, nr_segs);
         for (i = 0; i < s->num_ind; i++) {
@@ -1904,20 +1910,20 @@ blkif_completion(struct blkfront_info *info, unsigned long id)
         }
 
         for (i = 0; i < nr_segs; i++) {
-            gnttab_end_foreign_access(s->ind.indirect_grefs[i], 0UL);
+            gnttab_end_foreign_access(s->u.ind.indirect_grefs[i], 0UL);
         }
         s->num_ind = 0;
-        s->ind.nr_segments = 0;
+        s->u.ind.nr_segments = 0;
         break;
     }
     default:
-        for (i = 0; i < s->req.nr_segments; i++) {
-            gnttab_end_foreign_access(s->req.seg[i].gref, 0);
+        for (i = 0; i < s->u.req.nr_segments; i++) {
+            gnttab_end_foreign_access(s->u.req.seg[i].gref, 0);
             CDPRINTK(DPRTL_COND, 0, 0, 1,
                 ("blkif_completion: end_foreign_access i = %d, gref = %x.\n",
-                i, s->req.seg[i].gref));
+                i, s->u.req.seg[i].gref));
         }
-        s->req.nr_segments = 0;
+        s->u.req.nr_segments = 0;
         break;
     }
 }

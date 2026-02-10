@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -123,8 +123,8 @@ vnif_get_8021q_info(NET_BUFFER_LIST *nbl, uint32_t supported)
                                                   Ieee8021QNetBufferListInfo)));
         if (p8021->Value != NULL) {
             if (supported & P8021_PRIORITY_TAG) {
-                priority_vlan =
-                    p8021->TagHeader.UserPriority << P8021_PRIORITY_WORD_SHIFT;
+                priority_vlan = (uint16_t)(p8021->TagHeader.UserPriority
+                                                << P8021_PRIORITY_WORD_SHIFT);
             }
             if (supported & P8021_VLAN_TAG) {
                 priority_vlan |= p8021->TagHeader.VlanId;
@@ -648,6 +648,7 @@ vnif_build_sg(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb, UINT sg_cnt)
     ULONG       org_data_len;
 #endif
 
+    mdl_len = 0;
     mdl = NET_BUFFER_FIRST_MDL(tcb->nb);
     mdl_offset = NET_BUFFER_DATA_OFFSET(tcb->nb);
     data_len = NET_BUFFER_DATA_LENGTH(tcb->nb);
@@ -845,11 +846,8 @@ VNIFSendNetBufferList(PVNIF_ADAPTER adapter,
     NDIS_STATUS     send_status;
     TCB             *tcb;
     TCB             *ftcb;
-    ULONG           bytes_copied;
     PNET_BUFFER     nb_to_send;
-    PNET_BUFFER     nb;
     uint32_t        len;
-    int             notify;
     UINT            i;
     UINT            sg_cnt;
     UINT            avail_tcbs;
@@ -1089,7 +1087,6 @@ vnif_free_send_net_buffer(PVNIF_ADAPTER adapter, TCB *tcb)
 
     PNET_BUFFER         nb;
     PNET_BUFFER_LIST    nb_list;
-    TCB                 *return_tcb;
 
     nb = tcb->nb;
     nb_list = tcb->nb_list;
@@ -1184,7 +1181,6 @@ vnif_drain_tx_path_and_send(PVNIF_ADAPTER adapter,
     TCB *tcb;
     TCB *tcb_to_free;
     UINT cons, prod;
-    UINT i;
     UINT len;
     UINT cnt;
     UINT txstatus;
@@ -1315,18 +1311,9 @@ vnif_drain_tx_path_and_send(PVNIF_ADAPTER adapter,
 int
 VNIFCheckSendCompletion(PVNIF_ADAPTER adapter, UINT path_id)
 {
-    NDIS_STATUS         status = NDIS_STATUS_SUCCESS;
-    PNET_BUFFER_LIST    nb_list;
     PNET_BUFFER_LIST    tail_nb_list = NULL;
     PNET_BUFFER_LIST    complete_nb_lists = NULL;
-    PQUEUE_ENTRY pEntry;
-    TCB *tcb;
-    TCB *tcb_to_free;
-    UINT cons, prod;
-    UINT i;
-    UINT len;
     UINT nb_list_cnt;
-    UINT txstatus;
 
     DPRINTK(DPRTL_TX, ("---> VNIFCheckSendCompletion\n"));
 
@@ -1357,6 +1344,10 @@ MpProcessSGList(
     IN  PSCATTER_GATHER_LIST    pSGList,
     IN  PVOID                   tcb)
 {
+    UNREFERENCED_PARAMETER(pDO);
+    UNREFERENCED_PARAMETER(pIrp);
+    UNREFERENCED_PARAMETER(pSGList);
+    UNREFERENCED_PARAMETER(tcb);
 }
 
 void
@@ -1366,11 +1357,12 @@ MPSendNetBufferLists(
     NDIS_PORT_NUMBER PortNumber,
     ULONG SendFlags)
 {
+    UNREFERENCED_PARAMETER(PortNumber);
 
     PVNIF_ADAPTER adapter;
     NDIS_STATUS status = NDIS_STATUS_PENDING;
     UINT nb_cnt = 0;
-    UINT path_id;
+    UINT path_id = 0;
     UINT old_path_id;
     PNET_BUFFER nb;
     PNET_BUFFER_LIST cur_nb_list;
@@ -1566,8 +1558,9 @@ vnif_complete_priority_vlan_pkt(PVNIF_ADAPTER adapter, RCB *rcb)
          */
         rcb->total_len -= P8021_BYTE_LEN;
         rcb->len -= P8021_BYTE_LEN;
-        (uint8_t *)rcb->mdl->MappedSystemVa += P8021_BYTE_LEN;
-        (uint8_t *)rcb->mdl->StartVa += P8021_BYTE_LEN;
+        rcb->mdl->MappedSystemVa = (uint8_t *)rcb->mdl->MappedSystemVa
+                                                + P8021_BYTE_LEN;
+        rcb->mdl->StartVa = (uint8_t *)rcb->mdl->StartVa + P8021_BYTE_LEN;
 
         DPRINTK(DPRTL_PRI, ("  %02x %02x %02x %02x %02x %02x %02x %02x %02x",
                   data_buf[0],
@@ -1600,7 +1593,6 @@ vnif_rx_checksum(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nbl,
 {
     PNDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO info;
     uint8_t *data_buf;
-    NDIS_STATUS status;
     BOOLEAN valid_chksum;
 
     data_buf = rcb->page + adapter->buffer_offset;
@@ -1681,11 +1673,10 @@ vnif_rx_checksum(PVNIF_ADAPTER adapter, PNET_BUFFER_LIST nbl,
 }
 
 static void
-vnif_build_nb(PVNIF_ADAPTER adapter, RCB *rcb, PNET_BUFFER_LIST nbl)
+vnif_build_nb(RCB *rcb, PNET_BUFFER_LIST nbl)
 {
     PNET_BUFFER nb;
     PMDL tail_mdl;
-    UINT len;
 
     nb = rcb->nb;
     NET_BUFFER_LIST_FIRST_NB(nbl) = nb;
@@ -1694,7 +1685,7 @@ vnif_build_nb(PVNIF_ADAPTER adapter, RCB *rcb, PNET_BUFFER_LIST nbl)
     NET_BUFFER_CURRENT_MDL(nb) = rcb->mdl;
     NET_BUFFER_DATA_OFFSET(nb) = 0;
     NET_BUFFER_DATA_LENGTH(nb) = rcb->total_len;
-    (RCB *)NET_BUFFER_MINIPORT_RESERVED(nb)[0] = rcb;
+    NET_BUFFER_MINIPORT_RESERVED(nb)[0] = rcb;
     tail_mdl = NULL;
     while (rcb) {
         NdisAdjustMdlLength(rcb->mdl, rcb->len);
@@ -1859,7 +1850,7 @@ vnif_drain_rx_path(PVNIF_ADAPTER adapter,
     while ((rcb = vnif_get_rx(adapter, path_id, *rp, &i, &len))
            != NULL) {
 
-        len = (UINT)rcb->total_len;
+        len = rcb->total_len;
         if (vnif_continue_proccessing_rcb(adapter, rcb, len, path_id)
                 == FALSE) {
             (*rcb_added_to_ring)++;
@@ -1986,7 +1977,7 @@ vnif_mv_rcbs_to_nbl(PVNIF_ADAPTER adapter,
             continue;
         }
         rcb->rcv_qidx = rcv_qidx;
-        vnif_build_nb(adapter, rcb, cur_nbl);
+        vnif_build_nb(rcb, cur_nbl);
 
         (*nb_list_cnt)++;
         if (*nb_list == NULL) {
@@ -2066,7 +2057,7 @@ vvnif_mv_rcbs_to_nbl(PVNIF_ADAPTER adapter,
             continue;
         }
         rcb->rcv_qidx = rcv_qidx;
-        vnif_build_nb(adapter, rcb, cur_nbl);
+        vnif_build_nb(rcb, cur_nbl);
 
         (*nb_list_cnt)++;
         if (nb_list == NULL) {
@@ -2166,6 +2157,7 @@ VNIFReceivePackets(PVNIF_ADAPTER adapter,
     rcb_added_to_ring = 0;
     more_to_do = 0;
     needs_rcv_q_work = FALSE;
+    old = 0;
 
     if (path_id < adapter->num_paths) {
         NdisAcquireSpinLock(&adapter->path[path_id].rx_path_lock);
@@ -2272,6 +2264,8 @@ MPReturnNetBufferLists(NDIS_HANDLE MiniportAdapterContext,
     PNET_BUFFER_LIST    NetBufferLists,
     ULONG               ReturnFlags)
 {
+    UNREFERENCED_PARAMETER(ReturnFlags);
+
     PVNIF_ADAPTER adapter;
     PNDIS_NET_BUFFER_LIST_8021Q_INFO p8021;
     RCB *rcb;
@@ -2400,7 +2394,7 @@ VNIFFreeQueuedSendPackets(PVNIF_ADAPTER adapter, NDIS_STATUS status)
             NdisMSendNetBufferListsComplete(
                 adapter->AdapterHandle,
                 nb_list_to_complete,
-                NDIS_STATUS_SEND_ABORTED);
+                (ULONG)NDIS_STATUS_SEND_ABORTED);
         }
     }
 
@@ -2451,7 +2445,6 @@ void
 vnif_complete_lost_sends(VNIF_ADAPTER *adapter)
 {
     TCB *tcb;
-    NDIS_STATUS         status = NDIS_STATUS_SUCCESS;
     PNET_BUFFER_LIST    nb_list;
     PNET_BUFFER_LIST    last_nb_list = NULL;
     PNET_BUFFER_LIST    complete_nb_lists = NULL;
@@ -2490,15 +2483,18 @@ vnif_complete_lost_sends(VNIF_ADAPTER *adapter)
         NdisMSendNetBufferListsComplete(
             adapter->AdapterHandle,
             complete_nb_lists,
-            NDIS_STATUS_SEND_ABORTED);
+            (ULONG)NDIS_STATUS_SEND_ABORTED);
     }
 }
 
 void
 VNIFPollTimerDpc(void *s1, void *context, void *s2, void *s3)
 {
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+    UNREFERENCED_PARAMETER(s3);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER)context;
-    UINT i;
 
     DPRINTK(DPRTL_ON, ("%s: in, flags %x\n", __func__, adapter->adapter_flags));
 
@@ -2521,13 +2517,16 @@ VNIFPollTimerDpc(void *s1, void *context, void *s2, void *s3)
 void
 vnif_poll_dpc(PKDPC dpc, void *ctx, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     PVNIF_ADAPTER adapter;
-    UINT i;
 
     adapter = (PVNIF_ADAPTER)ctx;
-    DPRINTK(DPRTL_ON, ("%s: in, flags %x\n", __func__,
-                        adapter->adapter_flags));
     if (adapter) {
+        DPRINTK(DPRTL_ON, ("%s: in, flags %x\n", __func__,
+                            adapter->adapter_flags));
         NdisAcquireSpinLock(&adapter->adapter_flag_lock);
         if (adapter->adapter_flags & VNF_ADAPTER_POLLING) {
             NdisReleaseSpinLock(&adapter->adapter_flag_lock);

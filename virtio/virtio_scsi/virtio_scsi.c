@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -257,7 +257,6 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 BOOLEAN
 sp_build_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
 {
-    PHYSICAL_ADDRESS pa;
     PCDB cdb;
     vscsi_srb_ext_t *srb_ext;
     virtio_scsi_cmd_t *cmd;
@@ -416,6 +415,8 @@ virtio_scsi_do_tmf(PVOID DeviceExtension, PVOID Context)
 BOOLEAN
 sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
 {
+    UNREFERENCED_PARAMETER(PathId);
+
     PHYSICAL_ADDRESS pa;
     SCSI_REQUEST_BLOCK *srb;
     vscsi_srb_ext_t *srb_ext;
@@ -590,18 +591,18 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
             PRINTK(("%s: ** int infly\n", VIRTIO_SP_DRIVER_NAME));
             while ((cmd = vq_get_buf(dev_ext->vq[VIRTIO_SCSI_QUEUE_CONTROL],
                     &len)) != NULL) {
-                virtio_scsi_ctrl_tmf_resp_t *resp;
+                virtio_scsi_ctrl_tmf_resp_t *tmf_resp;
 
                 srb = (PSCSI_REQUEST_BLOCK)cmd->sc;
                 ASSERT(srb == &dev_ext->tmf_cmd_srb);
-                resp = &cmd->resp.tmf;
-                switch (resp->response) {
+                tmf_resp = &cmd->resp.tmf;
+                switch (tmf_resp->response) {
                 case VIRTIO_SCSI_S_OK:
                 case VIRTIO_SCSI_S_FUNCTION_SUCCEEDED:
                     break;
                 default:
                     PRINTK(("%s: Unknown response %d\n",
-                            VIRTIO_SP_DRIVER_NAME, resp->response));
+                            VIRTIO_SP_DRIVER_NAME, tmf_resp->response));
                     ASSERT(0);
                     break;
                 }

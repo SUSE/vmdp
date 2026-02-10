@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2015-2020 SUSE LLC
+ * Copyright 2015-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,6 +29,8 @@
 NTSTATUS
 XenbusDispatchInternalDeviceControl(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     PIO_STACK_LOCATION stack;
     xenbus_apis_t *api;
     NTSTATUS status;

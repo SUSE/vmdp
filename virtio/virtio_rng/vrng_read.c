@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,7 +28,7 @@
 
 DRIVER_CANCEL vrng_read_request_cancel;
 
-static void
+void
 vrng_read_request_cancel(PDEVICE_OBJECT DeviceObject, PIRP request)
 {
     PFDO_DEVICE_EXTENSION fdx;

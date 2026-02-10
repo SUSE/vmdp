@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,7 +48,7 @@ NTSTATUS
 FDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
-    ULONG length, prevcount, numNew, i;
+    ULONG length, prevcount, numNew;
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
     PIO_STACK_LOCATION stack;
@@ -135,8 +135,7 @@ FDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         for (entry = listHead->Flink, nextEntry = entry->Flink;
               entry != listHead;
               entry = nextEntry, nextEntry = entry->Flink) {
-            PPDO_DEVICE_EXTENSION pdx =
-                CONTAINING_RECORD(entry, PDO_DEVICE_EXTENSION, Link);
+            pdx = CONTAINING_RECORD(entry, PDO_DEVICE_EXTENSION, Link);
             if (pdx->Type != vbd && pdx->Type != vscsi) {
                 RemoveEntryList(&pdx->Link);
                 InitializeListHead(&pdx->Link);
@@ -176,8 +175,7 @@ FDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         for (entry = listHead->Flink, nextEntry = entry->Flink;
               entry != listHead;
               entry = nextEntry, nextEntry = entry->Flink) {
-            PPDO_DEVICE_EXTENSION pdx =
-                CONTAINING_RECORD(entry, PDO_DEVICE_EXTENSION, Link);
+            pdx = CONTAINING_RECORD(entry, PDO_DEVICE_EXTENSION, Link);
 
             if (pdx->Type != vbd && pdx->Type != vscsi) {
                 RPRINTK(DPRTL_ON,
@@ -363,6 +361,8 @@ XenbusIoCompletion(IN PDEVICE_OBJECT DeviceObject,
                    IN PIRP Irp,
                    IN PVOID Context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     if (Irp->PendingReturned == TRUE && Context != NULL) {
         KeSetEvent((PKEVENT) Context, IO_NO_INCREMENT, FALSE);
     }
@@ -377,7 +377,6 @@ FDOSetResources(IN PFDO_DEVICE_EXTENSION fdx,
 {
     PHYSICAL_ADDRESS portBase;
     PHYSICAL_ADDRESS memBase;
-    xenbus_pv_port_options_t options;
     PCM_PARTIAL_RESOURCE_DESCRIPTOR resource;
     KINTERRUPT_MODE mode;
     ULONG nres, i;

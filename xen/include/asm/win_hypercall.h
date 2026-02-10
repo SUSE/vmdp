@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -288,8 +288,9 @@ static __inline void
 HYPERVISOR_update_va_mapping(
   unsigned long va, unsigned long new_val, unsigned long flags)
 {
-    PUCHAR hpg = hypercall_page;
-    unsigned long pte_hi = 0;
+    UNREFERENCED_PARAMETER(va);
+    UNREFERENCED_PARAMETER(new_val);
+    UNREFERENCED_PARAMETER(flags);
 }
 
 static __inline xen_long_t
@@ -298,7 +299,6 @@ HYPERVISOR_event_channel_op(
 {
     PUCHAR hpg = hypercall_page;
     void *_cmd = (void *)((ULONG_PTR)cmd);
-    int j;
 
     return _hypercall2(hpg, HYPERCALL_EVENT_CHANNEL_OP, _cmd, arg);
 }
@@ -359,7 +359,10 @@ static __inline void
 HYPERVISOR_update_va_mapping_otherdomain(
   unsigned long va, unsigned long new_val, unsigned long flags, domid_t domid)
 {
-    unsigned long pte_hi = 0;
+    UNREFERENCED_PARAMETER(va);
+    UNREFERENCED_PARAMETER(new_val);
+    UNREFERENCED_PARAMETER(flags);
+    UNREFERENCED_PARAMETER(domid);
 }
 
 static __inline xen_long_t

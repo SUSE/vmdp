@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020-2021 SUSE LLC
+REM Copyright 2020-2026 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -34,6 +34,33 @@ cd %start_dir%
 
 if not exist pvvxbn\i386 mkdir pvvxbn\i386
 if not exist pvvxbn\amd64 mkdir pvvxbn\amd64
+
+if exist inf\net-start.inf del inf\net-start.inf
+mklink inf\net-start.inf %root_dir%\virtio\inf\net-start.inf
+if exist inf\net-dev-desc.inf del inf\net-dev-desc.inf
+mklink inf\net-dev-desc.inf %root_dir%\virtio\inf\net-dev-desc.inf
+if exist inf\net-ndi.inf del inf\net-ndi.inf
+mklink inf\net-ndi.inf %root_dir%\virtio\inf\net-ndi.inf
+if exist inf\net-reg.inf del inf\net-reg.inf
+mklink inf\net-reg.inf %root_dir%\virtio\inf\net-reg.inf
+if exist inf\net-reg5.inf del inf\net-reg5.inf
+mklink inf\net-reg5.inf %root_dir%\virtio\inf\net-reg5.inf
+if exist inf\net-reg6.inf del inf\net-reg6.inf
+mklink inf\net-reg6.inf %root_dir%\virtio\inf\net-reg6.inf
+if exist inf\net-reg61.inf del inf\net-reg61.inf
+mklink inf\net-reg61.inf %root_dir%\virtio\inf\net-reg61.inf
+if exist inf\net-reg-msi.inf del inf\net-reg-msi.inf
+mklink inf\net-reg-msi.inf %root_dir%\virtio\inf\net-reg-msi.inf
+if exist inf\net-reg-poll.inf del inf\net-reg-poll.inf
+mklink inf\net-reg-poll.inf %root_dir%\virtio\inf\net-reg-poll.inf
+if exist inf\net-service.inf del inf\net-service.inf
+mklink inf\net-service.inf %root_dir%\virtio\inf\net-service.inf
+if exist inf\net-strings.inf del inf\net-strings.inf
+mklink inf\net-strings.inf %root_dir%\virtio\inf\net-strings.inf
+if exist inf\net-strings6.inf del inf\net-strings6.inf
+mklink inf\net-strings6.inf %root_dir%\virtio\inf\net-strings6.inf
+if exist inf\net-strings61.inf del inf\net-strings61.inf
+mklink inf\net-strings61.inf %root_dir%\virtio\inf\net-strings61.inf
 
 if exist build_all.bat del build_all.bat
 mklink build_all.bat %root_dir%\virtio\build_all.bat

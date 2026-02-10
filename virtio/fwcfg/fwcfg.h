@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2018-2020 SUSE LLC
+ * Copyright 2018-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -70,6 +70,8 @@ typedef struct _COMMON_DEVICE_EXTENSION {
 
 } COMMON_DEVICE_EXTENSION, *PCOMMON_DEVICE_EXTENSION;
 
+#pragma warning(push)
+#pragma warning(disable:4201) // Disable nameless struct/union warning
 /* FDO device extension as function driver */
 typedef struct _FDO_DEVICE_EXTENSION {
     COMMON_DEVICE_EXTENSION;
@@ -92,6 +94,7 @@ typedef struct _FDO_DEVICE_EXTENSION {
     uint16_t index;
     BOOLEAN mapped_port;
 } FDO_DEVICE_EXTENSION, *PFDO_DEVICE_EXTENSION;
+#pragma warning(pop)
 
 
 #ifdef DBG

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -66,7 +66,6 @@ virtio_dbg_printk(char *_fmt, ...)
 {
     va_list ap;
     char buf[256];
-    char *c;
 
     va_start(ap, _fmt);
     RtlStringCbVPrintfA(buf, sizeof(buf), _fmt, ap);

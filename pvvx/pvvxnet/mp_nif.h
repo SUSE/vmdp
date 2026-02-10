@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -61,7 +61,7 @@ extern void *(*vnif_get_tx)(struct _VNIF_ADAPTER *adapter, UINT path_id,
                             UINT *cons, UINT prod,
                             UINT cnt, UINT *len, UINT *status);
 extern struct _RCB *(*vnif_get_rx)(struct _VNIF_ADAPTER *adapter, UINT path_id,
-                                   UINT prod, UINT *_cons, INT *len);
+                                   UINT prod, UINT *_cons, UINT *len);
 
 /* Indirect function pointers from mp_vinterface and mp_xinterface. */
 extern void (*VNIFFreeAdapterInterface)(struct _VNIF_ADAPTER *adapter);

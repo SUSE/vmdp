@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -84,6 +84,8 @@ static void virtio_balloon_finish_fdx_init(PDEVICE_OBJECT fdo,
 NTSTATUS
 KvmDriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
 {
+    UNREFERENCED_PARAMETER(RegistryPath);
+
     DriverObject->DriverExtension->AddDevice = virtio_bln_add_device;
     DriverObject->DriverUnload = NULL;
 
@@ -113,19 +115,19 @@ KvmDriverEntry(IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
 
 static VOID
 virtio_bln_unload(IN PDRIVER_OBJECT DriverObject) {
+    UNREFERENCED_PARAMETER(DriverObject);
+
     PRINTK(("VBLN: driver unload\n"));
     PAGED_CODE();
 }
 
-static NTSTATUS
+NTSTATUS
 virtio_bln_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 {
     NTSTATUS status;
     PDEVICE_OBJECT fdo;
     vbln_dev_extn_t *fdx;
     UNICODE_STRING virtio_balloon_dev_name;
-    uint32_t shutdown;
-    uint32_t notify;
 
     PAGED_CODE();
 
@@ -203,7 +205,7 @@ virtio_bln_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
     return STATUS_SUCCESS;
 }
 
-static NTSTATUS
+NTSTATUS
 virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     vbln_dev_extn_t *fdx;
@@ -336,6 +338,8 @@ virtio_bln_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 static NTSTATUS
 virtio_bln_completion(PDEVICE_OBJECT DeviceObject, PIRP Irp, PVOID Context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     if (Irp->PendingReturned == TRUE && Context != NULL) {
         KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
     }
@@ -375,12 +379,15 @@ send_irp_synchronous(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 NTSTATUS
 wdm_device_powerup(PFDO_DEVICE_EXTENSION fdx)
 {
+    UNREFERENCED_PARAMETER(fdx);
+
     return STATUS_SUCCESS;
 }
 
 void
 wdm_device_powerdown(PFDO_DEVICE_EXTENSION fdx)
 {
+    UNREFERENCED_PARAMETER(fdx);
 }
 
 static VOID
@@ -436,21 +443,21 @@ virtio_bln_dispatch_create_close(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
-static NTSTATUS
+NTSTATUS
 virtio_bln_dispatch_create(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     RPRINTK(DPRTL_TRC, ("virtio_bln_dispatch_create: create\n"));
     return virtio_bln_dispatch_create_close(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 virtio_bln_dispatch_close(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     RPRINTK(DPRTL_TRC, ("virtio_bln_dispatch_close: close\n"));
     return virtio_bln_dispatch_create_close(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 virtio_bln_dispatch_system_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
@@ -469,7 +476,7 @@ virtio_bln_dispatch_system_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return IoCallDriver(fdx->LowerDevice, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 virtio_bln_dispatch_device_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
@@ -566,8 +573,6 @@ virtio_balloon_get_startup_params(void)
     WCHAR wbuffer[SYSTEM_START_OPTIONS_LEN] = { 0 };
     UNICODE_STRING str;
     NTSTATUS status;
-    uint32_t version;
-    uint32_t index_offset;
 
     /* Read the registry to see if we are to actually us the PV drivers. */
     RPRINTK(DPRTL_ON, ("virtio_balloon_determine_pv_driver_usage\n"));

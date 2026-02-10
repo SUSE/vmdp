@@ -8,7 +8,7 @@
  *  Michael S. Tsirkin <mst@redhat.com>
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -57,7 +57,7 @@ virtio_ioread16(ULONG_PTR ulRegister)
     if (ulRegister & ~PORT_MASK) {
         return READ_REGISTER_USHORT((PUSHORT)ulRegister);
     } else {
-        return READ_PORT_USHORT((PSHORT)ulRegister);
+        return READ_PORT_USHORT((PUSHORT)ulRegister);
     }
 }
 
@@ -87,7 +87,7 @@ virtio_iowrite16(ULONG_PTR ulRegister, uint16_t val)
     if (ulRegister & ~PORT_MASK) {
         WRITE_REGISTER_USHORT((PUSHORT)ulRegister, val);
     } else {
-        WRITE_PORT_USHORT((PSHORT)ulRegister, val);
+        WRITE_PORT_USHORT((PUSHORT)ulRegister, val);
     }
 }
 

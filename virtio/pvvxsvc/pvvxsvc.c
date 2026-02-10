@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,7 +53,7 @@ static void pvvxsvc_msg_box(UINT id);
 static DWORD pvvxsvc_is_running(void);
 static VOID pvvxsvc_install(void);
 static LPTSTR pvvxsvc_get_last_error_text(LPTSTR lpszBuf, DWORD dwSize);
-static DWORD pvvxsvc_finish_first_boot(cmd);
+static DWORD pvvxsvc_finish_first_boot(DWORD cmd);
 
 /*
  * Purpose:
@@ -252,7 +252,6 @@ pvvxsvc_install()
     QUERY_SERVICE_CONFIG *qsc;
     DWORD i;
     DWORD bytes_needed;
-    DWORD bin_len;
 
     DBG_OUTPUT(TEXT("==> pvvxsvc_install ****\n"));
     if (!GetModuleFileName(NULL, sz_path, MAX_PATH)) {

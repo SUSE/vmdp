@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,6 +55,8 @@ static void MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled);
 void VNIFV_ALLOCATE_SHARED_MEMORY(VNIF_ADAPTER *adapter, void **va,
     PHYSICAL_ADDRESS *pa, uint32_t len, NDIS_HANDLE hndl)
 {
+    UNREFERENCED_PARAMETER(hndl);
+
     NdisMAllocateSharedMemory(
         adapter->AdapterHandle,
         len,
@@ -153,6 +155,8 @@ VNIFV_FreeAdapterInterface(PVNIF_ADAPTER adapter)
 void
 VNIFV_CleanupInterface(PVNIF_ADAPTER adapter, NDIS_STATUS status)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(status);
 }
 
 NDIS_STATUS
@@ -173,7 +177,7 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
 
         VNIF_ALLOCATE_SHARED_MEMORY = VNIFV_ALLOCATE_SHARED_MEMORY;
 
-        adapter->node_name = VNIF_DRIVER_NAME;
+        adapter->node_name = (PUCHAR)VNIF_DRIVER_NAME;
         adapter->u.v.cached = TRUE;
 
         vnif_virtio_dev_reset(adapter);
@@ -311,7 +315,6 @@ VNIFV_FindAdapter(PVNIF_ADAPTER adapter)
 static NDIS_STATUS
 vnif_init_rcb_pool(PVNIF_ADAPTER adapter)
 {
-    PLIST_ENTRY entry;
     RCB *rcb;
     virtio_buffer_descriptor_t sg;
     UINT path_id;
@@ -512,7 +515,7 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
 
         adapter->path[i].u.vq.rx = VIRTIO_DEVICE_QUEUE_SETUP(
             &adapter->u.v.vdev,
-            i * 2,
+            (uint16_t)(i * 2),
             NULL,
             NULL,
             0,
@@ -527,7 +530,7 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
 
         adapter->path[i].u.vq.tx = VIRTIO_DEVICE_QUEUE_SETUP(
             &adapter->u.v.vdev,
-            (i * 2) + 1,
+            (uint16_t)((i * 2) + 1),
             NULL,
             NULL,
             0,
@@ -720,10 +723,8 @@ vnifv_update_mac(PVNIF_ADAPTER adapter)
 NDIS_STATUS
 VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
 {
-    struct virtqueue *vq;
     NDIS_STATUS status;
     UINT i;
-    int err;
 
     RPRINTK(DPRTL_ON, ("VNIFSetupAdapterInterface: In\n"));
     status = NDIS_STATUS_SUCCESS;
@@ -788,12 +789,10 @@ VNIFV_QueryHWResources(PVNIF_ADAPTER adapter, PNDIS_RESOURCE_LIST res_list)
     PHYSICAL_ADDRESS pa;
     uint8_t pci_config_space[sizeof(PCI_COMMON_CONFIG)];
     PCM_PARTIAL_RESOURCE_DESCRIPTOR rdes;
-    PHYSICAL_ADDRESS mem_base;
     void *va;
     NDIS_STATUS status;
     ULONG read_bytes;
     ULONG len;
-    uint32_t mmiolen;
     uint32_t i;
     int iBar;
     BOOLEAN port_space;
@@ -946,7 +945,6 @@ uint32_t
 VNIFV_Quiesce(PVNIF_ADAPTER adapter)
 {
     KIRQL old_irql;
-    UINT i;
     uint32_t waiting = 0;
     uint32_t wait_count = 0;
     uint32_t resources_outstanding = 0;
@@ -999,6 +997,7 @@ VNIFV_Quiesce(PVNIF_ADAPTER adapter)
 void
 VNIFV_CleanupRings(PVNIF_ADAPTER adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
 }
 
 uint32_t
@@ -1183,5 +1182,7 @@ MPResume(PVNIF_ADAPTER adapter, uint32_t suspend_canceled)
 static uint32_t
 MPSuspend(PVNIF_ADAPTER adapter, uint32_t reason)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(reason);
     return 0;
 }

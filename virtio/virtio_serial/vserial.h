@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010-2017 Red Hat, Inc.
- * Copyright 2014-2021 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -145,6 +145,8 @@ typedef struct _WORKER_ITEM_CONTEXT {
 } WORKER_ITEM_CONTEXT, *PWORKER_ITEM_CONTEXT;
 
 /* child PDOs device extension */
+#pragma warning(push)
+#pragma warning(disable:4201) // Disable nameless struct/union warning
 typedef struct _PDO_DEVICE_EXTENSION {
     COMMON_DEVICE_EXTENSION;
     uint32_t sig;
@@ -193,6 +195,7 @@ typedef struct _PDO_DEVICE_EXTENSION {
     KEVENT port_opened_event;
 
 } PDO_DEVICE_EXTENSION, *PPDO_DEVICE_EXTENSION;
+#pragma warning(pop)
 
 #pragma pack(push)
 #pragma pack(1)
@@ -213,6 +216,8 @@ typedef struct _virtio_console_control_s {
 } VIRTIO_CONSOLE_CONTROL, *PVIRTIO_CONSOLE_CONTROL;
 #pragma pack(pop)
 
+#pragma warning(push)
+#pragma warning(disable:4201) // Disable nameless struct/union warning
 /* FDO device extension as function driver */
 typedef struct _FDO_DEVICE_EXTENSION {
     COMMON_DEVICE_EXTENSION;
@@ -257,6 +262,7 @@ typedef struct _FDO_DEVICE_EXTENSION {
     LONG queue_int;
     BOOLEAN mapped_port;
 } FDO_DEVICE_EXTENSION, *PFDO_DEVICE_EXTENSION;
+#pragma warning(pop)
 
 
 extern PKINTERRUPT DriverInterruptObj;

@@ -5,7 +5,7 @@
  * Packed virtio ring manipulation routines
  *
  * Copyright 2019 Red Hat, Inc.
- * Copyright 2021 SUSE LLC
+ * Copyright 2021-2026 SUSE LLC
  *
  * Authors:
  *  Yuri Benditovich <ybendito@redhat.com>
@@ -95,6 +95,11 @@ typedef struct vring_desc_state_packed {
     u16 last;           /* The last desc state in a list. */
 } vring_desc_state_packed_t;
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4200)
+#endif
+
 typedef struct virtio_queue_packed {
     virtio_queue_t vq_common;
     unsigned int num_added; /* Number we've added since last sync. */
@@ -123,6 +128,10 @@ typedef struct virtio_queue_packed {
     struct vring_desc_state_packed desc_states[];
 } virtio_queue_packed_t;
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 static __inline BOOLEAN
 vring_has_unconsumed_responses_packed(const virtio_queue_packed_t *vq,
                                       u16 idx,
@@ -141,6 +150,8 @@ vring_has_unconsumed_responses_packed(const virtio_queue_packed_t *vq,
 static __inline unsigned long
 vring_size_packed(unsigned int num, unsigned long align)
 {
+    UNREFERENCED_PARAMETER(align);
+
     /* array of descriptors */
     unsigned long res = num * sizeof(vring_packed_desc_t);
 

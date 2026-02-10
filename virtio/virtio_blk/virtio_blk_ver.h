@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,13 +29,13 @@
 #define _VIRTIO_BLK_VER_H
 
 #ifdef IS_STORPORT
-#define VER_FILEVERSION             2,6,0,17
-#define VER_FILEVERSION_STR         "2.6.0.17\0"
+#define VER_FILEVERSION             2,6,0,18
+#define VER_FILEVERSION_STR         "2.6.0.18\0"
 #else
-#define VER_FILEVERSION             2,6,0,17
-#define VER_FILEVERSION_STR         "2.6.0.17\0"
+#define VER_FILEVERSION             2,6,0,18
+#define VER_FILEVERSION_STR         "2.6.0.18\0"
 #endif
 
-#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2011-2025 SUSE. All rights reserved.", "\0"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2011-2026 SUSE. All rights reserved.", "\0"
 
 #endif

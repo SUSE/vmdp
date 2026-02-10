@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2025 SUSE LLC
+ * Copyright 2019-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -127,7 +127,7 @@ vnif_rss_fill_cpu_mapping(vnif_rss_t *rss, UINT num_receive_queues)
                     rss->first_q_indirection_idx = i;
                 }
 
-                if (receive_q != num_receive_queues) {
+                if (receive_q != (CCHAR)num_receive_queues) {
                     DPRINTK(DPRTL_RSS, ("  CPUIndexMapping[%d] %d\n",
                                          cur_proc_idx,
                                          receive_q));
@@ -272,7 +272,7 @@ vnif_rss_setup_q_map(PVNIF_ADAPTER adapter,
     }
 
     for (cpu_idx = 0; cpu_idx < active_proc_cnt; cpu_idx++) {
-        cpu_index_tbl[cpu_idx] = (USHORT)INVALID_PROCESSOR_INDEX;
+        cpu_index_tbl[cpu_idx] = (USHORT)(INVALID_PROCESSOR_INDEX & (USHORT)-1);
     }
 
     for (path_idx = 0; path_idx < adapter->num_paths; ++path_idx) {
@@ -299,7 +299,8 @@ vnif_rss_setup_q_map(PVNIF_ADAPTER adapter,
     }
 
     for (cpu_idx = 0; cpu_idx < active_proc_cnt; cpu_idx++) {
-        if (cpu_index_tbl[cpu_idx] == (USHORT)INVALID_PROCESSOR_INDEX) {
+        if (cpu_index_tbl[cpu_idx] == (USHORT)(INVALID_PROCESSOR_INDEX
+                                               & (USHORT)-1)) {
             cpu_index_tbl[cpu_idx] = (USHORT)(cpu_idx % adapter->num_paths);
         }
     }
@@ -402,7 +403,6 @@ vnif_rss_move_rx(PVNIF_ADAPTER adapter)
 {
     RCB *rcb;
     UINT no_q_idx;
-    UINT path_id;
     UINT i;
     UINT j;
 
@@ -698,8 +698,7 @@ NDIS_STATUS
 vnif_rss_set_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
                                   NDIS_RECEIVE_HASH_PARAMETERS *rss_params,
                                   ULONG rss_params_len,
-                                  PULONG bytes_read,
-                                  PULONG bytes_needed)
+                                  PULONG bytes_read)
 {
     if (adapter->b_rss_supported == FALSE) {
         return NDIS_STATUS_NOT_SUPPORTED;
@@ -814,7 +813,7 @@ vnif_rss_get_rcv_qidx_for_cur_processor(PVNIF_ADAPTER adapter)
     cur_proc_number = vnif_get_current_processor(NULL);
     if (adapter->rss.rss_mode != VNIF_RSS_FULL
             || cur_proc_number >= adapter->rss.cpu_idx_mapping_sz) {
-        return VNIF_NO_RECEIVE_QUEUE;
+        return (UINT)VNIF_NO_RECEIVE_QUEUE;
     }
 
     return adapter->rss.cpu_idx_mapping[cur_proc_number];
@@ -938,8 +937,8 @@ vnif_rss_get_hash_info(PVNIF_ADAPTER adapter,
 
     if (sg_cnt != 0) {
         *hash_value = vnif_rss_toeplitz_hash(sg_buf,
-                                             sg_cnt,
-                                             adapter->rss.hash_secret_key);
+            sg_cnt,
+            (uint8_t *)adapter->rss.hash_secret_key);
         rcb->pkt_info.hash_type = *hash_type;
         rcb->pkt_info.hash_value = *hash_value;
         rcb->pkt_info.hash_function = NdisHashFunctionToeplitz;

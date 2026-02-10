@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2018-2020 SUSE LLC
+ * Copyright 2018-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,7 +34,7 @@ static __inline xen_ulong_t
 cmp_strtoul(const char *ptr, char **endptr, int radix)
 {
     unsigned char ch;
-    unsigned int i;
+    unsigned int i = 0;
     xen_ulong_t res = 0;
     const char *p;
     int valid = 1;
@@ -106,7 +106,7 @@ static __inline uint64_t
 cmp_strtou64(const char *ptr, char **endptr, int radix)
 {
     unsigned char ch;
-    unsigned int i;
+    unsigned int i = 0;
     uint64_t res = 0;
     const char *p;
     int valid = 1;

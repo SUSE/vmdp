@@ -2,7 +2,7 @@
  * Packed virtio ring manipulation routines
  *
  * Copyright 2019 Red Hat, Inc.
- * Copyright 2021 SUSE LLC
+ * Copyright 2021-2026 SUSE LLC
  *
  * Authors:
  *  Yuri Benditovich <ybendito@redhat.com>
@@ -375,7 +375,7 @@ vring_enable_cb_delayed_packed(virtio_queue_t *vq_common)
 
     if (event_suppression_enabled) {
         /* TODO: tune this threshold */
-        bufs = (vq->packed.vring.num - vq->num_free) * 3 / 4;
+        bufs = ((u16)(vq->packed.vring.num - vq->num_free)) * 3 / 4;
         wrap_counter = vq->packed.used_wrap_counter;
 
         used_idx = vq->last_used_idx + bufs;
@@ -516,7 +516,7 @@ vring_kick_prepare_packed(virtio_queue_t *vq_common)
         struct {
             u16 off_wrap;
             u16 flags;
-        };
+        } s;
         u32 value32;
     } snapshot;
 
@@ -527,19 +527,19 @@ vring_kick_prepare_packed(virtio_queue_t *vq_common)
      */
     mb();
 
-    old = vq->packed.next_avail_idx - vq->num_added;
+    old = vq->packed.next_avail_idx - (u16)vq->num_added;
     new = vq->packed.next_avail_idx;
     vq->num_added = 0;
 
     snapshot.value32 = *(u32 *)vq->packed.vring.device;
-    flags = snapshot.flags;
+    flags = snapshot.s.flags;
 
     if (flags != VRING_PACKED_EVENT_FLAG_DESC) {
         needs_kick = (flags != VRING_PACKED_EVENT_FLAG_DISABLE);
         goto out;
     }
 
-    off_wrap = snapshot.off_wrap;
+    off_wrap = snapshot.s.off_wrap;
 
     wrap_counter = off_wrap >> VRING_PACKED_EVENT_F_WRAP_CTR;
     event_idx = off_wrap & ~(1 << VRING_PACKED_EVENT_F_WRAP_CTR);
@@ -618,6 +618,8 @@ vring_vq_setup_packed(virtio_device_t *vdev,
                      uint16_t qidx,
                      BOOLEAN use_event_idx)
 {
+    UNREFERENCED_PARAMETER(align);
+
     virtio_queue_packed_t *vq;
     uint16_t i;
 

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -205,7 +205,7 @@ increase_reservation(xen_ulong_t nr_pages)
 {
     struct xen_memory_reservation reservation;
     XEN_LOCK_HANDLE lh;
-    xen_ulong_t pfn, i;
+    xen_ulong_t i;
     PMDL mdl, head, tail;
     xen_long_t rc;
 
@@ -275,7 +275,7 @@ increase_reservation(xen_ulong_t nr_pages)
         totalram_pages = bs.current_pages - totalram_bias;
     }
 
-    return (int)(rc < 0 ? rc : rc != nr_pages);
+    return (int)(rc < 0 ? rc : rc != (xen_long_t)nr_pages);
 }
 
 static int
@@ -349,6 +349,10 @@ static void
 balloon_handler(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(watch);
+    UNREFERENCED_PARAMETER(vec);
+    UNREFERENCED_PARAMETER(len);
+
     uint64_t new_target;
     char *str;
     struct xenbus_transaction xbt;
@@ -507,28 +511,28 @@ balloon_get_os_vm_page_adjustment(xen_ulong_t version, DWORD *vm_page_adj)
 
 static void
 balloon_get_derive_os_mem_method(xen_ulong_t version,
-                                 DWORD *derive_os_mem)
+                                 DWORD *derive_os_mem_from)
 {
     NTSTATUS status;
 
     if (version >= XEN_VERSION_4_12) {
         /* Default is to use Xenstore devrived total memory. */
-        *derive_os_mem = XENBUS_DERIVE_OS_MEM_FROM_XENSTORE;
+        *derive_os_mem_from = XENBUS_DERIVE_OS_MEM_FROM_XENSTORE;
     } else {
         /* Default is to use OS devrived total memory. */
-        *derive_os_mem = XENBUS_DERIVE_OS_MEM_FROM_OS;
+        *derive_os_mem_from = XENBUS_DERIVE_OS_MEM_FROM_OS;
     }
 
     /* Check for derive_os_memory registry override. */
     status = xenbus_get_reg_value(XENBUS_FULL_DEVICE_KEY_WSTR,
                                   XENBUS_PVCTRL_DERIVE_OS_MEM_WSTR,
-                                  derive_os_mem);
+                                  derive_os_mem_from);
     if (status == STATUS_SUCCESS) {
         PRINTK(("%s:\n\tUsing regitry override for derive_os_memory %d\n",
-                __func__, *derive_os_mem));
+                __func__, *derive_os_mem_from));
     } else {
         PRINTK(("%s:\n\tUsing default derive_os_memory %d\n",
-                __func__, *derive_os_mem));
+                __func__, *derive_os_mem_from));
     }
 }
 
@@ -642,7 +646,6 @@ balloon_get_max_phys_pages_from_xenstore(xen_ulong_t *max_pages)
     uint64_t static_max;
     uint64_t videoram;
     char *str;
-    int err;
 
     *max_pages = 0;
     str = (char *)xenbus_read(XBT_NIL, "memory", "static-max", NULL);
@@ -672,7 +675,6 @@ balloon_init(void)
 {
     xen_pod_target_t pod_target;
     xen_ulong_t version;
-    xen_long_t rc;
     NTSTATUS status;
     DWORD vm_page_adjustment;
     DWORD attempts;
@@ -784,6 +786,8 @@ balloon_init(void)
 void
 balloon_worker(PDEVICE_OBJECT fdo, PVOID context)
 {
+    UNREFERENCED_PARAMETER(fdo);
+
     RPRINTK(DPRTL_ON, ("balloon_worker: in.\n"));
 
     if (context != NULL) {

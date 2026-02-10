@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2023 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,8 +53,8 @@ extern uint32_t io_srbs_seen;
 extern uint32_t io_srbs_returned;
 extern uint32_t sio_srbs_seen;
 extern uint32_t sio_srbs_returned;
-#define VBIF_INC_SRB(_V)            InterlockedIncrement(&(_V))
-#define VBIF_DEC_SRB(_V)            InterlockedDecrement(&(_V))
+#define VBIF_INC_SRB(_V)            InterlockedIncrement((LONG *)&(_V))
+#define VBIF_DEC_SRB(_V)            InterlockedDecrement((LONG *)&(_V))
 #ifdef VBIF_DBG_TRACK_AND_REPORT_SRBS
 static inline void
 DPR_SRB(char *where)
@@ -90,11 +90,11 @@ DPR_SRB(char *where)
 
 ULONG KvmDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath);
 
-NTSTATUS sp_find_adapter(
+ULONG sp_find_adapter(
     IN PVOID dev_ext,
     IN PVOID HwContext,
     IN PVOID BusInformation,
-    IN PCSTR ArgumentString,
+    IN PCHAR ArgumentString,
     IN OUT PPORT_CONFIGURATION_INFORMATION ConfigInfo,
     OUT PBOOLEAN Again);
 
@@ -120,11 +120,9 @@ BOOLEAN sp_msinterrupt_routine(virtio_sp_dev_ext_t *dev_ext, ULONG  msg_id);
 
 /* Calls into the specific drivers */
 void virtio_sp_get_device_config(virtio_sp_dev_ext_t *dev_ext);
-void virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
-    PPORT_CONFIGURATION_INFORMATION config_info);
+void virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext);
 void virtio_sp_enable_features(virtio_sp_dev_ext_t *dev_ext);
 void virtio_sp_initialize(virtio_sp_dev_ext_t *dev_ext);
-NTSTATUS virtio_sp_find_vq(virtio_sp_dev_ext_t *dev_ext);
 BOOLEAN virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                                ULONG reason,
                                ULONG  msg_id,
@@ -144,7 +142,7 @@ BOOLEAN virtio_sp_do_poll(virtio_sp_dev_ext_t *dev_ext, void *not_used);
 void virtio_sp_poll(IN virtio_sp_dev_ext_t *dev_ext);
 
 #ifdef DBG
-extern ULONG g_int_to_send;
+extern LONG g_int_to_send;
 
 #ifdef IS_STORPORT
 void virtio_sp_verify_sgl(virtio_sp_dev_ext_t *dev_ext,

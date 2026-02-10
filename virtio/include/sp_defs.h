@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2011-2015 Novell, Inc.
- * Copyright 2015-2022 SUSE LLC
+ * Copyright 2015-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -52,9 +52,9 @@ typedef struct {
     struct {
       ULONG BaseIndexRegister :3;
       ULONG Reserved          :29;
-    };
+    } s;
     ULONG TableOffset;
-  };
+  } u;
 } PCIX_TABLE_POINTER, *PPCIX_TABLE_POINTER;
 #endif
 

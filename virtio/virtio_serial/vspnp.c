@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2021 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -172,8 +172,10 @@ wdm_device_powerdown(FDO_DEVICE_EXTENSION *fdx)
     if (fdx->c_ivq) {
         vq_stop_interrupts(fdx->c_ivq);
 
-        while (buf = (port_buffer_t *)vq_detach_unused_buf(fdx->c_ivq)) {
+        buf = (port_buffer_t *)vq_detach_unused_buf(fdx->c_ivq);
+        while (buf != NULL) {
             vserial_free_buffer(buf);
+            buf = (port_buffer_t *)vq_detach_unused_buf(fdx->c_ivq);
         }
     }
 
@@ -272,7 +274,6 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
     uint32_t num_ports;
     USHORT control_vector;
     USHORT queues_vector;
-    USHORT vector;
 
     RPRINTK(DPRTL_ON, ("--> %s\n", __func__));
 
@@ -296,7 +297,7 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
         if (i == VIRTIO_SERIAL_CONTROL_PORT_INDEX) {
             if (!fdx->c_ivq) {
                 fdx->c_ivq = VIRTIO_DEVICE_QUEUE_SETUP(&fdx->vdev,
-                                                       i * 2,
+                                                       (uint16_t)(i * 2),
                                                        NULL,
                                                        NULL,
                                                        0,
@@ -311,7 +312,7 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
 
             if (!fdx->c_ovq) {
                 fdx->c_ovq = VIRTIO_DEVICE_QUEUE_SETUP(&fdx->vdev,
-                                                       (i * 2) + 1,
+                                                       (uint16_t)((i * 2) + 1),
                                                        NULL,
                                                        NULL,
                                                        0,
@@ -326,7 +327,7 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
         } else {
             if (!fdx->in_vqs[j]) {
                 fdx->in_vqs[j] = VIRTIO_DEVICE_QUEUE_SETUP(&fdx->vdev,
-                                                           (i * 2),
+                                                           (uint16_t)(i * 2),
                                                            NULL,
                                                            NULL,
                                                            0,
@@ -340,11 +341,11 @@ vserial_q_init(IN FDO_DEVICE_EXTENSION *fdx)
 
             if (!fdx->out_vqs[j]) {
                 fdx->out_vqs[j] = VIRTIO_DEVICE_QUEUE_SETUP(&fdx->vdev,
-                                                            (i * 2) + 1,
-                                                            NULL,
-                                                            NULL,
-                                                            0,
-                                                            queues_vector);
+                                                        (uint16_t)((i * 2) + 1),
+                                                        NULL,
+                                                        NULL,
+                                                        0,
+                                                        queues_vector);
             } else {
                 VIRTIO_DEVICE_QUEUE_ACTIVATE(&fdx->vdev,
                                              fdx->out_vqs[j],
@@ -405,7 +406,6 @@ FDORemoveDevice(IN PDEVICE_OBJECT fdo)
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
     PLIST_ENTRY entry, listHead, nextEntry;
-    NTSTATUS status;
 
     RPRINTK(DPRTL_ON, ("--> %s %s\n", VDEV_DRIVER_NAME, __func__));
 
@@ -447,12 +447,12 @@ FDO_Pnp(
   IN PIRP Irp)
 {
     NTSTATUS status;
-    ULONG length, prevcount, numNew, i;
+    ULONG length, prevcount, numNew;
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
     PIO_STACK_LOCATION stack;
     PCM_PARTIAL_RESOURCE_LIST raw, translated;
-    PLIST_ENTRY entry, listHead, nextEntry;
+    PLIST_ENTRY entry;
     PDEVICE_RELATIONS relations, oldRelations;
 
     fdx = (PFDO_DEVICE_EXTENSION) DeviceObject->DeviceExtension;

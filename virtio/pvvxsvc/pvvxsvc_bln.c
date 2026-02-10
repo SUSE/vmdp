@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -76,6 +76,8 @@ pvvxsvc_balloon_reg_update(LPVOID lParam)
     DWORD exit_loop;
     DWORD cc;
     DWORD evnt;
+
+    UNREFERENCED_PARAMETER(lParam);
 
     cc = RegOpenKeyEx(HKEY_LOCAL_MACHINE,
                       PVVXSVC_SYS_CCS_SERVICES_KEY_WSTR,

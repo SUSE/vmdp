@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -85,6 +85,8 @@ static void xenbus_finish_fdx_init(PDEVICE_OBJECT fdo,
 NTSTATUS
 XenDriverEntry (IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
 {
+    UNREFERENCED_PARAMETER(RegistryPath);
+
     DriverObject->DriverExtension->AddDevice = XenbusAddDevice;
     DriverObject->DriverUnload = NULL;
 
@@ -138,14 +140,16 @@ XenDriverEntry (IN PDRIVER_OBJECT DriverObject, IN PUNICODE_STRING RegistryPath)
 }
 
 
-static VOID
+VOID
 XenbusUnload (IN PDRIVER_OBJECT DriverObject)
 {
+    UNREFERENCED_PARAMETER(DriverObject);
+
     PRINTK(("XenbusUnload\n"));
     PAGED_CODE();
 }
 
-static NTSTATUS
+NTSTATUS
 XenbusAddDevice (IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 {
     NTSTATUS status;
@@ -219,7 +223,7 @@ XenbusAddDevice (IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
     return STATUS_SUCCESS;
 }
 
-static NTSTATUS
+NTSTATUS
 XenbusDispatchPnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     PCOMMON_DEVICE_EXTENSION fdx;
@@ -283,19 +287,19 @@ XenbusDispatchCreateClose(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
-static NTSTATUS
+NTSTATUS
 XenbusDispatchCreate(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     return XenbusDispatchCreateClose(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 XenbusDispatchClose(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     return XenbusDispatchCreateClose(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 XenbusDispatchSystemControl(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
@@ -698,7 +702,6 @@ xenbus_get_reg_value(PWSTR key, PWSTR name, DWORD *value)
 {
     UCHAR buffer[sizeof(KEY_VALUE_PARTIAL_INFORMATION) + sizeof(uint32_t)];
     HANDLE registryKey;
-    UNICODE_STRING keyName;
     UNICODE_STRING valueName;
     NTSTATUS status;
     ULONG len;
@@ -733,7 +736,6 @@ NTSTATUS
 xenbus_set_reg_value(PWSTR key, PWSTR name, DWORD value)
 {
     HANDLE registryKey;
-    UNICODE_STRING keyName;
     UNICODE_STRING valueName;
     NTSTATUS status;
 
@@ -764,7 +766,6 @@ xenbus_open_key(PWSTR key_wstr, HANDLE *registryKey)
 {
     OBJECT_ATTRIBUTES objectAttributes;
     UNICODE_STRING keyName;
-    UNICODE_STRING valueName;
 
     RtlInitUnicodeString(&keyName, key_wstr);
 
@@ -786,7 +787,6 @@ void
 xenbus_shutdown_setup(uint32_t *shutdown, uint32_t *notify)
 {
     HANDLE registryKey;
-    UNICODE_STRING keyName;
     UNICODE_STRING valueName;
     NTSTATUS status;
 

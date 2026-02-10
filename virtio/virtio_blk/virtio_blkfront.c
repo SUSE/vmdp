@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2011-2023 SUSE LLC
+ * Copyright 2011-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -89,8 +89,7 @@ virtio_sp_get_device_config(virtio_sp_dev_ext_t *dev_ext)
 }
 
 void
-virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
-                                  PPORT_CONFIGURATION_INFORMATION config_info)
+virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext)
 {
 
     PRINTK(("%s: features and configuration:\n", VIRTIO_SP_DRIVER_NAME));
@@ -614,9 +613,10 @@ virtio_blk_do_flush(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     vbif_srb_ext_t *srb_ext;
     KLOCK_QUEUE_HANDLE lh;
     ULONG len;
-    ULONG i;
     ULONG qidx;
+#ifndef IS_STORPORT
     ULONG wait   = 100000;
+#endif
     ULONG status = SRB_STATUS_ERROR;
     int num_free;
 
@@ -830,7 +830,7 @@ virtio_blk_fill_sn(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     /* snpage->Reserved; */
     snpage->PageLength = (UCHAR)len;
     memcpy(&snpage->SerialNumber, &dev_ext->sn, len);
-    srb->DataTransferLength = sizeof(VPD_SERIAL_NUMBER_PAGE) + len;
+    srb->DataTransferLength = (ULONG)(sizeof(VPD_SERIAL_NUMBER_PAGE) + len);
     srb->SrbStatus = SRB_STATUS_SUCCESS;
     srb->ScsiStatus = SCSISTAT_GOOD;
     RPRINTK(DPRTL_CONFIG, ("%s: Setting serial number to %s.\n",

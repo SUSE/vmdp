@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -331,7 +331,7 @@
 
 #define VNIF_GET_REF(_A)    ((_A)->RefCount)
 
-#define VNIFInterlockedIncrement(_inc) NdisInterlockedIncrement(&(_inc))
+#define VNIFInterlockedIncrement(_inc) NdisInterlockedIncrement((LONG *)&(_inc))
 
 #define VNIFInterlockedDecrement(_dec) {                                \
     NdisInterlockedDecrement(&(_dec));                                  \
@@ -356,13 +356,13 @@
 
 #define VNIFInterlockedIncrementStat(_inc) {                            \
     if (adapter->pv_stats) {                                            \
-        NdisInterlockedIncrement(&(_inc));                              \
+        NdisInterlockedIncrement((LONG *)&(_inc));                        \
     }                                                                   \
 }
 
 #define VNIFInterlockedDecrementStat(_dec) {                            \
     if (adapter->pv_stats) {                                            \
-        NdisInterlockedDecrement(&(_dec));                              \
+        NdisInterlockedDecrement((LONG *)&(_dec));                        \
         ASSERT((_dec) >= 0);                                            \
     }                                                                   \
 }
@@ -566,7 +566,7 @@ typedef struct _QUEUE_HEADER {
     ((_NetBufferList)->MiniportReserved[0])
 
 #define VNIF_GET_NET_BUFFER_LIST_REF_COUNT(_NetBufferList)              \
-    ((ULONG)(ULONG_PTR)((_NetBufferList)->MiniportReserved[1]))
+    (*((ULONG *)&(_NetBufferList)->MiniportReserved[1]))
 
 #define VNIF_GET_NET_BUFFER_PREV(_NetBuffer)                            \
     ((_NetBuffer)->MiniportReserved[0])
@@ -1115,6 +1115,7 @@ VNIFInitialize(PVNIF_ADAPTER adapter,
     PUINT SelectedMediumIndex,
     NDIS_HANDLE WrapperConfigurationContext);
 
+/*
 VOID
 MPAllocateComplete(
     NDIS_HANDLE MiniportAdapterContext,
@@ -1123,6 +1124,7 @@ MPAllocateComplete(
     IN ULONG Length,
     IN PVOID Context
     );
+*/
 
 NDIS_STATUS
 MPQueryInformation(

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2016-2022 SUSE LLC
+ * Copyright 2016-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -95,7 +95,6 @@ sp_open_key(PWSTR key_wstr, HANDLE *registryKey, DWORD operation)
 {
     OBJECT_ATTRIBUTES objectAttributes;
     UNICODE_STRING keyName;
-    UNICODE_STRING valueName;
 
     RtlInitUnicodeString(&keyName, key_wstr);
 
@@ -123,7 +122,6 @@ sp_get_reg_value(PWSTR key, PWSTR name, DWORD *value)
 {
     UCHAR buffer[sizeof(KEY_VALUE_PARTIAL_INFORMATION) + sizeof(DWORD)];
     HANDLE registryKey;
-    UNICODE_STRING keyName;
     UNICODE_STRING valueName;
     NTSTATUS status;
     ULONG len;
@@ -153,7 +151,6 @@ NTSTATUS
 sp_set_reg_value(PWSTR key, PWSTR name, DWORD value)
 {
     HANDLE registryKey;
-    UNICODE_STRING keyName;
     UNICODE_STRING valueName;
     NTSTATUS status;
 

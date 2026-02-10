@@ -5,7 +5,7 @@
  *  Vadim Rozenfeld <vrozenfe@redhat.com>
  *
  * Copyright 2010-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -293,7 +293,7 @@ virtio_bln_balloon_pages(vbln_dev_extn_t *fdx)
                            target_pages, actual_pages));
 
         virtio_bln_set_pages(fdx, fdx->num_pages);
-    } while (target_pages != actual_pages);
+    } while ((virtio_bln_ulong_t)target_pages != actual_pages);
     RPRINTK(DPRTL_DPC, ("virtio_bln_balloon_pages: out.\n"));
 }
 
@@ -302,7 +302,6 @@ virtio_bln_update_stats(vbln_dev_extn_t *fdx)
 {
     virtio_buffer_descriptor_t sg;
     LARGE_INTEGER phys_addr;
-    int i;
 
     phys_addr = MmGetPhysicalAddress(fdx->stats);
     sg.phys_addr = phys_addr.QuadPart;
@@ -316,6 +315,8 @@ virtio_bln_update_stats(vbln_dev_extn_t *fdx)
 void
 virtio_bln_worker(PDEVICE_OBJECT fdo, PVOID context)
 {
+    UNREFERENCED_PARAMETER(fdo);
+
     virtio_bln_work_item_t *vwork_item;
     vbln_dev_extn_t *fdx;
     KLOCK_QUEUE_HANDLE lh;
@@ -344,6 +345,10 @@ virtio_bln_worker(PDEVICE_OBJECT fdo, PVOID context)
 void
 virtio_bln_dpc(PKDPC dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     vbln_dev_extn_t *fdx;
     KLOCK_QUEUE_HANDLE lh;
     virtio_bln_work_item_t *vwork_item;
@@ -430,12 +435,17 @@ wdm_device_interrupt_message_service(
     PVOID context,
     ULONG  MessageId)
 {
+    UNREFERENCED_PARAMETER(MessageId);
+
     return wdm_device_isr(Interrupt, context);
 }
 
 BOOLEAN
 wdm_device_isr(IN PKINTERRUPT InterruptObject, IN PVOID context)
 {
+    UNREFERENCED_PARAMETER(InterruptObject);
+    UNREFERENCED_PARAMETER(context);
+
     vbln_dev_extn_t *fdx;
     BOOLEAN int_serviced;
 
@@ -518,8 +528,6 @@ virtio_bln_delete_qs(vbln_dev_extn_t *fdx)
 NTSTATUS
 wdm_device_virtio_init(PFDO_DEVICE_EXTENSION fdx)
 {
-    virtio_buffer_descriptor_t sg;
-    PHYSICAL_ADDRESS phys_addr;
     uint64_t host_features;
     uint64_t guest_features;
     NTSTATUS status = STATUS_SUCCESS;

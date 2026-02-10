@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -85,13 +85,17 @@ static KEVENT xb_event;
 static int shutting_down = SHUTDOWN_INVALID;
 static struct xenbus_watch shutdown_watch = {0};
 
-static void
+void
 XenbusDpcRoutine(
     IN PKDPC Dpc,
     IN PVOID DpcContext,
     IN PVOID RegisteredContext,
     IN PVOID DeviceExtension)
 {
+    UNREFERENCED_PARAMETER(Dpc);
+    UNREFERENCED_PARAMETER(RegisteredContext);
+    UNREFERENCED_PARAMETER(DeviceExtension);
+
     XEN_LOCK_HANDLE lh;
 
     DPRINTK(DPRTL_WAIT,
@@ -183,7 +187,6 @@ xb_write(const void *buf, unsigned int len)
     KDPC dpc = {0};
     struct xenstore_domain_interface *intf;
     XENSTORE_RING_IDX cons, prod;
-    int rc;
     PUCHAR data = (PUCHAR) buf;
     LARGE_INTEGER timeout;
 
@@ -370,7 +373,7 @@ xs_talkv(struct xenbus_transaction t,
     msg.type = type;
     msg.len = 0;
     for (i = 0; i < num_vecs; i++) {
-        msg.len += iovec[i].iov_len;
+        msg.len += (uint32_t)iovec[i].iov_len;
     }
 
     XenAcquireSpinLock(&xs_lock, &lh);
@@ -390,7 +393,7 @@ xs_talkv(struct xenbus_transaction t,
 
     for (i = 0; i < num_vecs; i++) {
         DPRINTK(DPRTL_XS, ("xs_talkv: xb_write iovec\n"));
-        err = xb_write(iovec[i].iov_base, iovec[i].iov_len);
+        err = xb_write(iovec[i].iov_base, (unsigned int)iovec[i].iov_len);
         if (err) {
             XENBUS_CLEAR_FLAG(xenbus_wait_events, XS_REQUEST);
             XENBUS_CLEAR_FLAG(xenbus_locks, X_XSL);
@@ -423,7 +426,7 @@ xs_talkv(struct xenbus_transaction t,
         return ERR_PTR(-err);
     }
 
-    if (msg.type != type) {
+    if (msg.type != (uint32_t)type) {
         PRINTK(("XENBUS unexpected type %d, expected %d, %x\n",
             msg.type, type, KeGetCurrentProcessorNumber()));
         ExFreePool(ret);
@@ -575,7 +578,7 @@ xenbus_exists(struct xenbus_transaction t,
     char **d;
     int dir_n;
 
-    d = xenbus_directory(t, dir, node, &dir_n);
+    d = xenbus_directory(t, dir, node, (unsigned int *)&dir_n);
     if (IS_ERR(d)) {
         return 0;
     }
@@ -892,7 +895,7 @@ register_xenbus_watch(struct xenbus_watch *watch)
 void
 unregister_xenbus_watch(struct xenbus_watch *watch)
 {
-    struct xs_stored_msg *msg, *tmp;
+    struct xs_stored_msg *msg;
     char token[sizeof(watch) * 2 + 1];
     int err;
     XEN_LOCK_HANDLE lh;
@@ -959,6 +962,8 @@ unregister_xenbus_watch(struct xenbus_watch *watch)
 void
 xenbus_watch_work(IN PDEVICE_OBJECT DeviceObject, PVOID work_item)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     struct xenbus_watch *i;
     PLIST_ENTRY li;
     struct xs_stored_msg *msg;
@@ -1016,6 +1021,7 @@ xenbus_watch_work(IN PDEVICE_OBJECT DeviceObject, PVOID work_item)
 
         ExFreePool(msg->u.watch.vec);
         ExFreePool(msg);
+        msg = NULL;
         ent = RemoveHeadList(&watch_events);
     }
     if (work_item) {
@@ -1040,7 +1046,6 @@ xb_read_fast(void *buf, uint32_t offset, unsigned int len)
 {
     struct xenstore_domain_interface *intf = xen_store_interface;
     XENSTORE_RING_IDX cons, prod;
-    int rc;
     PUCHAR data = buf;
     unsigned int avail;
     const char *src;
@@ -1382,17 +1387,17 @@ xenbus_suspend(PFDO_DEVICE_EXTENSION fdx, uint32_t reason)
 static void
 xenbus_shutdown(PFDO_DEVICE_EXTENSION fdx, uint32_t reason)
 {
-    XEN_LOCK_HANDLE lh;
-    xenbus_register_shutdown_event_t *ioctl;
+#ifdef XENBUS_HAS_IOCTLS
     PIRP irp;
+    XEN_LOCK_HANDLE lh;
     PLIST_ENTRY ent;
+#endif
     HANDLE registryKey;
     UNICODE_STRING valueName;
     NTSTATUS status;
     NTSTATUS open_key_status;
     uint32_t resultLength;
     uint32_t notify;
-    uint32_t shutdown;
     UCHAR buffer[sizeof(KEY_VALUE_PARTIAL_INFORMATION) + sizeof(uint32_t)];
 
     RPRINTK(DPRTL_ON, ("==> xenbus_shutdown: irql %x\n",
@@ -1413,7 +1418,7 @@ xenbus_shutdown(PFDO_DEVICE_EXTENSION fdx, uint32_t reason)
             KeyValuePartialInformation,
             buffer,
             sizeof(buffer),
-            &resultLength);
+            (PULONG)&resultLength);
 
         if (NT_SUCCESS(status)) {
             notify = *((PULONG)
@@ -1509,7 +1514,7 @@ hotplug_handler(PFDO_DEVICE_EXTENSION fdx, char *device, char *node,
         start = 11; /* device/vbd or device/vif */
     }
 
-    len = strlen(node);
+    len = (uint32_t)strlen(node);
     for (i = start; i < len && node[i] != '/'; i++) {
         ;
     }
@@ -1562,6 +1567,8 @@ static void
 vbd_handler(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(len);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)watch->context;
     PPDO_DEVICE_EXTENSION pdx;
     PLIST_ENTRY entry;
@@ -1604,6 +1611,8 @@ static void
 vscsi_handler(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(len);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)watch->context;
     PPDO_DEVICE_EXTENSION pdx;
     pv_ioctl_t ioctl_data;
@@ -1628,6 +1637,8 @@ static void
 vusb_handler(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(len);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)watch->context;
     PPDO_DEVICE_EXTENSION pdx;
     pv_ioctl_t ioctl_data;
@@ -1652,6 +1663,8 @@ static void
 vif_handler(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(len);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)watch->context;
 
     if (hotplug_handler(fdx, "vif", (char *)vec[0], NULL) == STATUS_SUCCESS) {
@@ -1663,10 +1676,11 @@ static void
 shutdown_handler(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(vec);
+    UNREFERENCED_PARAMETER(len);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)watch->context;
-    xenbus_pv_port_options_t options;
     char *str;
-    NTSTATUS status;
     struct xenbus_transaction xbt;
     int err;
 
@@ -1888,11 +1902,12 @@ VOID xs_cleanup(void)
 void
 xenbus_debug_dump(void)
 {
+#ifdef DBG
     FDO_DEVICE_EXTENSION *fdx;
-    PLIST_ENTRY entry;
     PPDO_DEVICE_EXTENSION pdx;
+    PLIST_ENTRY entry;
     pv_ioctl_t ioctl_data;
-
+#endif
     shared_info_t *s;
     vcpu_info_t *v;
     struct xenstore_domain_interface *intf;

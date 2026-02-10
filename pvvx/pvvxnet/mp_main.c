@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2013-2024 SUSE LLC
+ * Copyright 2013-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,7 +44,7 @@ void (*vnif_add_tx)(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
 void *(*vnif_get_tx)(PVNIF_ADAPTER adapter, UINT path_id, UINT *cons, UINT prod,
     UINT cnt, UINT *len, UINT *status);
 RCB *(*vnif_get_rx)(PVNIF_ADAPTER adapter, UINT path_id,
-                    UINT prod, UINT *_cons, INT *len);
+                    UINT prod, UINT *_cons, UINT *len);
 
 /* Indirect function pointers from mp_vinterface and mp_xinterface. */
 void (*VNIFFreeAdapterInterface)(PVNIF_ADAPTER adapter);
@@ -298,6 +298,8 @@ vnifx_setup(void)
     RtlStringCbCopyA(VNIF_VENDOR_DESC, sizeof(VNIF_VENDOR_DESC), "Xen");
     VNIF_VENDOR_ID = 0x0000163E;
 
+#pragma warning(push)
+#pragma warning(disable:4127) // Disable nameless struct/union warning
     if (NET_TX_RING_SIZE !=
             __WIN_RING_SIZE((struct netif_tx_sring *)0, PAGE_SIZE)) {
         PRINTK(("*** %s: NET_TX_RING_SIZE %d != actual ring size %d ***",
@@ -310,6 +312,7 @@ vnifx_setup(void)
             NET_TX_RING_SIZE,
             __WIN_RING_SIZE((struct netif_rx_sring *)0, PAGE_SIZE)));
     }
+#pragma warning(pop)
     return STATUS_SUCCESS;
 }
 

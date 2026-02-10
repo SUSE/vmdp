@@ -5,7 +5,7 @@
  *  Ladi Prosek <lprosek@redhat.com>
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -157,14 +157,14 @@ vring_add_buf_indirect(virtio_queue_t *vq_common,
     for (i = 0; i < out; i++) {
         vr_desc[i].addr = sg->phys_addr;
         vr_desc[i].len = sg->len;
-        vr_desc[i].next = i + 1;
+        vr_desc[i].next = (uint16_t)i + 1;
         vr_desc[i].flags = VRING_DESC_F_NEXT;
         sg++;
     }
     for (; i < (out + in); i++) {
         vr_desc[i].addr = sg->phys_addr;
         vr_desc[i].len = sg->len;
-        vr_desc[i].next = i + 1;
+        vr_desc[i].next = (uint16_t)i + 1;
         vr_desc[i].flags = VRING_DESC_F_NEXT | VRING_DESC_F_WRITE;
         sg++;
     }

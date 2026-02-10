@@ -5,7 +5,7 @@
  *  Anthony Liguori  <aliguori@us.ibm.com>
  *  Windows porting - Yan Vugenfirer <yvugenfi@redhat.com>
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -181,6 +181,8 @@ virtio_dev_legacy_vq_activate(virtio_device_t *vdev,
                               uint16_t msi_vector,
                               BOOLEAN query_notify_off)
 {
+    UNREFERENCED_PARAMETER(query_notify_off);
+
     PHYSICAL_ADDRESS pa;
     void *ring;
     ULONG page_num;
@@ -226,7 +228,6 @@ virtio_dev_legacy_vq_setup(virtio_device_t *vdev,
     NTSTATUS status;
     unsigned long ring_size;
     unsigned long queue_size;
-    uint16_t i;
     BOOLEAN alloced_mem;
 
     alloced_mem = FALSE;
@@ -315,6 +316,7 @@ NTSTATUS
 virtio_dev_legacy_init(virtio_device_t *vdev,
                        virtio_bar_t *vbar,
                        PUCHAR pci_config_buf) {
+    UNREFERENCED_PARAMETER(pci_config_buf);
 
     vdev->addr = (ULONG_PTR)vbar[0].va;
 

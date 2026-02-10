@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,6 +31,8 @@ static void vserial_int_queues_dpc(FDO_DEVICE_EXTENSION *fdx);
 BOOLEAN
 wdm_device_isr(IN PKINTERRUPT InterruptObject, IN PVOID context)
 {
+    UNREFERENCED_PARAMETER(InterruptObject);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     ULONG cc;
     BOOLEAN int_serviced;
@@ -68,6 +70,8 @@ wdm_device_interrupt_message_service(
     PVOID context,
     ULONG  MessageId)
 {
+    UNREFERENCED_PARAMETER(Interrupt);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     ULONG cc;
     BOOLEAN int_serviced;
@@ -102,6 +106,10 @@ wdm_device_interrupt_message_service(
 void
 vserial_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     FDO_DEVICE_EXTENSION *fdx = (FDO_DEVICE_EXTENSION *)context;
     LONG msg_int;
     LONG queue_int;

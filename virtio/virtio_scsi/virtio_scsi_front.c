@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -104,8 +104,7 @@ virtio_sp_get_device_config(virtio_sp_dev_ext_t *dev_ext)
 }
 
 void
-virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext,
-                                  PPORT_CONFIGURATION_INFORMATION config_info)
+virtio_sp_dump_device_config_info(virtio_sp_dev_ext_t *dev_ext)
 {
 
     PRINTK(("%s: features and configuration:\n", VIRTIO_SP_DRIVER_NAME));

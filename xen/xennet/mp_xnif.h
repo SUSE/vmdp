@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2024 SUSE LLC
+ * Copyright 2019-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -83,7 +83,7 @@ void *vnifx_get_tx(struct _VNIF_ADAPTER *adapter, UINT path_id,
                    UINT *cons, UINT prod,
                    UINT cnt, UINT *len, UINT *status);
 struct _RCB *vnifx_get_rx(struct _VNIF_ADAPTER *adapter, UINT path_id, UINT rp,
-    UINT *i, INT *len);
+    UINT *i, UINT *len);
 void vnifx_ndis_queue_dpc(struct _VNIF_ADAPTER *adapter,
                           UINT rcv_qidx,
                           UINT max_nbls_to_indicate);

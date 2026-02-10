@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008-2017 Red Hat, Inc.
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -95,7 +95,7 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
             break;
         }
 
-        VNIF_DUMP(adapter, path_id, "vnif_txrx_interrupt_dpc in", 3, 0);
+        VNIF_DUMP(adapter, path_id, (PUCHAR)"vnif_txrx_interrupt_dpc in", 3, 0);
 
         if (txrx_ind == VNIF_TX_INT) {
             did_work += VNIFCheckSendCompletion(adapter, path_id);
@@ -111,7 +111,7 @@ vnif_txrx_interrupt_dpc(PVNIF_ADAPTER adapter,
             did_work++;
         }
 
-        VNIF_DUMP(adapter, path_id, "vnif_txrx_interrupt_dpc out", 3, 0);
+        VNIF_DUMP(adapter, path_id, (PUCHAR)"vnif_txrx_interrupt_dpc out", 3, 0);
 
         NdisAcquireSpinLock(&adapter->adapter_flag_lock);
         adapter->path[path_id].path_id_flags &= ~(txrx_ind);
@@ -163,6 +163,8 @@ vnif_rx_path_dpc(
   IN PVOID SystemArgument1,
   IN PVOID SystemArgument2)
 {
+    UNREFERENCED_PARAMETER(Dpc);
+
     PVNIF_ADAPTER adapter;
     UINT path_id;
     UINT max_nbls_to_indicate;
@@ -237,7 +239,6 @@ vnif_rx_path_dpc(
 NDIS_STATUS
 vnif_setup_rx_path_dpc(VNIF_ADAPTER *adapter)
 {
-    NDIS_STATUS status;
     UINT i;
 
     for (i = 0; i < adapter->num_rcv_queues; i++) {
@@ -583,7 +584,6 @@ calculate_ip_checksum(uint8_t *pkt_buf)
     uint16_t *buff;
     uint16_t *w;
     uint32_t ip_hdr_sz;
-    uint32_t i;
     uint32_t sum;
 
     ip_hdr_sz = IP_INPLACE_HEADER_SIZE(pkt_buf);
@@ -909,7 +909,11 @@ vnif_add_rcb_to_ring_from_list(PVNIF_ADAPTER adapter, UINT path_id)
     rcb = (RCB *) RemoveHeadList(
         &adapter->path[path_id].rcb_rp.rcb_free_list);
     if (rcb == (RCB *)&adapter->path[path_id].rcb_rp.rcb_free_list) {
-        VNIF_DUMP(adapter, path_id, "vnif_add_rcb_to_ring_from_list", 1, 1);
+        VNIF_DUMP(adapter,
+                  path_id,
+                  (PUCHAR)"vnif_add_rcb_to_ring_from_list",
+                  1,
+                  1);
         return 0;
     }
 
@@ -961,6 +965,7 @@ vnif_drop_rcb(PVNIF_ADAPTER adapter, RCB *rcb, int status)
 VOID
 VNIFFreeQueuedRecvPackets(PVNIF_ADAPTER Adapter)
 {
+    UNREFERENCED_PARAMETER(Adapter);
 }
 
 VOID
@@ -970,6 +975,10 @@ VNIFReceiveTimerDpc(
     IN PVOID SystemSpecific2,
     IN PVOID SystemSpecific3)
 {
+    UNREFERENCED_PARAMETER(SystemSpecific1);
+    UNREFERENCED_PARAMETER(SystemSpecific2);
+    UNREFERENCED_PARAMETER(SystemSpecific3);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) FunctionContext;
     UINT i;
 
@@ -1008,7 +1017,7 @@ VNIFReceiveTimerDpc(
 }
 
 static void
-vnif_build_arp_packet(uint8_t *mac, uint8_t *ip, char *p)
+vnif_build_arp_packet(uint8_t *mac, uint8_t *ip, uint8_t *p)
 {
     /* Destination mac: broadcast */
     p[0]  = 0xff;
@@ -1209,7 +1218,7 @@ vnif_get_ip_address_from_reg(PVNIF_ADAPTER adapter, WCHAR *ip_addr_buf)
 static void
 vnif_send_private_buffer(
   PVNIF_ADAPTER adapter,
-  char *buffer,
+  uint8_t *buffer,
   uint32_t len)
 {
     TCB *tcb;
@@ -1294,7 +1303,7 @@ vnif_send_arp(PVNIF_ADAPTER adapter)
             PRINTK(("%s: ip = %d.%d.%d.%d\n",
                 __func__, ip_addr[0], ip_addr[1], ip_addr[2], ip_addr[3]));
             vnif_build_arp_packet(adapter->CurrentAddress, ip_addr, buf);
-            vnif_send_private_buffer(adapter,   buf, sizeof(buf));
+            vnif_send_private_buffer(adapter, buf, sizeof(buf));
         }
     }
 
@@ -1356,6 +1365,9 @@ fill_delays(PVNIF_ADAPTER adapter, uint64_t *delay, uint64_t delta)
 void
 VNIFReceivePacketsStats(PVNIF_ADAPTER adapter, UINT path_id, uint32_t ring_size)
 {
+#ifndef DBG
+    UNREFERENCED_PARAMETER(path_id);
+#endif
     if (adapter->pv_stats == NULL) {
         return;
     }
@@ -1406,7 +1418,7 @@ VNIFReceivePacketsPostStats(PVNIF_ADAPTER adapter, UINT path_id,
     VNIF_ADD(adapter->pv_stats->rx_path_cnt[path_id], cnt);
     fill_cnt(adapter, adapter->pv_stats->rx_max_passed_up, cnt, ring_size);
 
-    if (adapter->nBusyRecv == ring_size) {
+    if (adapter->nBusyRecv == (LONG)ring_size) {
         adapter->pv_stats->rx_ring_empty_nbusy++;
     }
 
@@ -1426,7 +1438,6 @@ VNIFReceivePacketsPostStats(PVNIF_ADAPTER adapter, UINT path_id,
 void
 VNIFReturnRcbStats(PVNIF_ADAPTER adapter, RCB *rcb)
 {
-    uint64_t cur;
     uint64_t et;
     uint64_t delta;
 
@@ -1477,6 +1488,10 @@ VNIFPvStatTimerDpc(
     IN PVOID SystemSpecific2,
     IN PVOID SystemSpecific3)
 {
+    UNREFERENCED_PARAMETER(SystemSpecific1);
+    UNREFERENCED_PARAMETER(SystemSpecific2);
+    UNREFERENCED_PARAMETER(SystemSpecific3);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) FunctionContext;
     uint64_t et;
     uint64_t delta;
@@ -1504,7 +1519,7 @@ VNIFPvStatTimerDpc(
 
     et = KeQueryInterruptTime();
     NdisDprAcquireSpinLock(&adapter->stats_lock);
-    VNIF_DUMP(adapter, 0, "STATS", 1, 1);
+    VNIF_DUMP(adapter, 0, (PUCHAR)"STATS", 1, 1);
     adapter->pv_stats->stat_timer_st = KeQueryInterruptTime();
 
     delta = et - adapter->pv_stats->stat_timer_st;

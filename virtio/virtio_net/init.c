@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,8 +35,6 @@ static NDIS_STRING reg_tcp6_chksum_name =
     NDIS_STRING_CONST("TCPChecksumOffloadIPv6");
 static NDIS_STRING reg_udp6_chksum_name =
     NDIS_STRING_CONST("UDPChecksumOffloadIPv6");
-static NDIS_STRING reg_calc_chksum_name =
-    NDIS_STRING_CONST("CalcMissingChecksum");
 static NDIS_STRING reg_lso_v1_name =
     NDIS_STRING_CONST("LsoV1IPv4");
 static NDIS_STRING reg_lso_v2_name =
@@ -152,7 +150,7 @@ VNIFSetupNdisAdapterTx(PVNIF_ADAPTER adapter)
         desc_pa.QuadPart = 0;
         num_ring_desc = VNIF_TX_RING_SIZE(adapter);
         VNIF_ALLOCATE_MEMORY(
-            (void *)adapter->TCBArray,
+            adapter->TCBArray,
             sizeof(TCB *) * num_ring_desc * adapter->num_paths,
             VNIF_POOL_TAG,
             NdisMiniportDriverHandle,
@@ -167,9 +165,9 @@ VNIFSetupNdisAdapterTx(PVNIF_ADAPTER adapter)
             sizeof(TCB *) * num_ring_desc * adapter->num_paths);
 
 #ifndef XENNET
+        bytes_per_desc = sizeof(struct vring_desc) * adapter->max_sg_el;
+        desc_per_page = PAGE_SIZE / bytes_per_desc;
         if (adapter->b_indirect == TRUE) {
-            bytes_per_desc = sizeof(struct vring_desc) * adapter->max_sg_el;
-            desc_per_page = PAGE_SIZE / bytes_per_desc;
             num_desc_pages = (num_ring_desc / desc_per_page)
                             + (num_ring_desc % desc_per_page ? 1 : 0);
             total_desc_bytes = num_desc_pages * PAGE_SIZE * adapter->num_paths;
@@ -333,9 +331,7 @@ VNIFFreeAdapterTx(PVNIF_ADAPTER adapter)
 static void
 vnif_free_path_info(PVNIF_ADAPTER adapter)
 {
-    NDIS_STATUS status;
     UINT i;
-    UINT r;
 
     if (adapter->path != NULL) {
         for (i = 0; i < adapter->num_paths; ++i) {
@@ -405,7 +401,6 @@ vnif_setup_path_info(PVNIF_ADAPTER adapter)
 {
     NDIS_STATUS status;
     UINT i;
-    UINT r;
 
     VNIF_ALLOCATE_MEMORY(
         adapter->path,
@@ -547,7 +542,6 @@ vnif_free_adapter_allocations(PVNIF_ADAPTER adapter)
 VOID
 VNIFFreeAdapter(PVNIF_ADAPTER adapter, NDIS_STATUS status)
 {
-    uint32_t i;
     uint32_t mac;
 
     if (adapter == NULL) {
@@ -622,14 +616,14 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
 {
     NDIS_STATUS status;
     NDIS_HANDLE config_handle;
+#if NDIS_SUPPORT_NDIS6 == 0
     NDIS_CONFIGURATION_PARAMETER reg_value;
-    PNDIS_CONFIGURATION_PARAMETER returned_value;
     WCHAR wbuffer[16] = {0};
+#endif
+    PNDIS_CONFIGURATION_PARAMETER returned_value;
     PUCHAR net_addr;
-    PUCHAR str;
     UNICODE_STRING ustr;
     ULONG reg_num_rcv_queues;
-    uint32_t calc_chksum;
     UINT length;
 
     status = VNIFNdisOpenConfiguration(adapter, &config_handle);

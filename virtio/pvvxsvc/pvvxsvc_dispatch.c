@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,12 +31,15 @@ HANDLE                  g_pvvxsvc_shutdown_stop_event_handle;
 HANDLE                  g_pvvxsvc_shutdown_wait_handle;
 
 
-static VOID pvvxsvc_dispatch_init(DWORD, LPTSTR *);
+static VOID pvvxsvc_dispatch_init(VOID);
 static VOID WINAPI pvvxsvc_dispatch_ctrl_handler(DWORD);
 
 VOID WINAPI
 pvvxsvc_dispatch(DWORD dwArgc, LPTSTR *lpszArgv)
 {
+    UNREFERENCED_PARAMETER(dwArgc);
+    UNREFERENCED_PARAMETER(lpszArgv);
+
     DBG_OUTPUT(TEXT("==> pvvxsvc_dispatch ****\n"));
     g_pvvxsvc_shutdown_status_handle = RegisterServiceCtrlHandler(
         PVVXSVC_NAME,
@@ -60,12 +63,12 @@ pvvxsvc_dispatch(DWORD dwArgc, LPTSTR *lpszArgv)
                           3000);
 
     /* Perform service-specific initialization and work. */
-    pvvxsvc_dispatch_init(dwArgc, lpszArgv);
+    pvvxsvc_dispatch_init();
     DBG_OUTPUT(TEXT("<== pvvxsvc_dispatch ****\n"));
 }
 
 static VOID
-pvvxsvc_dispatch_init(DWORD dwArgc, LPTSTR *lpszArgv)
+pvvxsvc_dispatch_init(VOID)
 {
     /*
      * Be sure to periodically call pvvxsvc_report_status() with

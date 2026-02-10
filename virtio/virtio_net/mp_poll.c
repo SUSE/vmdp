@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2024-2025 SUSE LLC
+ * Copyright 2024-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,7 +39,6 @@ NDIS_STATUS
 vnif_ndis_register_poll(PVNIF_ADAPTER adapter)
 {
     NDIS_POLL_CHARACTERISTICS poll_char;
-    PROCESSOR_NUMBER proc_num;
     NDIS_STATUS status;
     UINT i;
 
@@ -216,6 +215,7 @@ vnif_rx_ndis_poll(void *context,
              vnif_get_current_processor(NULL)));
 
     rp = 0;
+    old = 0;
     nb_list = NULL;
     tail_nb_list = NULL;
     nb_list_cnt = 0;
@@ -542,6 +542,10 @@ static void
 vnif_ndis_set_rcvq_poll_notification (void *context,
                                       NDIS_POLL_NOTIFICATION *notification)
 {
+#ifndef DBG
+    UNREFERENCED_PARAMETER(context);
+    UNREFERENCED_PARAMETER(notification);
+#else
     vnif_poll_context_t *poll_context;
 
     poll_context = (vnif_poll_context_t *)context;
@@ -553,6 +557,7 @@ vnif_ndis_set_rcvq_poll_notification (void *context,
         poll_context->poll_path_id,
         KeGetCurrentIrql(),
         KeGetCurrentProcessorNumber()));
+#endif
 }
 
 void

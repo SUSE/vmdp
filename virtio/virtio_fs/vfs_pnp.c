@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2022 SUSE LLC
+ * Copyright 2022-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,7 +34,6 @@ wdm_device_virtio_init(IN FDO_DEVICE_EXTENSION *fdx)
 {
     uint64_t guest_features;
     uint64_t host_features;
-    uint32_t i;
     uint8_t dev_status;
 
     RPRINTK(DPRTL_INIT, ("--> %s %s\n", VDEV_DRIVER_NAME, __func__));
@@ -116,8 +115,8 @@ vfs_q_init(IN FDO_DEVICE_EXTENSION *fdx)
 
     status = STATUS_SUCCESS;
     for (i = 0; i < fdx->num_queues; i++) {
-        queues_vector = fdx->int_info[i].message_signaled ? i :
-            VIRTIO_MSI_NO_VECTOR;
+        queues_vector = fdx->int_info[i].message_signaled ? (USHORT)i :
+            (USHORT)VIRTIO_MSI_NO_VECTOR;
         if (fdx->vqs[i] == NULL) {
             fdx->vqs[i] = VIRTIO_DEVICE_QUEUE_SETUP(&fdx->vdev,
                                                     (uint16_t)i,
@@ -222,7 +221,8 @@ vfs_return_vq_entries(virtio_queue_t *vq)
     KIRQL irql;
 
     RPRINTK(DPRTL_ON, ("--> %s\n", __func__));
-    while (entry = (virtio_fs_request_t *)vq_detach_unused_buf(vq)) {
+    entry = (virtio_fs_request_t *)vq_detach_unused_buf(vq);
+    while (entry != NULL) {
         if (entry->irp != NULL) {
             RPRINTK(DPRTL_ON, ("    Canceling request %p\n",
                     __func__, entry->irp));
@@ -234,6 +234,7 @@ vfs_return_vq_entries(virtio_queue_t *vq)
             vfs_complete_request(entry->irp, IO_NO_INCREMENT);
         }
         vfs_free_request(entry);
+        entry = (virtio_fs_request_t *)vq_detach_unused_buf(vq);
     }
     RPRINTK(DPRTL_ON, ("<-- %s\n", __func__));
 }

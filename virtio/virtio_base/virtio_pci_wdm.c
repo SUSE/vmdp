@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2022 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,6 +55,8 @@ wdm_prepare_hardware(
    IN PCM_PARTIAL_RESOURCE_LIST raw,
    IN PCM_PARTIAL_RESOURCE_LIST translated)
 {
+    UNREFERENCED_PARAMETER(raw);
+
     PHYSICAL_ADDRESS pa;
     uint8_t pci_config_space[sizeof(PCI_COMMON_CONFIG)];
     PCM_PARTIAL_RESOURCE_DESCRIPTOR resource;
@@ -176,10 +178,11 @@ wdm_connect_int(IN FDO_DEVICE_EXTENSION *fdx)
 {
 #ifdef TARGET_OS_GTE_WinLH
     IO_CONNECT_INTERRUPT_PARAMETERS int_params;
+    ULONG j;
 #endif
     NTSTATUS status;
-    ULONG j;
 
+    status = STATUS_SUCCESS;
     RPRINTK(DPRTL_ON, ("--> %s %s\n", VDEV_DRIVER_NAME, __func__));
     if (fdx->int_info[0].message_signaled) {
 #ifdef TARGET_OS_GTE_WinLH
@@ -392,6 +395,8 @@ wdm_io_completion(
   IN PIRP Irp,
   IN PVOID Context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     if (Irp->PendingReturned == TRUE && Context != NULL) {
         KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
     }

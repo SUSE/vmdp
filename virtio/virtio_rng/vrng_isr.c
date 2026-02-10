@@ -3,7 +3,7 @@
  *
  * Written By: Gal Hammer <ghammer@redhat.com>
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,6 +34,10 @@
 void
 vrng_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     FDO_DEVICE_EXTENSION *fdx = (FDO_DEVICE_EXTENSION *)context;
     KLOCK_QUEUE_HANDLE lh;
     read_buffer_entry_t *entry;
@@ -41,7 +45,6 @@ vrng_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
     PSINGLE_LIST_ENTRY iter;
     read_buffer_entry_t *current;
     DRIVER_CANCEL *cancel_routine;
-    KIRQL irql;
     void *system_buffer;
     unsigned int len;
 
@@ -114,6 +117,8 @@ vrng_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
 BOOLEAN
 wdm_device_isr(IN PKINTERRUPT InterruptObject, IN PVOID context)
 {
+    UNREFERENCED_PARAMETER(InterruptObject);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     ULONG cc;
     BOOLEAN int_serviced;
@@ -143,6 +148,8 @@ wdm_device_interrupt_message_service(
     PVOID context,
     ULONG  MessageId)
 {
+    UNREFERENCED_PARAMETER(Interrupt);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     ULONG cc;
     BOOLEAN int_serviced;

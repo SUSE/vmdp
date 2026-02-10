@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2022 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,6 +37,8 @@ pvcrash_io_completion(
   IN PIRP Irp,
   IN PVOID Context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     if (Irp->PendingReturned == TRUE && Context != NULL) {
         KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
     }
@@ -80,7 +82,6 @@ pvcrash_send_irp_synchronous(
 static NTSTATUS
 pvcrash_prepare_hardware(
    IN FDO_DEVICE_EXTENSION *fdx,
-   IN PCM_PARTIAL_RESOURCE_LIST raw,
    IN PCM_PARTIAL_RESOURCE_LIST translated)
 {
     PHYSICAL_ADDRESS pa;
@@ -236,7 +237,6 @@ pvcrash_deregister_callbacks(FDO_DEVICE_EXTENSION *fdx)
 static NTSTATUS
 pvcrash_start_device(
   IN PDEVICE_OBJECT fdo,
-  IN PCM_PARTIAL_RESOURCE_LIST raw,
   IN PCM_PARTIAL_RESOURCE_LIST translated)
 {
     NTSTATUS status;
@@ -255,7 +255,7 @@ pvcrash_start_device(
             break;
         }
 
-        status = pvcrash_prepare_hardware(fdx, raw, translated);
+        status = pvcrash_prepare_hardware(fdx, translated);
         if (!NT_SUCCESS(status)) {
             PRINTK(("%s: pvcrash_prepare_haredware failed: %x\n",
                     VDEV_DRIVER_NAME, status));
@@ -282,12 +282,9 @@ NTSTATUS
 pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
-    ULONG length, prevcount, numNew, i;
     PFDO_DEVICE_EXTENSION fdx;
     PIO_STACK_LOCATION stack;
-    PCM_PARTIAL_RESOURCE_LIST raw, translated;
-    PLIST_ENTRY entry, listHead, nextEntry;
-    PDEVICE_RELATIONS relations, oldRelations;
+    PCM_PARTIAL_RESOURCE_LIST translated;
 
     fdx = (PFDO_DEVICE_EXTENSION) DeviceObject->DeviceExtension;
     stack = IoGetCurrentIrpStackLocation(Irp);
@@ -299,13 +296,10 @@ pvcrash_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         status = pvcrash_send_irp_synchronous(fdx->LowerDevice, Irp);
 
         if  (NT_SUCCESS(status)) {
-            raw = &stack->Parameters.StartDevice
-                .AllocatedResources->List[0].PartialResourceList;
-
             translated = &stack->Parameters.StartDevice
                 .AllocatedResourcesTranslated->List[0].PartialResourceList;
 
-            pvcrash_start_device(DeviceObject, raw, translated);
+            pvcrash_start_device(DeviceObject, translated);
         }
 
         Irp->IoStatus.Status = status;

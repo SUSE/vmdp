@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2016-2020 SUSE LLC
+ * Copyright 2016-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -80,7 +80,6 @@ vxsb_printk(char *_fmt, ...)
 {
     va_list ap;
     char buf[256];
-    char *c;
 
     va_start(ap, _fmt);
     RtlStringCbVPrintfA(buf, sizeof(buf), _fmt, ap);
@@ -140,5 +139,5 @@ DriverEntry(IN void *DriverObject, IN void *RegistryPath)
     default:
         break;
     }
-    return STATUS_UNSUCCESSFUL;
+    return (ULONG)STATUS_UNSUCCESSFUL;
 }

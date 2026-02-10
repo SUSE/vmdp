@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,7 +38,6 @@ DriverEntry6(PVOID DriverObject, PVOID RegistryPath)
 {
     NDIS_STATUS status;
     NDIS_MINIPORT_DRIVER_CHARACTERISTICS mp_char;
-    UINT ver;
     UCHAR major_ver;
     UCHAR minor_ver;
 
@@ -106,11 +105,11 @@ DriverEntry6(PVOID DriverObject, PVOID RegistryPath)
 }
 
 NDIS_STATUS
-MPSetOptions(IN NDIS_HANDLE NdisMiniportDriverHandle,
-    IN NDIS_HANDLE MiniportDriverContext)
+MPSetOptions(IN NDIS_HANDLE ndisMiniportDriverHandle,
+    IN NDIS_HANDLE miniportDriverContext)
 {
-    UNREFERENCED_PARAMETER(NdisMiniportDriverHandle);
-    UNREFERENCED_PARAMETER(MiniportDriverContext);
+    UNREFERENCED_PARAMETER(ndisMiniportDriverHandle);
+    UNREFERENCED_PARAMETER(miniportDriverContext);
 
     RPRINTK(DPRTL_ON, ("VNIF: MPSetOptions.\n"));
     return NDIS_STATUS_SUCCESS;
@@ -197,7 +196,7 @@ MPCancelSends(NDIS_HANDLE MiniportAdapterContext, PVOID CancelId)
             NdisMSendNetBufferListsComplete(
                 adapter->AdapterHandle,
                 cancel_head_nb_list,
-                NDIS_STATUS_SEND_ABORTED);
+                (ULONG)NDIS_STATUS_SEND_ABORTED);
         }
     }
 
@@ -208,6 +207,8 @@ NDIS_STATUS
 MPPause(IN NDIS_HANDLE MiniportAdapterContext,
     IN PNDIS_MINIPORT_PAUSE_PARAMETERS MiniportPauseParameters)
 {
+    UNREFERENCED_PARAMETER(MiniportPauseParameters);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
 
     RPRINTK(DPRTL_ON, ("VNIF: MPPause %s %x - IN\n",
@@ -229,6 +230,8 @@ NDIS_STATUS
 MPRestart(IN NDIS_HANDLE MiniportAdapterContext,
     IN PNDIS_MINIPORT_RESTART_PARAMETERS  MiniportRestartParameters)
 {
+    UNREFERENCED_PARAMETER(MiniportRestartParameters);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
     KIRQL old_irql;
     UINT i;

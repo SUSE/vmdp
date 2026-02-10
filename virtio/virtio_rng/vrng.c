@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2025 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -75,6 +75,8 @@ DriverEntry (
   IN PDRIVER_OBJECT DriverObject,
   IN PUNICODE_STRING RegistryPath)
 {
+    UNREFERENCED_PARAMETER(RegistryPath);
+
     printk = virtio_dbg_printk;
     KeInitializeSpinLock(&virtio_print_lock);
 
@@ -98,7 +100,7 @@ DriverEntry (
     return STATUS_SUCCESS;
 }
 
-static NTSTATUS
+NTSTATUS
 vrng_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 {
     NTSTATUS status;
@@ -169,6 +171,8 @@ vrng_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 static VOID
 vrng_unload(IN PDRIVER_OBJECT DriverObject)
 {
+    UNREFERENCED_PARAMETER(DriverObject);
+
     PRINTK(("vrng_unload\n"));
     PAGED_CODE();
 }
@@ -203,19 +207,19 @@ vrng_dispatch_create_close(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
-static NTSTATUS
+NTSTATUS
 vrng_dispatch_create(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     return vrng_dispatch_create_close(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 vrng_dispatch_close(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     return vrng_dispatch_create_close(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 vrng_dispatch_read(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     PFDO_DEVICE_EXTENSION fdx;
@@ -232,7 +236,7 @@ vrng_dispatch_read(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
-static NTSTATUS
+NTSTATUS
 vrng_dispatch_power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     PIO_STACK_LOCATION irpStack;
@@ -259,7 +263,7 @@ vrng_dispatch_power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
-static NTSTATUS
+NTSTATUS
 vrng_dispatch_system_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
@@ -279,7 +283,7 @@ vrng_dispatch_system_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return IoCallDriver(fdx->LowerDevice, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 vrng_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     PCOMMON_DEVICE_EXTENSION fdx;

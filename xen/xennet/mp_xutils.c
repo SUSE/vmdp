@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,6 +50,9 @@ vnifx_disable_adapter_notifications(PVNIF_ADAPTER adapter,
                                     UINT path_id,
                                     LONG poll_requested)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(poll_requested);
 }
 
 void
@@ -70,6 +73,10 @@ vnifx_interrupt_dpc(
   IN PVOID SystemArgument1,
   IN PVOID SystemArgument2)
 {
+    UNREFERENCED_PARAMETER(Dpc);
+    UNREFERENCED_PARAMETER(SystemArgument1);
+    UNREFERENCED_PARAMETER(SystemArgument2);
+
     vnif_xq_path_t *path = (vnif_xq_path_t *) DeferredContext;
     PVNIF_ADAPTER adapter;
     UINT path_id;
@@ -146,6 +153,10 @@ vnifx_tx_interrupt_dpc(
   IN PVOID SystemArgument1,
   IN PVOID SystemArgument2)
 {
+    UNREFERENCED_PARAMETER(Dpc);
+    UNREFERENCED_PARAMETER(SystemArgument1);
+    UNREFERENCED_PARAMETER(SystemArgument2);
+
     vnif_xq_path_t *path = (vnif_xq_path_t *)DeferredContext;
     PVNIF_ADAPTER adapter;
     UINT path_id;
@@ -193,6 +204,10 @@ vnifx_rx_interrupt_dpc(
   IN PVOID SystemArgument1,
   IN PVOID SystemArgument2)
 {
+    UNREFERENCED_PARAMETER(Dpc);
+    UNREFERENCED_PARAMETER(SystemArgument1);
+    UNREFERENCED_PARAMETER(SystemArgument2);
+
     vnif_xq_path_t *path = (vnif_xq_path_t *) DeferredContext;
     PVNIF_ADAPTER adapter;
     UINT path_id;
@@ -279,7 +294,7 @@ vnifx_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
     struct netif_tx_request *tx;
     struct netif_extra_info *gso;
     uint8_t *ip_hdr;
-    xen_ulong_t id;
+    xen_ulong_t id = 0;
     ULONG gso_mss;
     UINT i;
     uint16_t ip_hdr_len;
@@ -417,6 +432,8 @@ void *
 vnifx_get_tx(PVNIF_ADAPTER adapter, UINT path_id, UINT *_cons, UINT prod,
     UINT cnt, UINT *len, UINT *status)
 {
+    UNREFERENCED_PARAMETER(len);
+
     void *pkt;
     struct netif_tx_response *txrsp;
     UINT id;
@@ -466,7 +483,7 @@ vnifx_get_tx(PVNIF_ADAPTER adapter, UINT path_id, UINT *_cons, UINT prod,
 
 RCB *
 vnifx_get_rx(PVNIF_ADAPTER adapter, UINT path_id,
-             UINT prod, UINT *_cons, INT *len)
+             UINT prod, UINT *_cons, UINT *len)
 {
     struct netif_rx_response *rx;
     struct netif_extra_info *extra;
@@ -488,7 +505,7 @@ vnifx_get_rx(PVNIF_ADAPTER adapter, UINT path_id,
             if (rx->status <= NETIF_RSP_NULL) {
                 PRINTK(("vnif_get_rx: bad status %x, id %x, cons %x prod %x\n",
                     rx->status, rx->id, cons - 1, prod));
-                VNIF_DUMP(adapter, path_id, "get_rx", 1, 1);
+                VNIF_DUMP(adapter, path_id, (PUCHAR)"get_rx", 1, 1);
             }
 
             rcb = adapter->path[path_id].rcb_rp.rcb_array[rx->id];
@@ -589,6 +606,10 @@ void
 VNIFX_FREE_SHARED_MEMORY(VNIF_ADAPTER *adapter, void *va,
     PHYSICAL_ADDRESS pa, uint32_t len, NDIS_HANDLE hndl)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(pa);
+    UNREFERENCED_PARAMETER(hndl);
+
     NdisFreeMemory(va, len, 0);
 }
 
@@ -620,12 +641,16 @@ VNIFX_ADD_RCB_TO_RING(VNIF_ADAPTER *adapter, RCB *rcb)
 ULONG
 VNIFX_RX_RING_SIZE(VNIF_ADAPTER *adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
+
     return NET_RX_RING_SIZE;
 }
 
 ULONG
 VNIFX_TX_RING_SIZE(VNIF_ADAPTER *adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
+
     return NET_TX_RING_SIZE;
 }
 
@@ -712,6 +737,8 @@ void
 VNIFX_RX_NOTIFY(VNIF_ADAPTER *adapter, UINT path_id,
                 UINT rcb_added_to_ring, UINT old)
 {
+    UNREFERENCED_PARAMETER(rcb_added_to_ring);
+
     if (adapter->path[path_id].u.xq.rx_front_ring.sring->req_event > old) {
         notify_remote_via_evtchn(adapter->path[path_id].u.xq.rx_evtchn);
     }
@@ -805,24 +832,30 @@ VNIFX_RING_FINAL_CHECK_FOR_RESPONSES(void *vq, int *more_to_do)
 void
 MPX_DriverEntryEx(NDIS_MINIPORT_CHARACTERISTICS *mp_char)
 {
+    UNREFERENCED_PARAMETER(mp_char);
 }
 #endif
 
 NDIS_STATUS
 VNIFX_GetHWResources(VNIF_ADAPTER *adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
+
     return NDIS_STATUS_SUCCESS;
 }
 
 NDIS_STATUS
 VNIFX_RegisterNdisInterrupt(VNIF_ADAPTER *adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
+
     return NDIS_STATUS_SUCCESS;
 }
 
 void
 VNIFX_DeregisterHardwareResources(VNIF_ADAPTER *adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
 }
 
 NDIS_STATUS
@@ -922,7 +955,7 @@ vnifx_rcv_stats_dump(PVNIF_ADAPTER adapter, UINT path_id)
         ((adapter->path[path_id].u.xq.rx_front_ring.sring->rsp_prod -
             adapter->path[path_id].u.xq.rx_front_ring.rsp_cons)
             + adapter->nBusyRecv) >= (NET_RX_RING_SIZE - 5)) {
-        VNIF_DUMP(adapter, path_id, "VNIFReceivePackets", 1, 1);
+        VNIF_DUMP(adapter, path_id, (PUCHAR)"VNIFReceivePackets", 1, 1);
     }
 }
 #endif

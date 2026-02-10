@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2013-2020 SUSE LLC
+ * Copyright 2013-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -90,8 +90,9 @@ typedef struct _xenbus_apis_s {
 
     NTSTATUS (*set_callback_irq)(int irq);
 
-    NTSTATUS (*register_dpc_to_evtchn)(ULONG evtchn, PVOID dpcroutine,
-        PVOID dpccontext, void *system1);
+    NTSTATUS (*register_dpc_to_evtchn)(ULONG evtchn,
+                                       PKDEFERRED_ROUTINE dpcroutine,
+                                       PVOID dpccontext, void *system1);
 
     VOID (*unregister_dpc_from_evtchn)(ULONG evtchn);
 

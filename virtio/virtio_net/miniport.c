@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,6 +59,8 @@ MPInitialize(
     IN NDIS_HANDLE MiniportAdapterHandle,
     IN NDIS_HANDLE MiniportDriverContext,
     IN PNDIS_MINIPORT_INIT_PARAMETERS MiniportInitParameters)
+{
+    UNREFERENCED_PARAMETER(MiniportDriverContext);
 #else
 NDIS_STATUS
 MPInitialize(
@@ -68,8 +70,8 @@ MPInitialize(
     IN UINT MediumArraySize,
     IN NDIS_HANDLE MiniportAdapterHandle,
     IN NDIS_HANDLE WrapperConfigurationContext)
-#endif
 {
+#endif
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
     NDIS_STATUS dmastatus = NDIS_STATUS_FAILURE;
     PVNIF_ADAPTER adapter;
@@ -173,11 +175,13 @@ MPInitialize(
 #if NDIS_SUPPORT_NDIS6
 VOID
 MPHalt(IN NDIS_HANDLE MiniportAdapterContext, IN NDIS_HALT_ACTION HaltAction)
+{
+    UNREFERENCED_PARAMETER(HaltAction);
 #else
 VOID
 MPHalt(IN NDIS_HANDLE MiniportAdapterContext)
-#endif
 {
+#endif
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
 
     RPRINTK(DPRTL_ON, ("VNIF: Miniport Halt irql %d for %s %x.\n",
@@ -230,7 +234,6 @@ NDIS_STATUS
 MPReset(OUT PBOOLEAN AddressingReset, IN NDIS_HANDLE MiniportAdapterContext)
 #endif
 {
-    NDIS_STATUS status;
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
     BOOLEAN done = TRUE;
 
@@ -280,8 +283,11 @@ VNIFResetCompleteTimerDpc(
     IN PVOID SystemSpecific2,
     IN PVOID SystemSpecific3)
 {
+    UNREFERENCED_PARAMETER(SystemSpecific1);
+    UNREFERENCED_PARAMETER(SystemSpecific2);
+    UNREFERENCED_PARAMETER(SystemSpecific3);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) FunctionContext;
-    UINT i;
     BOOLEAN done = TRUE;
 
     RPRINTK(DPRTL_ON, ("VNIF: VNIFResetCompleteTimerDpc - IN.\n"));
@@ -322,6 +328,8 @@ VNIFResetCompleteTimerDpc(
 VOID
 MPUnload(IN PDRIVER_OBJECT DriverObject)
 {
+    UNREFERENCED_PARAMETER(DriverObject);
+
     RPRINTK(DPRTL_ON, ("VNIF: Miniport Unload - IN.\n"));
 
 #if NDIS_SUPPORT_NDIS6
@@ -338,11 +346,13 @@ MPUnload(IN PDRIVER_OBJECT DriverObject)
 VOID
 MPShutdown(IN NDIS_HANDLE MiniportAdapterContext,
     IN  NDIS_SHUTDOWN_ACTION ShutdownAction)
+{
+    UNREFERENCED_PARAMETER(ShutdownAction);
 #else
 VOID
 MPShutdown(IN NDIS_HANDLE MiniportAdapterContext)
-#endif
 {
+#endif
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
 
     RPRINTK(DPRTL_ON, ("VNIF: MPShutdown %s %x - IN\n",
@@ -361,18 +371,8 @@ MPShutdown(IN NDIS_HANDLE MiniportAdapterContext)
 BOOLEAN
 MPCheckForHang(IN NDIS_HANDLE MiniportAdapterContext)
 {
+    UNREFERENCED_PARAMETER(MiniportAdapterContext);
     return FALSE;
-}
-
-VOID
-MPAllocateComplete(
-    NDIS_HANDLE MiniportAdapterContext,
-    IN PVOID VirtualAddress,
-    IN PNDIS_PHYSICAL_ADDRESS PhysicalAddress,
-    IN ULONG Length,
-    IN PVOID Context)
-{
-    RPRINTK(DPRTL_ON, ("VNIF: MPAllocateComplete.\n"));
 }
 
 #if NDIS_SUPPORT_NDIS6 || defined(NDIS51_MINIPORT)
@@ -392,7 +392,6 @@ MPPnPEventNotify(
 {
 #endif
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER) MiniportAdapterContext;
-    PNDIS_POWER_PROFILE NdisPowerProfile;
 
     RPRINTK(DPRTL_ON, ("VNIF: MPPnPEventNotify - IN %x\n", PnPEvent));
     switch (PnPEvent) {

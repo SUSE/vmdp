@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2025 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -130,7 +130,7 @@ vnifv_enable_adapter_notifications(PVNIF_ADAPTER adapter,
 }
 #endif
 
-static VOID
+VOID
 MPDisableMSIInterrupt(
     IN PVOID  MiniportInterruptContext,
     IN ULONG  MessageId)
@@ -152,7 +152,7 @@ MPDisableMSIInterrupt(
     }
 }
 
-static VOID
+VOID
 MPEnableMSIInterrupt(
     IN PVOID  MiniportInterruptContext,
     IN ULONG  MessageId)
@@ -319,13 +319,15 @@ vnif_miniport_interrupt_dpc(
     DPRINTK(DPRTL_DPC, ("%s: OUT msg_id %d\n", __func__, msg_id));
 }
 
-static void
+void
 MPInterruptDPC(
     IN NDIS_HANDLE MiniportInterruptContext,
     IN PVOID MiniportDpcContext,
     IN PVOID ReceiveThrottleParameters,
     IN PVOID NdisReserved2)
 {
+    UNREFERENCED_PARAMETER(NdisReserved2);
+
     UINT max_nbls_to_indicate;
 
 #if NDIS_SUPPORT_NDIS620
@@ -348,7 +350,7 @@ MPInterruptDPC(
     DPRINTK(DPRTL_DPC, ("%s: OUT\n", __func__));
 }
 
-static BOOLEAN
+BOOLEAN
 MPInterrupt(
     IN PVOID MiniportInterruptContext,
     OUT PBOOLEAN QueueDefaultInterruptDpc,
@@ -403,7 +405,7 @@ MPInterrupt(
     return TRUE;
 }
 
-static VOID
+VOID
 MPMsiInterruptDpc(
     IN PVOID MiniportInterruptContext,
     IN ULONG MessageId,
@@ -416,6 +418,8 @@ MPMsiInterruptDpc(
     IN PULONG NdisReserved2)
 #endif
 {
+    UNREFERENCED_PARAMETER(NdisReserved2);
+
     UINT max_nbls_to_indicate;
 
 #if NDIS_SUPPORT_NDIS620
@@ -438,7 +442,7 @@ MPMsiInterruptDpc(
     DPRINTK(DPRTL_DPC, ("%s: OUT msg_id %d\n", __func__, MessageId));
 }
 
-static BOOLEAN
+BOOLEAN
 MPMsiInterrupt(
     IN PVOID  MiniportInterruptContext,
     IN ULONG  MessageId,
@@ -606,7 +610,6 @@ vnifv_msi_config(VNIF_ADAPTER *adapter)
 NDIS_STATUS
 vnifv_setup_path_info_ex(VNIF_ADAPTER *adapter)
 {
-    NDIS_STATUS status;
     UINT i;
 
     for (i = 0; i < adapter->num_paths; i++) {

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
- * Copyright 2012-2022 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -115,7 +115,6 @@ extern HANDLE g_pvvxsvc_h_balloon_evnt;
 extern HANDLE g_pvvxsvc_h_balloon_thread;
 extern HANDLE g_pvvxsvc_h_balloon_reg_evnt[];
 extern HANDLE g_pvvxsvc_h_balloon_reg_thread;
-extern TCHAR *reg_bn_sys_dev_key;
 extern TCHAR pvvxsvc_name[];
 
 VOID pvvxsvc_report_status(SERVICE_STATUS_HANDLE,

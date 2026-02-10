@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2023 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,7 +37,7 @@
 
 #ifdef DBG
 uint32_t g_addb;
-ULONG g_int_to_send;
+LONG g_int_to_send;
 #endif
 
 #ifdef VBIF_DBG_TRACK_SRBS
@@ -97,7 +97,10 @@ KvmDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
         sizeof(HW_INITIALIZATION_DATA);
 
     /* Set entry points into the miniport. */
+#pragma warning(push)
+#pragma warning(disable:4152)
     hwInitializationData.HwFindAdapter = sp_find_adapter;
+#pragma warning(pop)
     hwInitializationData.HwInitialize = sp_initialize;
     hwInitializationData.HwResetBus = sp_reset_bus;
     hwInitializationData.HwAdapterControl = sp_adapter_control;
@@ -148,19 +151,22 @@ KvmDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
     return status;
 }
 
-NTSTATUS
+ULONG
 sp_find_adapter(
     IN PVOID dev_extt,
     IN PVOID HwContext,
     IN PVOID BusInformation,
-    IN PCSTR ArgumentString,
+    IN PCHAR ArgumentString,
     IN OUT PPORT_CONFIGURATION_INFORMATION config_info,
     OUT PBOOLEAN Again)
 {
+    UNREFERENCED_PARAMETER(HwContext);
+    UNREFERENCED_PARAMETER(BusInformation);
+    UNREFERENCED_PARAMETER(ArgumentString);
+    UNREFERENCED_PARAMETER(Again);
+
     virtio_sp_dev_ext_t *dev_ext = (virtio_sp_dev_ext_t *)dev_extt;
     NTSTATUS status = 0;
-    ULONG len;
-    uint32_t flags = 0;
 
     status = virtio_sp_find_device(dev_ext, config_info);
     if (!NT_SUCCESS(status)) {
@@ -191,8 +197,6 @@ sp_find_adapter(
 BOOLEAN
 sp_initialize(virtio_sp_dev_ext_t *dev_ext)
 {
-    uint32_t i;
-
     if (!(dev_ext->op_mode & OP_MODE_NORMAL)) {
         PRINTK(("%s %s: hibernate/crashdump Begin\n",
                 VIRTIO_SP_DRIVER_NAME, __func__));
@@ -397,10 +401,7 @@ sp_adapter_control(
     IN SCSI_ADAPTER_CONTROL_TYPE control_type,
     IN PVOID parameters)
 {
-    SP_LOCK_HANDLE lh;
     SCSI_ADAPTER_CONTROL_STATUS status;
-    uint32_t i;
-    int j;
     KIRQL irql;
 
     irql = KeGetCurrentIrql();
@@ -529,6 +530,8 @@ sp_msinterrupt_routine(virtio_sp_dev_ext_t *dev_ext, ULONG  msg_id)
 void
 sp_dpc_complete_cmd(PSTOR_DPC Dpc, PVOID context, PVOID s1, PVOID s2)
 {
+    UNREFERENCED_PARAMETER(Dpc);
+
     virtio_sp_complete_cmd((virtio_sp_dev_ext_t *)context,
                            PtrToUlong(s1),
                            PtrToUlong(s2),
@@ -705,6 +708,8 @@ sp_build_sgl(virtio_sp_dev_ext_t *dev_ext,
 BOOLEAN
 virtio_sp_enable_interrupt(virtio_sp_dev_ext_t *dev_ext, virtio_queue_t *vq)
 {
+    UNREFERENCED_PARAMETER(dev_ext);
+
     vq_enable_interrupt(vq);
     return TRUE;
 }
@@ -712,6 +717,8 @@ virtio_sp_enable_interrupt(virtio_sp_dev_ext_t *dev_ext, virtio_queue_t *vq)
 BOOLEAN
 virtio_sp_do_poll(virtio_sp_dev_ext_t *dev_ext, void *not_used)
 {
+    UNREFERENCED_PARAMETER(not_used);
+
     ULONG i;
 
     RPRINTK(DPRTL_ON | DPRTL_PWR, ("%s %s: in\n",
@@ -741,9 +748,6 @@ virtio_sp_poll(IN virtio_sp_dev_ext_t *dev_ext)
 static NTSTATUS
 virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
 {
-    void *pvoid;
-    NTSTATUS status = 0;
-    PUCHAR reg_buf;
     DWORD use_packed_rings;
 
     VBIF_ZERO_VALUE(dev_ext->alloc_cnt_i);
@@ -759,13 +763,19 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
     if (irql <= DISPATCH_LEVEL) {
         if (irql == PASSIVE_LEVEL) {
             dev_ext->op_mode = OP_MODE_NORMAL;
-            sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
+            sp_registry_read(dev_ext,
+                             (PUCHAR)PVCTRL_DBG_PRINT_MASK_STR,
+                             REG_DWORD,
                              &dbg_print_mask);
-            sp_registry_read(dev_ext, PVCTRL_PACKED_RINGS_STR, REG_DWORD,
+            sp_registry_read(dev_ext,
+                             (PUCHAR)PVCTRL_PACKED_RINGS_STR,
+                             REG_DWORD,
                              &use_packed_rings);
             dev_ext->b_use_packed_rings = (BOOLEAN)use_packed_rings;
 #ifdef DBG
-            sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
+            sp_registry_read(dev_ext,
+                             (PUCHAR)PVCTRL_CDBG_PRINT_LIMIT_STR,
+                             REG_DWORD,
                              &conditional_times_to_print_limit);
 #endif
         } else {
@@ -779,8 +789,8 @@ virtio_sp_init_dev_ext(virtio_sp_dev_ext_t *dev_ext, KIRQL irql)
         dev_ext->op_mode = OP_MODE_CRASHDUMP;
     }
 
-    dev_ext->queue_depth = VSP_QUEUE_DEPTH_NOT_SET;
-    sp_registry_read(dev_ext, PVCTRL_QDEPTH_STR, REG_DWORD,
+    dev_ext->queue_depth = (ULONG)VSP_QUEUE_DEPTH_NOT_SET;
+    sp_registry_read(dev_ext, (PUCHAR)PVCTRL_QDEPTH_STR, REG_DWORD,
                      &dev_ext->queue_depth);
 #if defined VIRTIO_SCSI_DRIVER
     dev_ext->underruns = 0;
@@ -1008,7 +1018,7 @@ virtio_sp_dump_config_info(virtio_sp_dev_ext_t *dev_ext,
                            PPORT_CONFIGURATION_INFORMATION config_info)
 {
 
-    virtio_sp_dump_device_config_info(dev_ext, config_info);
+    virtio_sp_dump_device_config_info(dev_ext);
 
     PRINTK(("\tindirect: %d\n", dev_ext->indirect));
     PRINTK(("\tNumberOfPhysicalBreaks: %d\n",
@@ -1117,15 +1127,9 @@ static NTSTATUS
 virtio_sp_get_uncached_size_offsets(virtio_sp_dev_ext_t *dev_ext,
                                     PPORT_CONFIGURATION_INFORMATION config_info)
 {
-    ULONG vr_size;
-    ULONG vq_size;
-    ULONG_PTR ptr;
     ULONG_PTR ring_va;
-    ULONG_PTR queue_va;
     ULONG rsize;
     ULONG qsize;
-    ULONG roffset;
-    ULONG qoffset;
     ULONG total_vring_size;
     ULONG total_vq_size;
     ULONG total_srb_ext_size;

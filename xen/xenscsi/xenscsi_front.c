@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -68,7 +68,6 @@ kasprintf(size_t len, const char *fmt, ...)
 NTSTATUS
 vscsi_probe(struct vscsi_front_info *info)
 {
-    char *buf;
     enum xenbus_state backend_state;
     int err, i;
 
@@ -88,7 +87,7 @@ vscsi_probe(struct vscsi_front_info *info)
 
     info->shadow_free = 0;
     for (i = 0; i < VSCSI_RING_SIZE; i++) {
-        info->shadow[i].req.id = i + 1;
+        info->shadow[i].req.id = (uint16_t)i + 1;
         info->shadow[i].req.nr_segments = 0;
         info->shadow[i].request = NULL;
     }
@@ -221,7 +220,7 @@ vs_setup_ring(struct vscsi_front_info *info)
             ("vs_setup_ring: info->ring_ref = %x for id %d\n", info->ring_ref,
             info->otherend_id));
 
-        err = xenbus_alloc_evtchn(info->otherend_id, &info->evtchn);
+        err = xenbus_alloc_evtchn(info->otherend_id, (int *)&info->evtchn);
         if (err) {
             PRINTK(("vs_setup_ring: xenbus_alloc_evtchn failed\n"));
             break;
@@ -262,7 +261,7 @@ static int
 vs_talk_to_backend(struct vscsi_front_info *info)
 {
     const char *message;
-    struct xenbus_transaction xbt;
+    struct xenbus_transaction xbt = {0};
     int err;
 
 
@@ -615,14 +614,13 @@ static XenbusState
 vs_backend_changed(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(len);
+
     struct vscsi_front_info *info = (struct vscsi_front_info *)watch->context;
     char *buf;
     XEN_LOCK_HANDLE lh;
     XenbusState backend_state;
     XenbusState frontend_state;
-    xenbus_release_device_t release_data;
-    uint32_t i;
-    uint32_t found;
 
     if (vec) {
         RPRINTK(DPRTL_INIT, ("vs_backend_changed: %s, ", vec[0]));
@@ -812,6 +810,8 @@ vs_restart_queue(
     IN PDEVICE_OBJECT DeviceObject,
     IN PVOID Context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     struct vscsi_front_info *info = (struct vscsi_front_info *)Context;
 
     if (info->connected == BLKIF_STATE_CONNECTED) {
@@ -1101,11 +1101,11 @@ vscsi_do_request(vscsi_front_info_t *info, SCSI_REQUEST_BLOCK *srb)
     info->shadow[rqid].req = *ring_req;
 
     info->shadow[rqid].srb_ext = (xenscsi_srb_extension *)srb->SrbExtension;
-    InterlockedIncrement(&srb_ext->use_cnt);
+    InterlockedIncrement((LONG *)&srb_ext->use_cnt);
 
 #ifdef DBG
     info->shadow[rqid].seq = info->seq;
-    InterlockedIncrement(&info->seq);
+    InterlockedIncrement((LONG *)&info->seq);
 
     if (srb_ext->use_cnt != 1) {
         PRINTK(("srb: %p %p use count should be 1, %d\n",
@@ -1147,7 +1147,6 @@ vscsi_do_reset(vscsi_front_info_t *info, SCSI_REQUEST_BLOCK *srb)
     vscsiif_request_t *ring_req;
     xenscsi_srb_extension *srb_ext;
     XEN_LOCK_HANDLE lh;
-    int ref_cnt;
     uint16_t rqid;
     vscsi_dev_t *sdev;
 
@@ -1181,7 +1180,7 @@ vscsi_do_reset(vscsi_front_info_t *info, SCSI_REQUEST_BLOCK *srb)
     ring_req->cmd_len   = min(srb->CdbLength, VSCSIIF_MAX_COMMAND_SIZE);
     ring_req->timeout_per_command = (USHORT)srb->TimeOutValue;
 
-    InterlockedIncrement(&srb_ext->use_cnt);
+    InterlockedIncrement((LONG *)&srb_ext->use_cnt);
 
     if (ring_req->cmd_len) {
         memcpy(ring_req->cmnd, srb->Cdb, ring_req->cmd_len);
@@ -1398,9 +1397,9 @@ vscsi_complete_int(struct vscsi_front_info *info)
                             info->shadow[id].request, ring_rsp->rslt));
 
                 }
-                InterlockedIncrement(&info->cseq);
+                InterlockedIncrement((LONG *)&info->cseq);
 #endif
-                InterlockedDecrement(&info->shadow[id].srb_ext->use_cnt);
+                InterlockedDecrement((LONG *)&info->shadow[id].srb_ext->use_cnt);
 
                 if (info->shadow[id].request) {
 #ifdef DBG
@@ -1419,7 +1418,7 @@ vscsi_complete_int(struct vscsi_front_info *info)
                         outoforder = 1;
                         info->queued_srb_ext++;
                     }
-                    InterlockedDecrement(&info->req);
+                    InterlockedDecrement((LONG *)&info->req);
 #endif
                     srb = info->shadow[id].srb_ext->srb;
                     if (srb->SenseInfoBuffer != NULL) {
@@ -1498,6 +1497,10 @@ vscsi_complete_int(struct vscsi_front_info *info)
 void
 vscsi_int_dpc(PKDPC dpc, PVOID dcontext, PVOID sa1, PVOID sa2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(dcontext);
+    UNREFERENCED_PARAMETER(sa2);
+
     struct vscsi_front_info *info = (struct vscsi_front_info *)sa1;
 
     vscsi_complete_int(info);
@@ -1506,6 +1509,10 @@ vscsi_int_dpc(PKDPC dpc, PVOID dcontext, PVOID sa1, PVOID sa2)
 void
 vscsi_xenbus_int(PKDPC dpc, PVOID dcontext, PVOID sa1, PVOID sa2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(sa1);
+    UNREFERENCED_PARAMETER(sa2);
+
     struct vscsi_front_info *info = (struct vscsi_front_info *)dcontext;
 
     if (info == NULL) {
@@ -1561,8 +1568,6 @@ void
 vscsi_disconnect_backend(XENSCSI_DEVICE_EXTENSION *dev_ext)
 {
     XEN_LOCK_HANDLE lh;
-    uint32_t i;
-    uint32_t j;
     char *buf;
     enum xenbus_state backend_state;
     struct vscsi_front_info *info;

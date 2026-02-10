@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -86,11 +86,8 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     NTSTATUS status;
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
-    PPDO_DEVICE_EXTENSION pdx_hba;
-    PLIST_ENTRY pdx_entry;
     PIO_STACK_LOCATION stack;
     POWER_STATE powerState;
-    uint32_t vbds_remaining;
 
 
     PAGED_CODE();
@@ -260,6 +257,9 @@ static NTSTATUS
 PDOSignalCompletion(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp,
                     IN PVOID Event)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+    UNREFERENCED_PARAMETER(Irp);
+
     if (Event) {
         KeSetEvent((PKEVENT)Event, IO_NO_INCREMENT, FALSE);
     }
@@ -450,10 +450,10 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         RPRINTK(DPRTL_PNP, ("BusQueryInstacneID.\n"));
         if (pdx->instance_id) {
             RtlInitAnsiString(&astr, pdx->instance_id);
-            length = strlen(pdx->instance_id) + 1;
+            length = (USHORT)(strlen(pdx->instance_id) + 1);
         } else {
             RtlInitAnsiString(&astr, pdx->Nodename);
-            length = strlen(pdx->Nodename) + 1;
+            length = (USHORT)(strlen(pdx->Nodename) + 1);
         }
         status = RtlAnsiStringToUnicodeString(&ustr, &astr, TRUE);
         if (status != STATUS_SUCCESS) {
@@ -535,7 +535,7 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
                 break;
             }
 
-            length = (wcslen(VENDORNAME) + 2 + wcslen(model) + 1);
+            length = (USHORT)((wcslen(VENDORNAME) + 2 + wcslen(model) + 1));
             buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED,
                                    length * sizeof(WCHAR),
                                    XENBUS_POOL_TAG);
@@ -756,6 +756,7 @@ PDOQueryDeviceRelations(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 static NTSTATUS
 PDOQueryBusInformation(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 {
+    UNREFERENCED_PARAMETER(pdx);
 
     PPNP_BUS_INFORMATION busInfo;
 
@@ -783,7 +784,7 @@ PDOInterfaceReference (__in PVOID Context)
 {
     PPDO_DEVICE_EXTENSION pdx = (PPDO_DEVICE_EXTENSION)Context;
 
-    InterlockedIncrement(&pdx->InterfaceRefCount);
+    InterlockedIncrement((LONG *)&pdx->InterfaceRefCount);
     RPRINTK(DPRTL_ON, ("PDOInterfaceReference: %s cnt = %d\n",
                        pdx->Nodename, pdx->InterfaceRefCount));
 }
@@ -794,7 +795,7 @@ PDOInterfaceDereference (__in PVOID Context)
     PPDO_DEVICE_EXTENSION pdx = (PPDO_DEVICE_EXTENSION)Context;
 
     if (pdx) {
-        InterlockedDecrement(&pdx->InterfaceRefCount);
+        InterlockedDecrement((LONG *)&pdx->InterfaceRefCount);
         if (pdx->Nodename) {
             RPRINTK(DPRTL_ON, ("PDOInterfaceDereference: %s cnt  %d\n",
                                pdx->Nodename, pdx->InterfaceRefCount));
@@ -815,6 +816,8 @@ PDOTranslateBusAddress(IN PVOID  Context,
                        IN OUT PULONG  AddressSpace,
                        OUT PPHYSICAL_ADDRESS  TranslatedAddress)
 {
+    UNREFERENCED_PARAMETER(Length);
+
     RPRINTK(DPRTL_ON, ("PDOTranslateBusAddress: %p\n", Context));
     *AddressSpace = 0;
     *TranslatedAddress = BusAddress;
@@ -857,6 +860,11 @@ PDOSetBusData(IN PVOID  Context,
               IN ULONG  Offset,
               IN ULONG  Length)
 {
+    UNREFERENCED_PARAMETER(DataType);
+    UNREFERENCED_PARAMETER(Buffer);
+    UNREFERENCED_PARAMETER(Offset);
+    UNREFERENCED_PARAMETER(Length);
+
     RPRINTK(DPRTL_ON, ("PDOSetBusData: %p\n", Context));
     return 0;
 }
@@ -868,6 +876,11 @@ PDOGetBusData(IN PVOID  Context,
               IN ULONG  Offset,
               IN ULONG  Length)
 {
+    UNREFERENCED_PARAMETER(DataType);
+    UNREFERENCED_PARAMETER(Buffer);
+    UNREFERENCED_PARAMETER(Offset);
+    UNREFERENCED_PARAMETER(Length);
+
     RPRINTK(DPRTL_ON, ("PDOGetBusData: %p\n", Context));
     return 0;
 }
@@ -956,8 +969,8 @@ GetDeviceCapabilities(IN PDEVICE_OBJECT DeviceObject,
     RtlZeroMemory(DeviceCapabilities, sizeof(DEVICE_CAPABILITIES));
     DeviceCapabilities->Size = sizeof(DEVICE_CAPABILITIES);
     DeviceCapabilities->Version = 1;
-    DeviceCapabilities->Address = -1;
-    DeviceCapabilities->UINumber = -1;
+    DeviceCapabilities->Address = (ULONG)-1;
+    DeviceCapabilities->UINumber = (ULONG)-1;
 
     /* Initialize the event */
     KeInitializeEvent(&pnpEvent, NotificationEvent, FALSE);

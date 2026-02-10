@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -191,6 +191,8 @@ static void
 xenbus_get_vscsi_info(char *otherend, XENBUS_DEVICE_SUBTYPE *subtype,
     DEVICE_TYPE  *devtype)
 {
+    UNREFERENCED_PARAMETER(otherend);
+
     *subtype = none;
     *devtype = FILE_DEVICE_CONTROLLER;
 }
@@ -203,14 +205,13 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
     PDEVICE_OBJECT pdo;
     PPDO_DEVICE_EXTENSION pdx;
     NTSTATUS status;
-    ANSI_STRING astr;
     char *res;
     char *otherend;
     ULONG len;
-    XENBUS_DEVICE_TYPE xtype;
-    XENBUS_DEVICE_SUBTYPE subtype;
+    XENBUS_DEVICE_TYPE xtype = unknown;
+    XENBUS_DEVICE_SUBTYPE subtype = none;
     XENBUS_DEVICE_ORIGIN origin;
-    DEVICE_TYPE dev_type;
+    DEVICE_TYPE dev_type = 0;
     ULONG add_pci_during_install;
 
     RPRINTK(DPRTL_ON, ("XenbusInitializePDO: new PDO, id: %s, type = %s.\n",
@@ -466,7 +467,10 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
         pdx = (PPDO_DEVICE_EXTENSION) pdo->DeviceExtension;
 
         if (xtype == vnif && (pvctrl_flags & XENBUS_PVCTRL_USE_INSTANCE_IDS)) {
-            pdx->instance_id = xenbus_read(XBT_NIL, nodename, "mac", &len);
+            pdx->instance_id = xenbus_read(XBT_NIL,
+                                           nodename,
+                                           "mac",
+                                           (unsigned int *)&len);
         } else {
             pdx->instance_id = NULL;
         }
@@ -475,7 +479,7 @@ XenbusInitializePDO(PDEVICE_OBJECT fdo, char *type, char *nodename,
 
     /* The backend-id always needs to be updated incase a hibernate happened. */
     RPRINTK(DPRTL_PROBE, ("XenbusInitializePDO: xenbus_read backend-id\n"));
-    res = xenbus_read(XBT_NIL, nodename, "backend-id", &len);
+    res = xenbus_read(XBT_NIL, nodename, "backend-id", (unsigned int *)&len);
     if (res) {
         pdx->BackendID = res;
     } else {
@@ -644,7 +648,6 @@ xenbus_init_pdx(PDEVICE_OBJECT fdo, PDEVICE_OBJECT pdo,
 {
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
-    ANSI_STRING astr;
     NTSTATUS status;
 
     fdx = (PFDO_DEVICE_EXTENSION)fdo->DeviceExtension;

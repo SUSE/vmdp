@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2021 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -104,7 +104,7 @@ vserial_send_buffers(PPDO_DEVICE_EXTENSION port,
     len = length;
     while (len > 0) {
         sg_buf[out].phys_addr = MmGetPhysicalAddress(buf).QuadPart;
-        sg_buf[out].len = min(len, PAGE_SIZE);
+        sg_buf[out].len = min((unsigned long)len, PAGE_SIZE);
 
         buf = (PVOID)((LONG_PTR)buf + sg_buf[out].len);
         len -= sg_buf[out].len;
@@ -143,7 +143,7 @@ vserial_add_in_buf(IN virtio_queue_t *vq, IN port_buffer_t *buf)
     }
 
     sg.phys_addr = buf->pa_buf.QuadPart;
-    sg.len = buf->size;
+    sg.len = (unsigned long)buf->size;
 
     if (vq_add_buf(vq, &sg, 0, 1, buf) < 0) {
         status = STATUS_INSUFFICIENT_RESOURCES;

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2017-2024 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -132,7 +132,8 @@ vrng_return_vq_entries(FDO_DEVICE_EXTENSION *fdx)
 
     RPRINTK(DPRTL_TRC, ("--> %s\n", __func__));
     fdx->read_buffers_list.Next = NULL;
-    while (entry = (read_buffer_entry_t *)vq_detach_unused_buf(fdx->vq)) {
+    entry = (read_buffer_entry_t *)vq_detach_unused_buf(fdx->vq);
+    while (entry != NULL) {
         if (entry->request != NULL) {
             RPRINTK(DPRTL_TRC, ("%s: Canceling entry %p request %p\n",
                     __func__, entry, entry->request));
@@ -146,6 +147,7 @@ vrng_return_vq_entries(FDO_DEVICE_EXTENSION *fdx)
         }
         ExFreePoolWithTag(entry->buffer, VRNG_POOL_TAG);
         ExFreePoolWithTag(entry, VRNG_POOL_TAG);
+        entry = (read_buffer_entry_t *)vq_detach_unused_buf(fdx->vq);
     }
     RPRINTK(DPRTL_TRC, ("<-- %s\n", __func__));
 }
@@ -166,9 +168,6 @@ vrng_delete_queue(virtio_queue_t **ppvq)
 static void
 vrng_shutdown_queues(FDO_DEVICE_EXTENSION *fdx)
 {
-    unsigned int nr_ports;
-    unsigned int i;
-
     RPRINTK(DPRTL_ON, ("--> %s\n", __func__));
 
     virtio_device_remove_status(&fdx->vdev, VIRTIO_CONFIG_S_DRIVER_OK);
@@ -208,12 +207,9 @@ vrng_fdo_pnp(
   IN PIRP Irp)
 {
     NTSTATUS status;
-    ULONG length, prevcount, numNew, i;
     PFDO_DEVICE_EXTENSION fdx;
     PIO_STACK_LOCATION stack;
     PCM_PARTIAL_RESOURCE_LIST raw, translated;
-    PLIST_ENTRY entry, listHead, nextEntry;
-    PDEVICE_RELATIONS relations, oldRelations;
 
     fdx = (PFDO_DEVICE_EXTENSION) DeviceObject->DeviceExtension;
     stack = IoGetCurrentIrpStackLocation(Irp);

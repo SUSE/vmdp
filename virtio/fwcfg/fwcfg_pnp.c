@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2018-2020 SUSE LLC
+ * Copyright 2018-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -75,7 +75,6 @@ fwcfg_init_dma(IN FDO_DEVICE_EXTENSION *fdx)
 static NTSTATUS
 fwcfg_prepare_hardware(
    IN FDO_DEVICE_EXTENSION *fdx,
-   IN PCM_PARTIAL_RESOURCE_LIST raw,
    IN PCM_PARTIAL_RESOURCE_LIST translated)
 {
     PHYSICAL_ADDRESS pa;
@@ -176,22 +175,18 @@ fwcfg_prepare_hardware(
 static NTSTATUS
 fwcfg_start_device(
   IN PDEVICE_OBJECT fdo,
-  IN PCM_PARTIAL_RESOURCE_LIST raw,
   IN PCM_PARTIAL_RESOURCE_LIST translated)
 {
     NTSTATUS status;
     PFDO_DEVICE_EXTENSION fdx;
     POWER_STATE powerState;
-    DECLARE_UNICODE_STRING_SIZE(symbolic_link_name, 128);
-    DECLARE_UNICODE_STRING_SIZE(device_name, 128);
-    BOOLEAN res;
 
     fdx = (PFDO_DEVICE_EXTENSION)fdo->DeviceExtension;
     RPRINTK(DPRTL_ON, ("--> %s %s: (irql %d) fdo = %p\n",
                        VDEV_DRIVER_NAME, __func__, KeGetCurrentIrql(), fdo));
 
     do {
-        status = fwcfg_prepare_hardware(fdx, raw, translated);
+        status = fwcfg_prepare_hardware(fdx, translated);
         if (!NT_SUCCESS(status)) {
             PRINTK(("%s: fwcfg_prepare_haredware failed %x\n",
                     VDEV_DRIVER_NAME, status));
@@ -269,6 +264,8 @@ fwcfg_io_completion(IN PDEVICE_OBJECT DeviceObject,
                     IN PIRP Irp,
                     IN PVOID Context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     if (Irp->PendingReturned == TRUE && Context != NULL) {
         KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
     }
@@ -310,12 +307,9 @@ NTSTATUS
 fwcfg_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
-    ULONG length, prevcount, numNew, i;
     PFDO_DEVICE_EXTENSION fdx;
     PIO_STACK_LOCATION stack;
-    PCM_PARTIAL_RESOURCE_LIST raw, translated;
-    PLIST_ENTRY entry, listHead, nextEntry;
-    PDEVICE_RELATIONS relations, oldRelations;
+    PCM_PARTIAL_RESOURCE_LIST translated;
 
     fdx = (PFDO_DEVICE_EXTENSION) DeviceObject->DeviceExtension;
     stack = IoGetCurrentIrpStackLocation(Irp);
@@ -328,13 +322,10 @@ fwcfg_fdo_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
         status = fwcfg_send_irp_synchronous(fdx->LowerDevice, Irp);
 
         if  (NT_SUCCESS(status)) {
-            raw = &stack->Parameters.StartDevice
-                .AllocatedResources->List[0].PartialResourceList;
-
             translated = &stack->Parameters.StartDevice
                 .AllocatedResourcesTranslated->List[0].PartialResourceList;
 
-            fwcfg_start_device(DeviceObject, raw, translated);
+            fwcfg_start_device(DeviceObject, translated);
         }
 
         Irp->IoStatus.Status = status;

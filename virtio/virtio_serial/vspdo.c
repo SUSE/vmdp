@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -309,7 +309,7 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
                 if (NT_SUCCESS(status)) {
 
                     IoAdjustPagingPathCount(
-                        &pdx->PagingPathCount,
+                        (LONG *)&pdx->PagingPathCount,
                         stack->Parameters.UsageNotification.InPath);
 
                     if (stack->Parameters.UsageNotification.InPath) {
@@ -353,13 +353,13 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
             case DeviceUsageTypeHibernation: {
 
                 IoAdjustPagingPathCount(
-                    &pdx->HibernationPathCount,
+                    (LONG *)&pdx->HibernationPathCount,
                     stack->Parameters.UsageNotification.InPath
                     );
                 status = PDOForwardIrpSynchronous(pdx, Irp);
                 if (!NT_SUCCESS(status)) {
                     IoAdjustPagingPathCount(
-                        &pdx->HibernationPathCount,
+                        (LONG *)&pdx->HibernationPathCount,
                         !stack->Parameters.UsageNotification.InPath
                         );
                 }
@@ -369,13 +369,13 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
             case DeviceUsageTypeDumpFile: {
                 IoAdjustPagingPathCount(
-                    &pdx->DumpPathCount,
+                    (LONG *)&pdx->DumpPathCount,
                     stack->Parameters.UsageNotification.InPath
                     );
                 status = PDOForwardIrpSynchronous(pdx, Irp);
                 if (!NT_SUCCESS(status)) {
                     IoAdjustPagingPathCount(
-                        &pdx->DumpPathCount,
+                        (LONG *)&pdx->DumpPathCount,
                         !stack->Parameters.UsageNotification.InPath
                         );
                 }
@@ -412,6 +412,9 @@ PDO_Pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 static NTSTATUS
 PDOSignalCompletion(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp, IN PVOID Event)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+    UNREFERENCED_PARAMETER(Irp);
+
     if (Event) {
         KeSetEvent((PKEVENT)Event, IO_NO_INCREMENT, FALSE);
     }
@@ -612,7 +615,7 @@ PDOQueryDeviceId(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
     case BusQueryInstanceID:
         RPRINTK(DPRTL_PNP, ("BusQueryInstacneID.\n"));
         RtlInitAnsiString(&astr, pdx->instance_id);
-        length = strlen(pdx->instance_id) + 1;
+        length = (ULONG)strlen(pdx->instance_id) + 1;
         status = RtlAnsiStringToUnicodeString(&ustr, &astr, TRUE);
         if (status != STATUS_SUCCESS) {
             break;
@@ -659,7 +662,9 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         case 0x00000409:  /* English */
             model = VSERIAL_MODEL;
 
-            length = (wcslen(L"vportXXpYY") + 2) * sizeof(WCHAR); /* 2 nulls */
+            /* 2 nulls */
+            length = (USHORT)((wcslen(L"vportXXpYY") + 2) * sizeof(WCHAR));
+
             buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, length, VSERIAL_POOL_TAG);
             if (buffer == NULL) {
                 status = STATUS_INSUFFICIENT_RESOURCES;
@@ -677,7 +682,8 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
         }
         break;
     case DeviceTextLocationInformation:
-        length = (wcslen(VSERIAL_TEXT_LOCATION_NAME_WSTR) + 2) * sizeof(WCHAR);
+        length = (USHORT)((wcslen(VSERIAL_TEXT_LOCATION_NAME_WSTR) + 2)
+                          * sizeof(WCHAR));
         buffer = EX_ALLOC_POOL(VPOOL_NON_PAGED, length, VSERIAL_POOL_TAG);
         if (buffer == NULL) {
             status = STATUS_INSUFFICIENT_RESOURCES;
@@ -707,6 +713,8 @@ PDOQueryDeviceText(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 static NTSTATUS
 PDOQueryResources(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 {
+    UNREFERENCED_PARAMETER(pdx);
+
     PAGED_CODE();
 
     return Irp->IoStatus.Status;
@@ -715,6 +723,8 @@ PDOQueryResources(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 static NTSTATUS
 PDOQueryResourceRequirements(IN PPDO_DEVICE_EXTENSION pdx, IN PIRP Irp)
 {
+    UNREFERENCED_PARAMETER(pdx);
+
     PAGED_CODE();
 
     return Irp->IoStatus.Status;
@@ -803,7 +813,7 @@ PDOInterfaceReference (__in PVOID Context)
 {
     PPDO_DEVICE_EXTENSION pdx = (PPDO_DEVICE_EXTENSION)Context;
 
-    InterlockedIncrement(&pdx->InterfaceRefCount);
+    InterlockedIncrement((LONG *)&pdx->InterfaceRefCount);
     RPRINTK(DPRTL_ON, ("PDOInterfaceReference: %d cnt = %d\n",
          pdx->port_id, pdx->InterfaceRefCount));
 }
@@ -814,7 +824,7 @@ PDOInterfaceDereference (__in PVOID Context)
     PPDO_DEVICE_EXTENSION pdx = (PPDO_DEVICE_EXTENSION)Context;
 
     if (pdx) {
-        InterlockedDecrement(&pdx->InterfaceRefCount);
+        InterlockedDecrement((LONG *)&pdx->InterfaceRefCount);
         RPRINTK(DPRTL_ON, ("<--> %s: port_id %d cnt = %d\n",
             __func__, pdx->port_id, pdx->InterfaceRefCount));
     } else {
@@ -830,6 +840,8 @@ PDOTranslateBusAddress(
     IN OUT PULONG  AddressSpace,
     OUT PPHYSICAL_ADDRESS  TranslatedAddress)
 {
+    UNREFERENCED_PARAMETER(Length);
+
     RPRINTK(DPRTL_ON, ("PDOTranslateBusAddress: %p\n", Context));
     *AddressSpace = 0;
     *TranslatedAddress = BusAddress;
@@ -874,6 +886,11 @@ PDOSetBusData(
     IN ULONG  Offset,
     IN ULONG  Length)
 {
+    UNREFERENCED_PARAMETER(DataType);
+    UNREFERENCED_PARAMETER(Buffer);
+    UNREFERENCED_PARAMETER(Offset);
+    UNREFERENCED_PARAMETER(Length);
+
     RPRINTK(DPRTL_ON, ("<--> %s: context %p\n", __func__, Context));
     return 0;
 }
@@ -886,6 +903,11 @@ PDOGetBusData(
     IN ULONG  Offset,
     IN ULONG  Length)
 {
+    UNREFERENCED_PARAMETER(DataType);
+    UNREFERENCED_PARAMETER(Buffer);
+    UNREFERENCED_PARAMETER(Offset);
+    UNREFERENCED_PARAMETER(Length);
+
     RPRINTK(DPRTL_ON, ("<--> %s: context %p\n", __func__, Context));
     return 0;
 }
@@ -979,8 +1001,8 @@ GetDeviceCapabilities(
     RtlZeroMemory(DeviceCapabilities, sizeof(DEVICE_CAPABILITIES));
     DeviceCapabilities->Size = sizeof(DEVICE_CAPABILITIES);
     DeviceCapabilities->Version = 1;
-    DeviceCapabilities->Address = -1;
-    DeviceCapabilities->UINumber = -1;
+    DeviceCapabilities->Address = (ULONG)-1;
+    DeviceCapabilities->UINumber = (ULONG)-1;
 
     /* Initialize the event */
     KeInitializeEvent(&pnpEvent, NotificationEvent, FALSE);

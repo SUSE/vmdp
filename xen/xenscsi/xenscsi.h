@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -138,12 +138,12 @@
 #define BLK_ACTR_L              0x2000
 #define BLK_RSU_L               0x4000
 
-#define XENSCSI_SET_FLAG(_F, _V)            InterlockedOr(&(_F), (_V))
-#define XENSCSI_CLEAR_FLAG(_F, _V)      InterlockedAnd(&(_F), ~(_V))
+#define XENSCSI_SET_FLAG(_F, _V)        InterlockedOr((LONG *)&(_F), (_V))
+#define XENSCSI_CLEAR_FLAG(_F, _V)      InterlockedAnd((LONG *)&(_F), ~(_V))
 #define XENSCSI_ZERO_VALUE(_V)          _V = 0
 #define XENSCSI_SET_VALUE(_V, _S)       _V = _S
-#define XENSCSI_INC(_V)                 InterlockedIncrement(&(_V))
-#define XENSCSI_DEC(_V)                 InterlockedDecrement(&(_V))
+#define XENSCSI_INC(_V)                 InterlockedIncrement((LONG *)&(_V))
+#define XENSCSI_DEC(_V)                 InterlockedDecrement((LONG *)&(_V))
 #else
 #define XENSCSI_SET_FLAG(_F, _V)
 #define XENSCSI_CLEAR_FLAG(_F, _V)
@@ -161,8 +161,8 @@ extern uint32_t io_srbs_seen;
 extern uint32_t io_srbs_returned;
 extern uint32_t sio_srbs_seen;
 extern uint32_t sio_srbs_returned;
-#define XENSCSI_INC_SRB(_V)             InterlockedIncrement(&(_V))
-#define XENSCSI_DEC_SRB(_V)             InterlockedDecrement(&(_V))
+#define XENSCSI_INC_SRB(_V)             InterlockedIncrement((LONG *)&(_V))
+#define XENSCSI_DEC_SRB(_V)             InterlockedDecrement((LONG *)&(_V))
 #ifdef VBIF_DBG_TRACK_AND_REPORT_SRBS
 static inline void
 DPR_SRB(char *where)
@@ -479,6 +479,8 @@ static inline void
 xenscsi_request_complete(SCSI_NOTIFICATION_TYPE nt,
     XENSCSI_DEVICE_EXTENSION *dev_ext, SCSI_REQUEST_BLOCK *srb)
 {
+    UNREFERENCED_PARAMETER(nt);
+
     xenscsi_srb_extension *srb_ext;
 
     srb_ext = (xenscsi_srb_extension *)srb->SrbExtension;

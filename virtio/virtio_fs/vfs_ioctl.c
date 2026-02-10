@@ -3,7 +3,7 @@
  *
  * Written By: Gal Hammer <ghammer@redhat.com>
  *
- * Copyright 2022 SUSE LLC
+ * Copyright 2022-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -270,7 +270,6 @@ vfs_fuse_request(PFDO_DEVICE_EXTENSION fdx,
     NTSTATUS status;
     virtio_fs_request_t *fs_req;
     PVOID in_buf_va;
-    PVOID in_buf;
     BOOLEAN hiprio;
 
     status = STATUS_INVALID_PARAMETER;
@@ -346,7 +345,7 @@ vfs_fuse_request(PFDO_DEVICE_EXTENSION fdx,
     return status;
 }
 
-static void
+void
 vfs_request_cancel(PDEVICE_OBJECT DeviceObject, PIRP request)
 {
     PFDO_DEVICE_EXTENSION fdx;

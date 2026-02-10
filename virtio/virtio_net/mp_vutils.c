@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2017 Novell, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,7 +82,6 @@ vnif_report_link_status(PVNIF_ADAPTER adapter)
 {
     uint16_t link_status;
     BOOLEAN link_up;
-    BOOLEAN link_anounce;
 
     VIRTIO_DEVICE_GET_CONFIG(&adapter->u.v.vdev,
         ETH_LENGTH_OF_ADDRESS,
@@ -127,6 +126,8 @@ vnifv_add_tx(PVNIF_ADAPTER adapter, UINT path_id, TCB *tcb,
              UINT send_len, UINT pkt_len,
              uint16_t flags, UINT *i)
 {
+    UNREFERENCED_PARAMETER(i);
+
     VNIF_GSO_INFO gso_info;
     virtio_buffer_descriptor_t sg[VNIF_MAX_TX_SG_ELEMENTS];
     virtio_net_hdr_t *hdr;
@@ -330,13 +331,20 @@ void *
 vnifv_get_tx(PVNIF_ADAPTER adapter, UINT path_id, UINT *cons, UINT prod,
     UINT cnt, UINT *len, UINT *status)
 {
+    UNREFERENCED_PARAMETER(cons);
+    UNREFERENCED_PARAMETER(prod);
+    UNREFERENCED_PARAMETER(cnt);
+
     *status = NETIF_RSP_OKAY;
     return vq_get_buf(adapter->path[path_id].tx, len);
 }
 
 RCB *
-vnifv_get_rx(PVNIF_ADAPTER adapter, UINT path_id, UINT rp, UINT *i, INT *len)
+vnifv_get_rx(PVNIF_ADAPTER adapter, UINT path_id, UINT rp, UINT *i, UINT *len)
 {
+    UNREFERENCED_PARAMETER(rp);
+    UNREFERENCED_PARAMETER(i);
+
     RCB *rcb;
 
     rcb = vq_get_buf(adapter->path[path_id].u.vq.rx, len);
@@ -393,6 +401,8 @@ void
 VNIFV_FREE_SHARED_MEMORY(VNIF_ADAPTER *adapter, void *va,
     PHYSICAL_ADDRESS pa, uint32_t len, NDIS_HANDLE hndl)
 {
+    UNREFERENCED_PARAMETER(hndl);
+
     NdisMFreeSharedMemory(
         adapter->AdapterHandle,
         len,
@@ -436,57 +446,90 @@ VNIFV_TX_RING_SIZE(VNIF_ADAPTER *adapter)
 void
 VNIFV_GET_TX_REQ_PROD_PVT(VNIF_ADAPTER *adapter, UINT path_id, UINT *i)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(i);
 }
 
 void
 VNIFV_GET_RX_REQ_PROD(VNIF_ADAPTER *adapter, UINT path_id, UINT *i)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(i);
 }
 
 void
 VNIFV_SET_TX_REQ_PROD_PVT(VNIF_ADAPTER *adapter, UINT path_id, UINT i)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(i);
 }
 
 void
 VNIFV_GET_TX_RSP_PROD(VNIF_ADAPTER *adapter, UINT path_id, UINT *prod)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+
     *prod = 0;
 }
 void
 VNIFV_GET_RX_RSP_PROD(VNIF_ADAPTER *adapter, UINT path_id, UINT *prod)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+
     *prod = 0;
 }
 
 void
 VNIFV_GET_TX_RSP_CONS(VNIF_ADAPTER *adapter, UINT path_id, UINT *prod)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(prod);
 }
 
 void
 VNIFV_GET_RX_RSP_CONS(VNIF_ADAPTER *adapter, UINT path_id, UINT *prod)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(prod);
 }
 
 void
 VNIFV_SET_TX_RSP_CONS(VNIF_ADAPTER *adapter, UINT path_id, UINT cons)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(cons);
 }
 
 void
 VNIFV_SET_RX_RSP_CONS(VNIF_ADAPTER *adapter, UINT path_id, UINT cons)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(cons);
 }
 
 void
 VNIFV_SET_TX_EVENT(VNIF_ADAPTER *adapter, UINT path_id, UINT prod)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(prod);
 }
 
 void
 VNIFV_SET_RX_EVENT(VNIF_ADAPTER *adapter, UINT path_id, UINT prod)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(prod);
 }
 
 void
@@ -499,6 +542,8 @@ void
 VNIFV_RX_NOTIFY(VNIF_ADAPTER *adapter, UINT path_id,
                 UINT rcb_added_to_ring, UINT old)
 {
+    UNREFERENCED_PARAMETER(old);
+
     if (rcb_added_to_ring) {
         vq_kick_always(adapter->path[path_id].rx);
     }
@@ -519,12 +564,17 @@ VNIFV_RING_FREE_REQUESTS(VNIF_ADAPTER *adapter, UINT path_id)
 UINT
 VNIFV_HAS_UNCONSUMED_RESPONSES(void *vq, UINT cons, UINT prod)
 {
+    UNREFERENCED_PARAMETER(cons);
+    UNREFERENCED_PARAMETER(prod);
+
     return vq_has_unconsumed_responses((virtio_queue_t *)vq);
 }
 
 UINT
 VNIFV_IS_VALID_RCB(RCB *rcb)
 {
+    UNREFERENCED_PARAMETER(rcb);
+
     return 1;
 }
 
@@ -591,9 +641,16 @@ VNIFV_DUMP(PVNIF_ADAPTER adapter,
            uint32_t rxtx,
            uint32_t force)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
+    UNREFERENCED_PARAMETER(str);
+    UNREFERENCED_PARAMETER(rxtx);
+    UNREFERENCED_PARAMETER(force);
 }
 
 void vnifv_rcv_stats_dump(PVNIF_ADAPTER adapter, UINT path_id)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(path_id);
 }
 #endif

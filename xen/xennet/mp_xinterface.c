@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -63,6 +63,7 @@ void
 VNIFX_ALLOCATE_SHARED_MEMORY(struct _VNIF_ADAPTER *adapter,
     void **va, PHYSICAL_ADDRESS *pa, uint32_t len, NDIS_HANDLE hndl)
 {
+    UNREFERENCED_PARAMETER(adapter);
 #if NDIS_SUPPORT_NDIS6
     *va = NdisAllocateMemoryWithTagPriority(
         hndl,
@@ -86,14 +87,14 @@ VNIFX_FreeAdapterInterface(PVNIF_ADAPTER adapter)
         RPRINTK(DPRTL_ON,
             ("VNIFFreeXenAdapter: freeing %s\n", adapter->node_name));
         NdisFreeMemory(adapter->node_name,
-            strlen(adapter->node_name) + 1, 0);
+            (UINT)strlen((const char *)adapter->node_name) + 1, 0);
         adapter->node_name = NULL;
     }
     if (adapter->u.x.otherend) {
         RPRINTK(DPRTL_ON,
             ("VNIFFreeXenAdapter: freeing %s\n", adapter->u.x.otherend));
         NdisFreeMemory(adapter->u.x.otherend,
-            strlen(adapter->u.x.otherend) + 1, 0);
+            (UINT)strlen((const char *)adapter->u.x.otherend) + 1, 0);
         adapter->u.x.otherend = NULL;
     }
 
@@ -160,13 +161,13 @@ VNIFX_FindAdapter(PVNIF_ADAPTER adapter)
 
         /* Nodename */
         RPRINTK(DPRTL_ON, ("VNIFFindXenAdapter: IN VNIFGetNodenameFromPDO\n"));
-        nodename = xenbus_get_nodename_from_pdo(adapter->Pdo);
+        nodename = (PUCHAR)xenbus_get_nodename_from_pdo(adapter->Pdo);
         if (nodename == NULL) {
             PRINTK(("VNIF: failed to get nodename.\n"));
             status = NDIS_STATUS_FAILURE;
             break;
         }
-        i = strlen(nodename) + 1;
+        i = (UINT)strlen((const char *)nodename) + 1;
         VNIF_ALLOCATE_MEMORY(
             adapter->node_name,
             i,
@@ -181,13 +182,13 @@ VNIFX_FindAdapter(PVNIF_ADAPTER adapter)
         NdisMoveMemory(adapter->node_name, nodename, i);
 
         /* Otherend */
-        otherend = xenbus_get_otherend_from_pdo(adapter->Pdo);
+        otherend = (PUCHAR)xenbus_get_otherend_from_pdo(adapter->Pdo);
         if (otherend == NULL) {
             PRINTK(("VNIF: failed to get otherend.\n"));
             status = NDIS_STATUS_FAILURE;
             break;
         }
-        i = strlen(otherend) + 1;
+        i = (UINT)strlen((const char *)otherend) + 1;
         VNIF_ALLOCATE_MEMORY(
             adapter->u.x.otherend,
             i,
@@ -210,113 +211,126 @@ VNIFX_FindAdapter(PVNIF_ADAPTER adapter)
         }
 
         adapter->hw_tasks |= VNIF_CHKSUM_TXRX_SUPPORTED;
-        if (xenbus_exists(XBT_NIL, adapter->u.x.otherend,
+        if (xenbus_exists(XBT_NIL, (const char *)adapter->u.x.otherend,
                           "feature-no-csum-offload")) {
             RPRINTK(DPRTL_ON, ("VNIF backend no csum offload exists.\n"));
-            str = xenbus_read(XBT_NIL, adapter->u.x.otherend,
-                "feature-no-csum-offload", &i);
+            str = xenbus_read(XBT_NIL,
+                              (const char *)adapter->u.x.otherend,
+                              "feature-no-csum-offload",
+                              &i);
             if (str) {
                 RPRINTK(DPRTL_ON, ("VNIF backend no csum offload read %s.\n",
                                    str));
-                val = (ULONG)cmp_strtoul(str, &ptr, 10);
+                val = (ULONG)cmp_strtoul((const char *)str, (char **)&ptr, 10);
                 RPRINTK(DPRTL_ON, ("VNIF backend no csum offload val %d.\n",
                                    val));
                 if (ptr != str && val) {
                     adapter->hw_tasks &= ~VNIF_CHKSUM_TXRX_SUPPORTED;
                     RPRINTK(DPRTL_ON, ("VNIF backend csum not supported.\n"));
                 }
-                xenbus_free_string(str);
+                xenbus_free_string((char *)str);
             }
         }
 
-        if (xenbus_exists(XBT_NIL, adapter->u.x.otherend,
+        if (xenbus_exists(XBT_NIL, (const char *)adapter->u.x.otherend,
                           "feature-ipv6-csum-offload")) {
             RPRINTK(DPRTL_ON, ("VNIF backend supports ipv6 csum offload.\n"));
-            str = xenbus_read(XBT_NIL, adapter->u.x.otherend,
-                "feature-ipv6-csum-offload", &i);
+            str = xenbus_read(XBT_NIL,
+                              (const char *)adapter->u.x.otherend,
+                              "feature-ipv6-csum-offload",
+                              &i);
             if (str) {
                 RPRINTK(DPRTL_ON, ("VNIF backend ipv6 csum offload read %s.\n",
                                    str));
-                val = (ULONG)cmp_strtoul(str, &ptr, 10);
+                val = (ULONG)cmp_strtoul((const char *)str, (char **)&ptr, 10);
                 RPRINTK(DPRTL_ON, ("VNIF backend ipv6 csum offload val %d.\n",
                                    val));
                 if (ptr != str && val) {
                     adapter->hw_tasks |= VNIF_CHKSUM_TXRX_IPV6_SUPPORTED;
                     RPRINTK(DPRTL_ON, ("VNIF enabling frontend ipv6 csum.\n"));
                 }
-                xenbus_free_string(str);
+                xenbus_free_string((char *)str);
             }
         }
 
-        if (xenbus_exists(XBT_NIL, adapter->u.x.otherend,
+        if (xenbus_exists(XBT_NIL, (const char *)adapter->u.x.otherend,
                           "feature-gso-tcpv4")) {
             RPRINTK(DPRTL_ON, ("VNIF backend LSO exists.\n"));
-            str = xenbus_read(XBT_NIL, adapter->u.x.otherend,
-                "feature-gso-tcpv4", &i);
+            str = xenbus_read(XBT_NIL,
+                              (const char *)adapter->u.x.otherend,
+                              "feature-gso-tcpv4",
+                              &i);
             if (str) {
                 RPRINTK(DPRTL_ON, ("VNIF backend LSO read %s.\n", str));
-                val = (ULONG)cmp_strtoul(str, &ptr, 16);
+                val = (ULONG)cmp_strtoul((const char *)str, (char **)&ptr, 16);
                 RPRINTK(DPRTL_ON, ("VNIF backend LSO val %d.\n", val));
                 if (ptr != str && val) {
                     adapter->hw_tasks |= VNIF_LSO_SUPPORTED;
                     RPRINTK(DPRTL_ON, ("VNIF backend LSO supported.\n"));
                 }
-                xenbus_free_string(str);
+                xenbus_free_string((char *)str);
             }
         }
 
-        if (xenbus_exists(XBT_NIL, adapter->u.x.otherend,
+        if (xenbus_exists(XBT_NIL, (const char *)adapter->u.x.otherend,
                           "feature-gso-tcpv6")) {
             RPRINTK(DPRTL_ON, ("VNIF backend LSO IPv6 exists.\n"));
-            str = xenbus_read(XBT_NIL, adapter->u.x.otherend,
-                "feature-gso-tcpv6", &i);
+            str = xenbus_read(XBT_NIL,
+                              (const char *)adapter->u.x.otherend,
+                              "feature-gso-tcpv6",
+                              &i);
             if (str) {
                 RPRINTK(DPRTL_ON, ("VNIF backend LSO IPv6 read %s.\n", str));
-                val = (ULONG)cmp_strtoul(str, &ptr, 16);
+                val = (ULONG)cmp_strtoul((const char *)str, (char **)&ptr, 16);
                 RPRINTK(DPRTL_ON, ("VNIF backend LSO IPv6 val %d.\n", val));
                 if (ptr != str && val) {
                     adapter->hw_tasks |= VNIF_LSO_V2_IPV6_SUPPORTED;
                     RPRINTK(DPRTL_ON, ("VNIF backend LSO IPv6 supported.\n"));
                 }
-                xenbus_free_string(str);
+                xenbus_free_string((char *)str);
             }
         }
 
         adapter->num_hw_queues = 1;
         adapter->b_multi_queue = FALSE;
-        if (xenbus_exists(XBT_NIL, adapter->u.x.otherend,
+        if (xenbus_exists(XBT_NIL, (const char *)adapter->u.x.otherend,
                           "multi-queue-max-queues")) {
             RPRINTK(DPRTL_ON,
                     ("VNIF backend multi-queue-max-queues exists.\n"));
-            str = xenbus_read(XBT_NIL, adapter->u.x.otherend,
-                              "multi-queue-max-queues", NULL);
+            str = xenbus_read(XBT_NIL,
+                              (const char *)adapter->u.x.otherend,
+                              "multi-queue-max-queues",
+                              NULL);
             if (str) {
                 RPRINTK(DPRTL_ON, ("  multi-queue-max-queues str: %s\n",
                                    str));
-                adapter->num_hw_queues = (uint16_t)cmp_strtoul(str, NULL, 10);
+                adapter->num_hw_queues = (uint16_t)cmp_strtoul(
+                    (const char *)str, NULL, 10);
                 adapter->b_multi_queue = TRUE;
                 adapter->b_multi_signaled = TRUE;
                 RPRINTK(DPRTL_ON, ("  multi-queue-max-queues val: %d\n",
                                    adapter->num_hw_queues));
-                xenbus_free_string(str);
+                xenbus_free_string((char *)str);
             }
         }
 
         adapter->u.x.feature_split_evtchn = 0;
-        if (xenbus_exists(XBT_NIL, adapter->u.x.otherend,
+        if (xenbus_exists(XBT_NIL, (const char *)adapter->u.x.otherend,
                           "feature-split-event-channels")) {
             RPRINTK(DPRTL_ON,
                     ("VNIF backend feature-split-event-channels exists.\n"));
-            str = xenbus_read(XBT_NIL, adapter->u.x.otherend,
-                              "feature-split-event-channels", NULL);
+            str = xenbus_read(XBT_NIL,
+                              (const char *)adapter->u.x.otherend,
+                              "feature-split-event-channels",
+                              NULL);
             if (str) {
                 RPRINTK(DPRTL_ON, ("  feature-split-event-channels str: %s\n",
                                    str));
                 adapter->u.x.feature_split_evtchn =
-                    (UCHAR)cmp_strtoul(str, NULL, 10);
+                    (UCHAR)cmp_strtoul((const char *)str, NULL, 10);
                 RPRINTK(DPRTL_ON, ("  feature-split-event-channels val: %d\n",
                                    adapter->u.x.feature_split_evtchn));
-                xenbus_free_string(str);
+                xenbus_free_string((char *)str);
             }
         }
 
@@ -345,7 +359,10 @@ xennet_get_backend_state(PVNIF_ADAPTER adapter)
     char *buf;
     enum xenbus_state backend_state;
 
-    buf = xenbus_read(XBT_NIL, adapter->u.x.otherend, "state", NULL);
+    buf = xenbus_read(XBT_NIL,
+                      (const char *)adapter->u.x.otherend,
+                      "state",
+                      NULL);
     if (buf != NULL) {
         backend_state = (enum xenbus_state)cmp_strtoul(buf, NULL, 10);
         xenbus_free_string(buf);
@@ -353,7 +370,7 @@ xennet_get_backend_state(PVNIF_ADAPTER adapter)
             ("xennet:backend_changed to state %d.\n", backend_state));
     } else {
         backend_state = XenbusStateClosed;
-        xenbus_printf(XBT_NIL, adapter->node_name,
+        xenbus_printf(XBT_NIL, (const char *)adapter->node_name,
                       "reading state", "%x", buf);
         PRINTK(("xennet_get_backend_stat:failed to read state from\n"));
         PRINTK(("         %s.\n", adapter->u.x.otherend));
@@ -365,12 +382,12 @@ static void
 vnifx_setup_watches(PVNIF_ADAPTER adapter)
 {
     adapter->u.x.watch.callback = xennet_frontend_changed;
-    adapter->u.x.watch.node = adapter->node_name;
+    adapter->u.x.watch.node = (const char *)adapter->node_name;
     adapter->u.x.watch.flags = XBWF_new_thread;
     adapter->u.x.watch.context = adapter;
 
     adapter->u.x.backend_watch.callback = xennet_backend_changed;
-    adapter->u.x.backend_watch.node = adapter->u.x.otherend;
+    adapter->u.x.backend_watch.node = (const char *)adapter->u.x.otherend;
     adapter->u.x.backend_watch.flags = XBWF_new_thread;
     adapter->u.x.backend_watch.context = adapter;
 
@@ -389,7 +406,7 @@ vnifx_initial_connect(PVNIF_ADAPTER adapter)
 
     VNIF_CLEAR_FLAG(adapter, VNF_DISCONNECTED);
 
-    xenbus_switch_state(adapter->node_name, XenbusStateConnected);
+    xenbus_switch_state((const char *)adapter->node_name, XenbusStateConnected);
 
     /* Wait for connect */
     for (i = 0; i < 50; i++) {
@@ -416,7 +433,6 @@ NDIS_STATUS
 VNIFX_SetupAdapterInterface(PVNIF_ADAPTER adapter)
 {
     NTSTATUS status;
-    UINT i;
 
     RPRINTK(DPRTL_INIT, ("%s: IN %p, %s\n",
                          __func__, adapter, adapter->node_name));
@@ -475,6 +491,9 @@ VNIFX_SetupAdapterInterface(PVNIF_ADAPTER adapter)
 NDIS_STATUS
 VNIFX_QueryHWResources(PVNIF_ADAPTER adapter, PNDIS_RESOURCE_LIST res_list)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(res_list);
+
     return STATUS_SUCCESS;
 }
 
@@ -500,13 +519,15 @@ VNIFSetupPermanentAddress(PVNIF_ADAPTER adapter)
     unsigned long val;
     char *mac, *ptr, *str;
 
-    res = xenbus_exists(XBT_NIL, adapter->u.x.otherend, "mac");
+    res = xenbus_exists(XBT_NIL, (const char *)adapter->u.x.otherend, "mac");
     if (res == 0) {
         return 0;
     }
 
-    str = mac = (char *)xenbus_read(XBT_NIL, adapter->u.x.otherend,
-                                    "mac", &res);
+    str = mac = (char *)xenbus_read(XBT_NIL,
+                                    (const char *)adapter->u.x.otherend,
+                                    "mac",
+                                    (unsigned int *)&res);
     if (mac == NULL) {
         return 0;
     }
@@ -560,11 +581,13 @@ VNIFSetupPermanentAddress(PVNIF_ADAPTER adapter)
 static int
 VNIFSetupXenFlags(PVNIF_ADAPTER Adapter)
 {
-    int res;
     unsigned int feature_rx_copy;
     char *val;
 
-    val = xenbus_read(XBT_NIL, Adapter->u.x.otherend, "feature-rx-copy", NULL);
+    val = xenbus_read(XBT_NIL,
+                      (const char *)Adapter->u.x.otherend,
+                      "feature-rx-copy",
+                      NULL);
     if (val == NULL) {
         PRINTK(("VNIF: backend/feature-rx-copy missing.\n"));
         return 0;
@@ -586,13 +609,13 @@ vinfx_setup_evtchns(PVNIF_ADAPTER Adapter, vnif_xq_path_t *path)
     do {
         if (Adapter->b_use_split_evtchn) {
             err = xenbus_alloc_evtchn(Adapter->u.x.backend_id,
-                                      &path->tx_evtchn);
+                                      (int *)&path->tx_evtchn);
             if (err) {
                 break;
             }
 
             err = xenbus_alloc_evtchn(Adapter->u.x.backend_id,
-                                      &path->rx_evtchn);
+                                      (int *)&path->rx_evtchn);
             if (err) {
                 break;
             }
@@ -609,7 +632,7 @@ vinfx_setup_evtchns(PVNIF_ADAPTER Adapter, vnif_xq_path_t *path)
                                    NULL);
         } else {
             err = xenbus_alloc_evtchn(Adapter->u.x.backend_id,
-                                      &path->tx_evtchn);
+                                      (int *)&path->tx_evtchn);
             if (err) {
                 break;
             }
@@ -639,7 +662,7 @@ VNIFSetupDevice(PVNIF_ADAPTER Adapter)
     struct netif_rx_sring *rxs;
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
     UINT i;
-    int err;
+    int err = 0;
 
     RPRINTK(DPRTL_ON, ("VNIF: VNIFSetupDevice - IN\n"));
 
@@ -729,15 +752,19 @@ vnifx_write_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
 
         if (adapter->num_paths > 1) {
             xs_path = xs_path_buf;
-            RtlStringCbPrintfA(xs_path, VNIF_MAX_NODE_NAME_LEN, "%s/queue-%u",
-                    adapter->node_name, i);
+            RtlStringCbPrintfA((NTSTRSAFE_PSTR)xs_path,
+                               VNIF_MAX_NODE_NAME_LEN,
+                               "%s/queue-%u",
+                               adapter->node_name, i);
         } else {
             xs_path = adapter->node_name;
         }
 
         RPRINTK(DPRTL_INIT, ("%s: writing %s tx-ring-ref %d\n",
                              __func__, xs_path, path->tx_ring_ref));
-        err = xenbus_printf(*xbt, xs_path, "tx-ring-ref", "%u",
+        err = xenbus_printf(*xbt,
+                            (const char *)xs_path,
+                            "tx-ring-ref", "%u",
                             path->tx_ring_ref);
         if (err) {
             PRINTK(("%s: failed writing %s tx-ring-ref %d\n",
@@ -747,7 +774,9 @@ vnifx_write_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
 
         RPRINTK(DPRTL_INIT, ("%s: writing %s rx-ring-ref %d\n",
                              __func__, xs_path, path->rx_ring_ref));
-        err = xenbus_printf(*xbt, xs_path, "rx-ring-ref", "%u",
+        err = xenbus_printf(*xbt,
+                            (const char *)xs_path,
+                            "rx-ring-ref", "%u",
                             path->rx_ring_ref);
         if (err) {
             PRINTK(("%s: failed writing %s rx-ring-ref %d\n",
@@ -758,7 +787,9 @@ vnifx_write_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
         if (path->tx_evtchn == path->rx_evtchn) {
             RPRINTK(DPRTL_INIT, ("%s: writing %s event-channel %d\n",
                                  __func__, xs_path, path->tx_evtchn));
-            err = xenbus_printf(*xbt, xs_path, "event-channel", "%u",
+            err = xenbus_printf(*xbt,
+                                (const char *)xs_path,
+                                "event-channel", "%u",
                                 path->tx_evtchn);
             if (err) {
                 PRINTK(("%s: failed writing %s event-channel %d\n",
@@ -768,7 +799,9 @@ vnifx_write_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
         } else {
             RPRINTK(DPRTL_INIT, ("%s: writing %s event-channel-tx %d\n",
                                  __func__, xs_path, path->tx_evtchn));
-            err = xenbus_printf(*xbt, xs_path, "event-channel-tx", "%u",
+            err = xenbus_printf(*xbt,
+                                (const char *)xs_path,
+                                "event-channel-tx", "%u",
                                 path->tx_evtchn);
             if (err) {
                 PRINTK(("%s: failed writing %s event-channel-tx %d\n",
@@ -778,7 +811,9 @@ vnifx_write_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
 
             RPRINTK(DPRTL_INIT, ("%s: writing %s event-channel-rx %d\n",
                                  __func__, xs_path, path->rx_evtchn));
-            err = xenbus_printf(*xbt, xs_path, "event-channel-rx", "%u",
+            err = xenbus_printf(*xbt,
+                                (const char  *)xs_path,
+                                "event-channel-rx", "%u",
                                 path->rx_evtchn);
             if (err) {
                 PRINTK(("%s: failed writing %s event-channel-rx %d\n",
@@ -793,6 +828,8 @@ vnifx_write_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
 static int
 vnifx_rm_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
 {
+    UNREFERENCED_PARAMETER(xbt);
+
     vnif_xq_path_t *path;
     UCHAR xs_path_buf[VNIF_MAX_NODE_NAME_LEN];
     UCHAR *xs_path;
@@ -805,25 +842,30 @@ vnifx_rm_path_keys(PVNIF_ADAPTER adapter, struct xenbus_transaction *xbt)
 
         if (adapter->num_paths > 1) {
             xs_path = xs_path_buf;
-            RtlStringCbPrintfA(xs_path, VNIF_MAX_NODE_NAME_LEN, "%s/queue-%u",
-                    adapter->node_name, i);
+            RtlStringCbPrintfA((NTSTRSAFE_PSTR)xs_path,
+                               VNIF_MAX_NODE_NAME_LEN,
+                               "%s/queue-%u",
+                               adapter->node_name, i);
         } else {
             xs_path = adapter->node_name;
         }
 
         DPRINTK(DPRTL_INIT, ("%s: rm %s ring ref\n", __func__, xs_path));
-        xenbus_rm(XBT_NIL, xs_path, "tx-ring-ref");
-        xenbus_rm(XBT_NIL, xs_path, "rx-ring-ref");
+        xenbus_rm(XBT_NIL, (const char *)xs_path, (const char *)"tx-ring-ref");
+        xenbus_rm(XBT_NIL, (const char *)xs_path, (const char *)"rx-ring-ref");
 
         if (adapter->b_use_split_evtchn) {
             DPRINTK(DPRTL_INIT,
                     ("%s: rm %s event-channel tx/rx\n", __func__, xs_path));
-            xenbus_rm(XBT_NIL, xs_path, "event-channel-tx");
-            xenbus_rm(XBT_NIL, xs_path, "event-channel-rx");
+            xenbus_rm(XBT_NIL, (const char *)xs_path,
+                      "(const char *)event-channel-tx");
+            xenbus_rm(XBT_NIL, (const char *)xs_path,
+                      (const char *)"event-channel-rx");
         } else {
             DPRINTK(DPRTL_INIT,
                     ("%s: rm %s event-channel\n", __func__, xs_path));
-            xenbus_rm(XBT_NIL, xs_path, "event-channel");
+            xenbus_rm(XBT_NIL, (const char *)xs_path,
+                      (const char *)"event-channel");
         }
     }
     return err;
@@ -851,7 +893,7 @@ again:
     }
 
     if (Adapter->b_multi_queue == TRUE) {
-        err = xenbus_printf(xbt, Adapter->node_name,
+        err = xenbus_printf(xbt, (const char *)Adapter->node_name,
                             "multi-queue-num-queues", "%u", Adapter->num_paths);
         if (err) {
             PRINTK(("VNIF: xenbus writing multi-queue-num-queues fail.\n"));
@@ -866,7 +908,7 @@ again:
 
     RPRINTK(DPRTL_INIT,
         ("VNIF: xenbus writing feature-rx-notify.\n"));
-    err = xenbus_printf(xbt, Adapter->node_name,
+    err = xenbus_printf(xbt, (const char *)Adapter->node_name,
         "feature-rx-notify", "%d", 1);
     if (err) {
         PRINTK(("VNIF: xenbus writing feature-rx-notify fail.\n"));
@@ -875,21 +917,24 @@ again:
 
     /* 1=copyall, 0=page-flipping */
     RPRINTK(DPRTL_INIT, ("VNIF: xenbus writing request-rx-copy.\n"));
-    err = xenbus_printf(xbt, Adapter->node_name, "request-rx-copy", "%u",
-                  Adapter->u.x.copyall);
+    err = xenbus_printf(xbt, (const char *)Adapter->node_name,
+                        "request-rx-copy",
+                        "%u",
+                        Adapter->u.x.copyall);
     if (err) {
         PRINTK(("VNIF: xenbus writing request-rx-copy fail.\n"));
         goto abort_transaction;
     }
 
     if (Adapter->hw_tasks & VNIF_RX_SG) {
-        err = xenbus_printf(xbt, Adapter->node_name, "feature-sg", "%d", 1);
+        err = xenbus_printf(xbt, (const char *)Adapter->node_name,
+                            "feature-sg", "%d", 1);
         if (err) {
             PRINTK(("VNIF: xenbus writing feature-sg fail.\n"));
             goto abort_transaction;
         }
     } else {
-        err = xenbus_rm(xbt, Adapter->node_name, "feature-sg");
+        err = xenbus_rm(xbt, (const char *)Adapter->node_name, "feature-sg");
         if (err) {
             PRINTK(("VNIF: xenbus rm feature-sg fail.\n"));
             goto abort_transaction;
@@ -897,7 +942,7 @@ again:
     }
 
     if (Adapter->lso_enabled & (VNIF_LSOV1_ENABLED | VNIF_LSOV2_ENABLED)) {
-        err = xenbus_printf(xbt, Adapter->node_name,
+        err = xenbus_printf(xbt, (const char *)Adapter->node_name,
             "feature-gso-tcpv4", "%d", 1);
         if (err) {
             PRINTK(("VNIF: xenbus writing feature-gso-tcpv4 fail.\n"));
@@ -906,7 +951,7 @@ again:
     }
 
     if (Adapter->lso_enabled & VNIF_LSOV2_IPV6_ENABLED) {
-        err = xenbus_printf(xbt, Adapter->node_name,
+        err = xenbus_printf(xbt, (const char *)Adapter->node_name,
             "feature-gso-tcpv6", "%d", 1);
         if (err) {
             PRINTK(("VNIF: xenbus writing feature-gso-tcpv6 fail.\n"));
@@ -916,7 +961,7 @@ again:
 
     /* this field is for backward compatibility */
     RPRINTK(DPRTL_INIT, ("VNIF: xenbus writing copy-delivery-offset.\n"));
-    err = xenbus_printf(xbt, Adapter->node_name,
+    err = xenbus_printf(xbt, (const char *)Adapter->node_name,
         "copy-delivery-offset", "%u", 0);
     if (err) {
         PRINTK(("VNIF: xenbus writing copy-delivery-offset fail.\n"));
@@ -925,7 +970,7 @@ again:
 
     /* If not supporting checksuming, need to tell backend. */
     RPRINTK(DPRTL_INIT, ("VNIF: xenbus writing feature-no-csum-offload.\n"));
-    err = xenbus_printf(xbt, Adapter->node_name,
+    err = xenbus_printf(xbt, (const char *)Adapter->node_name,
         "feature-no-csum-offload", "%d",
         !(Adapter->cur_rx_tasks
             & (VNIF_CHKSUM_IPV4_TCP | VNIF_CHKSUM_IPV4_UDP)));
@@ -935,7 +980,7 @@ again:
     }
 
     RPRINTK(DPRTL_INIT, ("VNIF: xenbus writing feature-ipv6-csum-offload.\n"));
-    err = xenbus_printf(xbt, Adapter->node_name,
+    err = xenbus_printf(xbt, (const char *)Adapter->node_name,
         "feature-ipv6-csum-offload", "%d",
         !!(Adapter->cur_rx_tasks
             & (VNIF_CHKSUM_IPV6_TCP | VNIF_CHKSUM_IPV6_UDP)));
@@ -972,7 +1017,6 @@ out:
 static NDIS_STATUS
 VNIFInitRxGrants(PVNIF_ADAPTER adapter)
 {
-    PLIST_ENTRY entry;
     vnif_xq_path_t  *xq;
     rcb_ring_pool_t *rcb_rp;
     RCB *rcb;
@@ -1058,10 +1102,8 @@ static NDIS_STATUS
 VNIFInitTxGrants(PVNIF_ADAPTER adapter)
 {
     TCB *tcb;
-    ULONG mfn;
     UINT p;
     UINT i;
-    grant_ref_t ref;
 
     /* Pre-allocate grant table references for send. */
     for (p = 0; p < adapter->num_paths; p++) {
@@ -1144,9 +1186,10 @@ VNIFOutstanding(PVNIF_ADAPTER adapter)
 uint32_t
 VNIFX_Quiesce(PVNIF_ADAPTER adapter)
 {
+#ifdef DBG
     char *buf;
+#endif
     KIRQL old_irql;
-    KDPC Dpc = {0};
     UINT p;
     uint32_t waiting = 0;
     uint32_t wait_count = 0;
@@ -1159,12 +1202,15 @@ VNIFX_Quiesce(PVNIF_ADAPTER adapter)
         return 0;
     }
 #ifdef DBG
-    buf = xenbus_read(XBT_NIL, adapter->u.x.otherend, "state", NULL);
+    buf = xenbus_read(XBT_NIL,
+                      (const char *)adapter->u.x.otherend,
+                      "state",
+                      NULL);
     if (buf) {
         PRINTK(("VNIFQuiesce: backend state %s, ", buf));
         xenbus_free_string(buf);
     }
-    buf = xenbus_read(XBT_NIL, adapter->node_name, "state", NULL);
+    buf = xenbus_read(XBT_NIL, (const char *)adapter->node_name, "state", NULL);
     if (buf) {
         PRINTK(("frontend state %s\n", buf));
         xenbus_free_string(buf);
@@ -1274,12 +1320,13 @@ VNIFWaitStateChange(PVNIF_ADAPTER adapter,
 {
     char *buf;
     uint32_t i;
-    enum xenbus_state backend_state;
+    enum xenbus_state backend_state = XenbusStateUnknown;
 
     RPRINTK(DPRTL_ON, ("VNIFWaitStateChange: switching front end state to %d\n",
         front_state));
     for (i = 0; i < 1000; i++) {
-        if (xenbus_switch_state(adapter->node_name, front_state) == 0) {
+        if (xenbus_switch_state((const char *)adapter->node_name, front_state)
+                == 0) {
             RPRINTK(DPRTL_INIT,
                 ("VNIFWaitStateChange: front end state switched to %d: %d\n",
                 front_state, i));
@@ -1291,7 +1338,10 @@ VNIFWaitStateChange(PVNIF_ADAPTER adapter,
         ("VNIFWaitStateChange: waiting for backend state to be %d\n",
         end_state));
     for (i = 0; i < 1000; i++) {
-        buf = xenbus_read(XBT_NIL, adapter->u.x.otherend, "state", NULL);
+        buf = xenbus_read(XBT_NIL,
+                          (const char *)adapter->u.x.otherend,
+                          "state",
+                          NULL);
         if (buf) {
             backend_state = (enum xenbus_state)cmp_strtoul(buf, NULL, 10);
             xenbus_free_string(buf);
@@ -1309,7 +1359,6 @@ VNIFWaitStateChange(PVNIF_ADAPTER adapter,
 void
 VNIFX_CleanupRings(PVNIF_ADAPTER adapter)
 {
-    TCB *tcb;
     RCB *rcb;
     UINT i;
     UINT p;
@@ -1479,11 +1528,17 @@ static void
 xennet_frontend_changed(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(vec);
+    UNREFERENCED_PARAMETER(len);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER)watch->context;
     char *buf;
     uint32_t link_status;
 
-    buf = xenbus_read(XBT_NIL, adapter->node_name, "link-status", NULL);
+    buf = xenbus_read(XBT_NIL,
+                      (const char *)adapter->node_name,
+                      "link-status",
+                      NULL);
     if (buf == NULL || IS_ERR(buf)) {
         return;
     }
@@ -1493,7 +1548,8 @@ xennet_frontend_changed(struct xenbus_watch *watch,
     RPRINTK(DPRTL_ON, ("xennet_frontend_changed: %p, link status = %d.\n",
         adapter, link_status));
 
-    if (link_status != !VNIF_TEST_FLAG(adapter, VNF_ADAPTER_NO_LINK)) {
+    if (link_status !=
+            (uint32_t)!VNIF_TEST_FLAG(adapter, VNF_ADAPTER_NO_LINK)) {
         if (link_status) {
             VNIF_CLEAR_FLAG(adapter, VNF_ADAPTER_NO_LINK);
         } else {
@@ -1514,6 +1570,8 @@ static void
 xennet_backend_changed(struct xenbus_watch *watch,
     const char **vec, unsigned int len)
 {
+    UNREFERENCED_PARAMETER(len);
+
     PVNIF_ADAPTER adapter = (PVNIF_ADAPTER)watch->context;
     enum xenbus_state backend_state;
     xenbus_release_device_t release_data;
@@ -1534,7 +1592,8 @@ xennet_backend_changed(struct xenbus_watch *watch,
 
         RPRINTK(DPRTL_ON,
             ("xennet:backend_changed switching to state closed.\n"));
-        xenbus_switch_state(adapter->node_name, XenbusStateClosed);
+        xenbus_switch_state((const char *)adapter->node_name,
+                            XenbusStateClosed);
 
         RPRINTK(DPRTL_ON, ("xennet:backend_changed: xenbus_release_device.\n"));
         release_data.action = RELEASE_REMOVE;
@@ -1548,29 +1607,31 @@ xennet_backend_changed(struct xenbus_watch *watch,
 void
 vnifx_restart_interface(PVNIF_ADAPTER adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
 }
 
 void
 vnifx_send_packet_filter(PVNIF_ADAPTER adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
 }
 
 void
 vnifx_send_multicast_list(PVNIF_ADAPTER adapter)
 {
+    UNREFERENCED_PARAMETER(adapter);
 }
 
 void
 vnifx_send_vlan_filter(PVNIF_ADAPTER adapter, UCHAR add_del)
 {
+    UNREFERENCED_PARAMETER(adapter);
+    UNREFERENCED_PARAMETER(add_del);
 }
 
 static void
 xennet_resume_failue_cleanup(PVNIF_ADAPTER adapter)
 {
-    xenbus_release_device_t release_data;
-    BOOLEAN cancelled = TRUE;
-
     RPRINTK(DPRTL_ON, ("xennet_resume_failue_cleanup - IN\n"));
 
     VNIF_SET_FLAG(adapter, VNF_DISCONNECTED);
@@ -1665,7 +1726,6 @@ static uint32_t
 MPSuspend(PVNIF_ADAPTER adapter, uint32_t reason)
 {
     uint32_t waiting;
-    RCB *rcb;
     UINT i;
     BOOLEAN cancelled = TRUE;
 
@@ -1712,8 +1772,8 @@ MPSuspend(PVNIF_ADAPTER adapter, uint32_t reason)
             VNIFFreeAdapterInterface(adapter);
         }
     }
-    PRINTK(("MPSuspend: OUT, waiting %d for sends %d, recv %d\n",
-        waiting, adapter->nBusySend, adapter->nBusyRecv));
+    PRINTK(("MPSuspend: OUT, waiting %d for sends %d, recv %d, cancelled %d\n",
+        waiting, adapter->nBusySend, adapter->nBusyRecv, cancelled));
     return waiting;
 }
 

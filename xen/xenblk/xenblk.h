@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -137,12 +137,12 @@
 #define BLK_ACTR_L              0x2000
 #define BLK_RSU_L               0x4000
 
-#define XENBLK_SET_FLAG(_F, _V)         InterlockedOr(&(_F), (_V))
-#define XENBLK_CLEAR_FLAG(_F, _V)       InterlockedAnd(&(_F), ~(_V))
+#define XENBLK_SET_FLAG(_F, _V)         InterlockedOr((LONG *)&(_F), (_V))
+#define XENBLK_CLEAR_FLAG(_F, _V)       InterlockedAnd((LONG *)&(_F), ~(_V))
 #define XENBLK_ZERO_VALUE(_V)           _V = 0
 #define XENBLK_SET_VALUE(_V, _S)        _V = _S
-#define XENBLK_INC(_V)                  InterlockedIncrement(&(_V))
-#define XENBLK_DEC(_V)                  InterlockedDecrement(&(_V))
+#define XENBLK_INC(_V)                  InterlockedIncrement((LONG *)&(_V))
+#define XENBLK_DEC(_V)                  InterlockedDecrement((LONG *)&(_V))
 #else
 #define XENBLK_SET_FLAG(_F, _V)
 #define XENBLK_CLEAR_FLAG(_F, _V)
@@ -160,8 +160,8 @@ extern uint32_t io_srbs_seen;
 extern uint32_t io_srbs_returned;
 extern uint32_t sio_srbs_seen;
 extern uint32_t sio_srbs_returned;
-#define XENBLK_INC_SRB(_V)              InterlockedIncrement(&(_V))
-#define XENBLK_DEC_SRB(_V)              InterlockedDecrement(&(_V))
+#define XENBLK_INC_SRB(_V)              InterlockedIncrement((LONG *)&(_V))
+#define XENBLK_DEC_SRB(_V)              InterlockedDecrement((LONG *)&(_V))
 #ifdef VBIF_DBG_TRACK_AND_REPORT_SRBS
 static inline void
 DPR_SRB(char *where)
@@ -246,7 +246,7 @@ typedef struct blk_shadow {
     union {
         blkif_request_t req;
         blkif_request_indirect_t ind;
-    };
+    } u;
     void *request;
     unsigned long *frame;
     uint32_t num_ind;
@@ -372,12 +372,12 @@ ULONG XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath);
 #define srb_pages_in_req(_srb_ext, _np)                                     \
 {                                                                           \
     ULONG i;                                                                \
-    ULONG len;                                                              \
+    ULONG sgl_len;                                                          \
     ULONG remaining_bytes;                                                  \
-    ULONG page_offset;                                                      \
+    ULONG pg_offset;                                                        \
                                                                             \
     (_np) = 0;                                                              \
-    page_offset = 0;                                                        \
+    pg_offset = 0;                                                          \
     for (i = 0; i < (_srb_ext)->sgl->NumberOfElements; i++) {               \
         if (((uint32_t)(_srb_ext)->sgl->List[i].PhysicalAddress.QuadPart &  \
                 (PAGE_SIZE - 1)) == 0) {                                    \
@@ -385,12 +385,12 @@ ULONG XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath);
                 (PAGE_SHIFT)) + 1;                                          \
         } else {                                                            \
             (_np)++; /* we have at least one page */                        \
-            page_offset = (unsigned long)                                   \
+            pg_offset = (unsigned long)                                     \
                 (_srb_ext)->sgl->List[i].PhysicalAddress.QuadPart &         \
                     (PAGE_SIZE - 1);                                        \
-            len = (_srb_ext)->sgl->List[i].Length;                          \
-            remaining_bytes = len > PAGE_SIZE - page_offset ?               \
-                len - (PAGE_SIZE - page_offset) : 0;                        \
+            sgl_len = (_srb_ext)->sgl->List[i].Length;                      \
+            remaining_bytes = sgl_len > PAGE_SIZE - pg_offset ?             \
+                sgl_len - (PAGE_SIZE - pg_offset) : 0;                      \
             if (remaining_bytes) {                                          \
                 (_np) += ((remaining_bytes - 1) >> (PAGE_SHIFT)) + 1;       \
             }                                                               \
@@ -563,6 +563,8 @@ static inline void
 xenblk_request_complete(SCSI_NOTIFICATION_TYPE nt,
     XENBLK_DEVICE_EXTENSION *dev_ext, SCSI_REQUEST_BLOCK *srb)
 {
+    UNREFERENCED_PARAMETER(nt);
+
     xenblk_srb_extension *srb_ext;
 
     srb_ext = (xenblk_srb_extension *)srb->SrbExtension;
@@ -771,12 +773,16 @@ xenblk_get_virtual_address(XENBLK_DEVICE_EXTENSION *dev_ext,
     SCSI_REQUEST_BLOCK *Srb,
     STOR_PHYSICAL_ADDRESS paddr)
 {
+    UNREFERENCED_PARAMETER(Srb);
     return StorPortGetVirtualAddress(dev_ext, paddr);
 }
 
 static inline xenblk_addr_t
 xenblk_get_buffer_addr(SCSI_REQUEST_BLOCK *srb, xenblk_srb_extension *srb_ext)
 {
+    UNREFERENCED_PARAMETER(srb);
+    UNREFERENCED_PARAMETER(srb_ext);
+
     return srb_ext->sgl->List[0].PhysicalAddress.QuadPart;
 }
 
@@ -784,6 +790,9 @@ static inline unsigned long
 xenblk_buffer_mfn(XENBLK_DEVICE_EXTENSION *dev_ext, SCSI_REQUEST_BLOCK *srb,
     xenblk_srb_extension *srb_ext, xenblk_addr_t addr)
 {
+    UNREFERENCED_PARAMETER(dev_ext);
+    UNREFERENCED_PARAMETER(srb);
+    UNREFERENCED_PARAMETER(srb_ext);
     return pfn_to_mfn((unsigned long)(addr >> PAGE_SHIFT));
 }
 

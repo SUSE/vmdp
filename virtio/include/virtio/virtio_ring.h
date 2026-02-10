@@ -12,7 +12,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright Rusty Russell IBM Corporation 2007.
- * Copyright 2021 SUSE LLC
+ * Copyright 2021-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -86,6 +86,11 @@ struct vring_desc {
     uint16_t next;
 };
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4200)
+#endif
+
 struct vring_avail {
     uint16_t flags;
     uint16_t idx;
@@ -124,6 +129,10 @@ typedef struct virtio_queue_split_s {
     uint16_t flags;
     void *data[];
 } virtio_queue_split_t;
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 /*
  * The standard layout for the ring is a continuous chunk of memory which looks

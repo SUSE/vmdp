@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2008-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,6 +36,8 @@ static DWORD pvvxsvc_swap_nic_driver(void);
 DWORD WINAPI
 pvvxsvc_shutdown_wait_thread(LPVOID param)
 {
+    UNREFERENCED_PARAMETER(param);
+
     DBG_OUTPUT(TEXT("==> pvvxsvc_shutdown_wait_thread ****\n"));
     WaitForSingleObject(g_pvvxsvc_shutdown_stop_event_handle, INFINITE);
     pvvxsvc_report_status(g_pvvxsvc_shutdown_status_handle,

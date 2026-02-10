@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2021 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -156,9 +156,11 @@ vserial_port_add(PDEVICE_OBJECT DeviceObject, PVOID context)
     return;
 }
 
-static void
+void
 vserial_port_remove_worker(PDEVICE_OBJECT DeviceObject, PVOID context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     WORKER_ITEM_CONTEXT *ctx = (WORKER_ITEM_CONTEXT *)context;
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION port;
@@ -193,8 +195,6 @@ vserial_port_remove_worker(PDEVICE_OBJECT DeviceObject, PVOID context)
 void
 vserial_port_remove(IN PFDO_DEVICE_EXTENSION fdx, IN PPDO_DEVICE_EXTENSION port)
 {
-    NTSTATUS status;
-
     RPRINTK(DPRTL_ON,
         ("--> %s: DeviceId %d PortId %d\n",
         __func__, port->device_id, port->port_id));
@@ -225,7 +225,8 @@ vserial_port_create_name(
     IN PPDO_DEVICE_EXTENSION port,
     IN port_buffer_t *buf)
 {
-    NTSTATUS status = STATUS_SUCCESS;
+    UNREFERENCED_PARAMETER(fdx);
+
     size_t length;
     PVIRTIO_CONSOLE_CONTROL cpkt;
     char tmp[VSERIAL_MAX_NAME_LEN];
@@ -554,7 +555,7 @@ vserial_port_pnp_notify(PPDO_DEVICE_EXTENSION port)
     DPRINTK(DPRTL_ON, ("<-- %s\n", __func__));
 }
 
-static void
+void
 vserial_port_read_request_cancel(PDEVICE_OBJECT pdo, PIRP request)
 {
     PPDO_DEVICE_EXTENSION port;
@@ -679,7 +680,7 @@ vserial_will_write_block(PPDO_DEVICE_EXTENSION port)
     return ret;
 }
 
-static void
+void
 vserial_port_write_request_cancel(PDEVICE_OBJECT pdo, PIRP request)
 {
     PPDO_DEVICE_EXTENSION port;
@@ -956,8 +957,10 @@ vserial_port_power_off(PPDO_DEVICE_EXTENSION port)
     KeReleaseInStackQueuedSpinLock(&lh);
 
     if (in_vq) {
-        while (buf = (port_buffer_t *)vq_detach_unused_buf(in_vq)) {
+        buf = (port_buffer_t *)vq_detach_unused_buf(in_vq);
+        while (buf != NULL) {
             vserial_free_buffer(buf);
+            buf = (port_buffer_t *)vq_detach_unused_buf(in_vq);
         }
     }
     KeReleaseInStackQueuedSpinLock(&fdxlh);

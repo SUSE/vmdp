@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,6 +64,8 @@ XenbusDispatchPower(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 static NTSTATUS
 xenbus_shutdown_completion(PDEVICE_OBJECT DeviceObject, PIRP Irp, void *context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
 
     if (fdx == NULL) {
@@ -85,6 +87,8 @@ xenbus_shutdown_completion(PDEVICE_OBJECT DeviceObject, PIRP Irp, void *context)
 static void
 xenbus_shutdown_worker(PDEVICE_OBJECT DeviceObject, void *context)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     PPDO_DEVICE_EXTENSION pdx;
     PLIST_ENTRY entry;
@@ -142,9 +146,13 @@ xenbus_shutdown_worker(PDEVICE_OBJECT DeviceObject, void *context)
             ("xenbus_shutdown_worker out: pdx %p, irp %p\n", fdx, fdx->irp));
 }
 
-static void
+void
 xenbus_dpc_shutdown(PKDPC dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     COMMON_DEVICE_EXTENSION *dev_ext = context;
 
     if (dev_ext == NULL) {
@@ -168,10 +176,9 @@ FDO_Power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     POWER_ACTION action;
     PFDO_DEVICE_EXTENSION fdx;
     PIO_STACK_LOCATION stack;
-    PLIST_ENTRY entry, listHead;
+    PLIST_ENTRY entry;
     pv_ioctl_t ioctl_data;
     uint32_t minor_func;
-    xenbus_pv_port_options_t options;
     PPDO_DEVICE_EXTENSION pdx;
 
     RPRINTK(DPRTL_PWR,

@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2024 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -795,8 +795,6 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
     NET_BUFFER_POOL_PARAMETERS nb_pool_parameters;
     PNET_BUFFER_LIST nb_list;
     RCB *rcb;
-    void *ptr;
-    PNET_BUFFER nb;
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
     uint32_t i;
     uint32_t p;
@@ -1025,7 +1023,6 @@ vnif_free_rcb_array(PVNIF_ADAPTER adapter, RCB **rcb_array)
 VOID
 VNIFFreeAdapterRx(PVNIF_ADAPTER adapter)
 {
-    RCB *rcb;
     PNET_BUFFER_LIST nbl;
     uint32_t i;
 
@@ -1066,17 +1063,15 @@ VNIFFreeAdapterRx(PVNIF_ADAPTER adapter)
 VOID
 VNIFFreeAdapterEx(PVNIF_ADAPTER adapter)
 {
-    BOOLEAN cancelled = TRUE;
-
     RPRINTK(DPRTL_ON, ("VNIF: VNIFFreeAdapterEx in, irql %d\n",
                        KeGetCurrentIrql()));
     if (adapter->ResetTimer) {
-        VNIF_CANCEL_TIMER(adapter->ResetTimer, &cancelled);
+        NdisCancelTimerObject(adapter->ResetTimer);
         NdisFreeTimerObject(adapter->ResetTimer);
         adapter->ResetTimer = NULL;
     }
     if (adapter->rcv_timer) {
-        VNIF_CANCEL_TIMER(adapter->rcv_timer, &cancelled);
+        NdisCancelTimerObject(adapter->rcv_timer);
         NdisFreeTimerObject(adapter->rcv_timer);
         adapter->rcv_timer = NULL;
     }
@@ -1087,7 +1082,7 @@ VNIFFreeAdapterEx(PVNIF_ADAPTER adapter)
             adapter->adapter_flags &= ~VNF_ADAPTER_POLLING;
             NdisReleaseSpinLock(&adapter->adapter_flag_lock);
 
-            VNIF_CANCEL_TIMER(adapter->poll_timer, &cancelled);
+            NdisCancelTimerObject(adapter->poll_timer);
 
             NdisAcquireSpinLock(&adapter->adapter_flag_lock);
             NdisFreeTimerObject(adapter->poll_timer);
@@ -1098,7 +1093,7 @@ VNIFFreeAdapterEx(PVNIF_ADAPTER adapter)
     }
 #endif
     if (adapter->pv_stats) {
-        VNIF_CANCEL_TIMER(adapter->pv_stats->stat_timer, &cancelled);
+        NdisCancelTimerObject(adapter->pv_stats->stat_timer);
         NdisAcquireSpinLock(&adapter->stats_lock);
         NdisFreeTimerObject(adapter->pv_stats->stat_timer);
         adapter->pv_stats->stat_timer = NULL;

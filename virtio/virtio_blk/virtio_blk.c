@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -133,8 +133,6 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
         case SCSIOP_WRITE:
         case SCSIOP_READ16:
         case SCSIOP_WRITE16: {
-            NTSTATUS status;
-
             DPRINTK(DPRTL_TRC | DPRTL_PWR,
                 ("%s %x: SCSIOP_WRITE SCSIOP_READ %x, dev=%x,srb=%x\n",
                 VIRTIO_SP_DRIVER_NAME, Srb->TargetId,
@@ -513,6 +511,11 @@ sp_build_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK srb)
 BOOLEAN
 sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
 {
+#ifdef IS_STORPORT
+    UNREFERENCED_PARAMETER(dev_ext);
+#endif
+    UNREFERENCED_PARAMETER(PathId);
+
     RPRINTK(DPRTL_ON, ("%s %s: In\n", VIRTIO_SP_DRIVER_NAME, __func__));
     VBIF_SET_FLAG(dev_ext->sp_locks, (BLK_RBUS_L | BLK_SIO_L));
     SP_NEXT_REQUEST(NextRequest, dev_ext);

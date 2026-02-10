@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2012-2021 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -120,7 +120,10 @@ XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
 
     /* Set entry points into the miniport. */
     hwInitializationData.HwInitialize = XenScsiInitialize;
+#pragma warning(push)
+#pragma warning(disable:4152)
     hwInitializationData.HwFindAdapter = XenScsiFindAdapter;
+#pragma warning(pop)
     hwInitializationData.HwResetBus = XenScsiResetBus;
     hwInitializationData.HwAdapterControl = XenScsiAdapterControl;
 
@@ -166,7 +169,6 @@ XenScsiInitDevExt(
     xenbus_apis_t api = {0};
     xenbus_shared_info_t *xenbus_shared_info;
 #endif
-    NTSTATUS status = 0;
     PACCESS_RANGE accessRange = &((*(config_info->AccessRanges))[0]);
 
     KeInitializeDpc(&dev_ext->restart_dpc, XenScsiRestartDpc, dev_ext);
@@ -178,10 +180,14 @@ XenScsiInitDevExt(
     if (irql <= DISPATCH_LEVEL) {
         if (irql == PASSIVE_LEVEL) {
             dev_ext->op_mode = OP_MODE_NORMAL;
-            sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
+            sp_registry_read(dev_ext,
+                             (PUCHAR)PVCTRL_DBG_PRINT_MASK_STR,
+                             REG_DWORD,
                              &dbg_print_mask);
 #ifdef DBG
-            sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
+            sp_registry_read(dev_ext,
+                             (PUCHAR)PVCTRL_CDBG_PRINT_LIMIT_STR,
+                             REG_DWORD,
                              &conditional_times_to_print_limit);
 #endif
         } else {
@@ -246,11 +252,12 @@ XenScsiFindAdapter(
     IN OUT PPORT_CONFIGURATION_INFORMATION config_info,
     OUT PBOOLEAN Again)
 {
+    UNREFERENCED_PARAMETER(BusInformation);
+    UNREFERENCED_PARAMETER(HwContext);
+    UNREFERENCED_PARAMETER(Again);
+
     XENSCSI_DEVICE_EXTENSION *dev_ext = (XENSCSI_DEVICE_EXTENSION *)dev_extt;
-    void *nc;
-    NTSTATUS status = 0;
     KIRQL irql;
-    uint32_t flags = 0;
 
     if (config_info->NumberOfAccessRanges == 0) {
         PRINTK(("Find adapter start: No access ranges\n"));
@@ -428,11 +435,6 @@ XenScsiInitialize(XENSCSI_DEVICE_EXTENSION *dev_ext)
 static BOOLEAN
 XenScsiPassiveInit(XENSCSI_DEVICE_EXTENSION *dev_ext)
 {
-    xenbus_pv_port_options_t options;
-    xenbus_release_device_t release_data;
-    uint32_t devices_to_probe;
-    uint32_t i;
-
     RPRINTK(DPRTL_INIT,
         ("XenScsiPassiveInit - IN dev %p, sizeof(info) %d, irql = %d\n",
         dev_ext, sizeof(struct vscsi_front_info), KeGetCurrentIrql(),
@@ -535,7 +537,6 @@ XenScsiXenbusInit(XENSCSI_DEVICE_EXTENSION *dev_ext)
 static NTSTATUS
 XenScsiClaim(XENSCSI_DEVICE_EXTENSION *dev_ext)
 {
-    struct vscsi_front_info *info;
     NTSTATUS status;
 
     /*
@@ -659,7 +660,7 @@ static void
 XenScsiInitHiberCrash(XENSCSI_DEVICE_EXTENSION *dev_ext)
 {
     struct vscsi_front_info *info;
-    uint32_t i, j;
+    uint32_t i;
     KIRQL irql;
 
     RPRINTK(DPRTL_INIT, ("XenScsiInitHiberCrash: IN.\n"));
@@ -670,7 +671,6 @@ XenScsiInitHiberCrash(XENSCSI_DEVICE_EXTENSION *dev_ext)
 
     RPRINTK(DPRTL_ON, ("XenScsi XenScsiInitHiberCrash: info[0] %p, max_t %d.\n",
         dev_ext->info, dev_ext->max_targets));
-    i = 0;
     do {
         info = xenbus_enum_xenblk_info(&i);
         if (info) {
@@ -691,7 +691,6 @@ vs_start_io_chk(XENSCSI_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 {
     struct vscsi_front_info *info;
     xenscsi_srb_extension *srb_ext;
-    XENSCSI_LOCK_HANDLE lh;
     UCHAR status;
 
     /* StorPort already has the lock.  Just need it for scsiport. */
@@ -756,6 +755,8 @@ vs_start_io_chk(XENSCSI_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 static UCHAR
 xenscsi_mode_sense(XENSCSI_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK srb)
 {
+    UNREFERENCED_PARAMETER(dev_ext);
+
     PCDB cdb;
     PMODE_PARAMETER_HEADER header;
     PMODE_PARAMETER_BLOCK param_block;
@@ -875,7 +876,9 @@ static BOOLEAN
 XenScsiStartIo(XENSCSI_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK srb)
 {
     UCHAR status;
+#ifdef DBG
     int i;
+#endif
 
     /* Make some checks to see if we are really readly to do IO. */
     status = vs_start_io_chk(dev_ext, srb);
@@ -997,7 +1000,6 @@ XenScsiStartReadWrite(XENSCSI_DEVICE_EXTENSION *dev_ext,
 {
     xenscsi_srb_extension *srb_ext;
     NTSTATUS status = STATUS_SUCCESS;
-    ULONG len;
 
     DPRINTK(DPRTL_TRC,
         (" XenScsiStartReadWrite dev %x-IN srb = %p, ext = %p, irql = %d\n",
@@ -1137,6 +1139,11 @@ XenScsiResetBus(
     XENSCSI_DEVICE_EXTENSION *dev_ext,
     IN ULONG PathId)
 {
+#ifndef DBG
+    UNREFERENCED_PARAMETER(dev_ext);
+#endif
+    UNREFERENCED_PARAMETER(PathId);
+
     XENSCSI_SET_FLAG(dev_ext->xenscsi_locks, (BLK_RBUS_L | BLK_SIO_L));
     xenscsi_next_request(NextRequest, dev_ext);
     RPRINTK(DPRTL_ON, ("XenScsiResetBus - Out\n"));
@@ -1148,7 +1155,6 @@ static BOOLEAN
 XenScsiInterruptPoll(XENSCSI_DEVICE_EXTENSION *dev_ext)
 {
     struct vscsi_front_info *info;
-    uint32_t i;
     BOOLEAN claimed;
 
     DPRINTK(DPRTL_TRC, ("==> XenScsiInterruptPoll: cpu %d irql = %x\n",
@@ -1182,6 +1188,8 @@ XenScsiRestartAdapter(
     IN PDEVICE_OBJECT DeviceObject,
     XENSCSI_DEVICE_EXTENSION *dev_ext)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     XENSCSI_SET_VALUE(conditional_times_to_print_limit, 0);
     DPR_SRB("Rs");
 
@@ -1205,6 +1213,10 @@ XenScsiRestartAdapter(
 static void
 XenScsiRestartDpc(PKDPC dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     XENSCSI_DEVICE_EXTENSION *dev_ext = (XENSCSI_DEVICE_EXTENSION *)context;
 
     if (dev_ext == NULL) {
@@ -1228,8 +1240,6 @@ XenScsiAdapterControl (
     IN PVOID Parameters)
 {
     XENSCSI_LOCK_HANDLE lh = {0};
-    uint32_t i;
-    int j;
     KIRQL irql;
 
     irql = KeGetCurrentIrql();
@@ -1361,9 +1371,10 @@ void
 XenScsiFreeResource(struct vscsi_front_info *info, uint32_t info_idx,
     XENBUS_RELEASE_ACTION action)
 {
+    UNREFERENCED_PARAMETER(info_idx);
+
     XENSCSI_DEVICE_EXTENSION *dev_ext;
     xenbus_release_device_t release_data;
-    uint32_t i;
 
     release_data.action = action;
     release_data.type = vscsi;
@@ -1409,10 +1420,6 @@ XenScsiFreeAllResources(XENSCSI_DEVICE_EXTENSION *dev_ext,
 static void
 XenScsiResume(XENSCSI_DEVICE_EXTENSION *dev_ext, uint32_t suspend_canceled)
 {
-    xenbus_release_device_t release_data;
-    struct vscsi_front_info *info;
-    uint32_t i;
-
     PRINTK(("XenScsiResume IN canceled = %d, dev = %p, irql = %d, cpu = %d\n",
         suspend_canceled, dev_ext, KeGetCurrentIrql(),
         KeGetCurrentProcessorNumber()));
@@ -1438,8 +1445,6 @@ XenScsiResume(XENSCSI_DEVICE_EXTENSION *dev_ext, uint32_t suspend_canceled)
 static uint32_t
 XenScsiSuspend(XENSCSI_DEVICE_EXTENSION *dev_ext, uint32_t reason)
 {
-    uint32_t i;
-
     if (reason == SHUTDOWN_suspend) {
         XENSCSI_SET_FLAG(dev_ext->xenscsi_locks, (BLK_RSU_L | BLK_SIO_L));
 
@@ -1493,8 +1498,6 @@ XenScsiIoctl(XENSCSI_DEVICE_EXTENSION *dev_ext, pv_ioctl_t data)
 void
 XenScsiDebugDump(XENSCSI_DEVICE_EXTENSION *dev_ext)
 {
-    uint32_t i;
-
     PRINTK(("*** XenScsi state dump for disk %d:\n", 0));
     PRINTK(("\tstate %x, connected %x, irql %d, cpu %x\n",
         dev_ext->state, dev_ext->info->connected,

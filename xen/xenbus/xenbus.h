@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -154,6 +154,8 @@ typedef enum _XENBUS_DEVICE_ORIGIN {
     origin_unknown,
 } XENBUS_DEVICE_ORIGIN;
 
+#pragma warning(push)
+#pragma warning(disable:4201) // Disable nameless struct/union warning
 /* child PDOs device extension */
 typedef struct _PDO_DEVICE_EXTENSION {
     COMMON_DEVICE_EXTENSION;
@@ -234,6 +236,7 @@ typedef struct _FDO_DEVICE_EXTENSION {
     BOOLEAN MappedPort;
     uint32_t dbg_print_mask;
 } FDO_DEVICE_EXTENSION, *PFDO_DEVICE_EXTENSION;
+#pragma warning(pop)
 
 struct xs_stored_msg {
     LIST_ENTRY list;

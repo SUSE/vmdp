@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -113,8 +113,6 @@ XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
     HW_INITIALIZATION_DATA hwInitializationData;
     NTSTATUS status;
     uint32_t i;
-    uint8_t vendorId[4]   = {'5', '8', '5', '3'};
-    uint8_t deviceId1[4]  = {'0', '0', '0', '1'};
 
     for (i = 0; i < sizeof(HW_INITIALIZATION_DATA); i++) {
         ((PCHAR)&hwInitializationData)[i] = 0;
@@ -125,7 +123,10 @@ XenDriverEntry(IN PVOID DriverObject, IN PVOID RegistryPath)
 
     /* Set entry points into the miniport. */
     hwInitializationData.HwInitialize = XenBlkInitialize;
+#pragma warning(push)
+#pragma warning(disable:4152)
     hwInitializationData.HwFindAdapter = XenBlkFindAdapter;
+#pragma warning(pop)
     hwInitializationData.HwResetBus = XenBlkResetBus;
     hwInitializationData.HwAdapterControl = XenBlkAdapterControl;
 
@@ -181,7 +182,6 @@ XenBlkInitDevExt(
     xenbus_apis_t api = {0};
     xenbus_shared_info_t *xenbus_shared_info;
 #endif
-    NTSTATUS status = 0;
     PACCESS_RANGE accessRange = &((*(config_info->AccessRanges))[0]);
 
 #ifndef XENBLK_STORPORT
@@ -198,12 +198,15 @@ XenBlkInitDevExt(
         if (irql == PASSIVE_LEVEL) {
             dev_ext->qdepth = PVCTRL_MAX_BLK_QDEPTH;
             dev_ext->op_mode = OP_MODE_NORMAL;
-            sp_registry_read(dev_ext, PVCTRL_QDEPTH_STR, REG_DWORD,
+            sp_registry_read(dev_ext, (PUCHAR)PVCTRL_QDEPTH_STR,
+                             REG_DWORD,
                              &dev_ext->qdepth);
-            sp_registry_read(dev_ext, PVCTRL_DBG_PRINT_MASK_STR, REG_DWORD,
+            sp_registry_read(dev_ext, (PUCHAR)PVCTRL_DBG_PRINT_MASK_STR,
+                             REG_DWORD,
                              &dbg_print_mask);
 #ifdef DBG
-            sp_registry_read(dev_ext, PVCTRL_CDBG_PRINT_LIMIT_STR, REG_DWORD,
+            sp_registry_read(dev_ext, (PUCHAR)PVCTRL_CDBG_PRINT_LIMIT_STR,
+                             REG_DWORD,
                              &conditional_times_to_print_limit);
 #endif
         } else {
@@ -269,12 +272,12 @@ XenBlkFindAdapter(
     IN OUT PPORT_CONFIGURATION_INFORMATION config_info,
     OUT PBOOLEAN Again)
 {
+    UNREFERENCED_PARAMETER(HwContext);
+    UNREFERENCED_PARAMETER(BusInformation);
+    UNREFERENCED_PARAMETER(Again);
+
     XENBLK_DEVICE_EXTENSION *dev_ext = (XENBLK_DEVICE_EXTENSION *)dev_extt;
-    void *nc;
-    NTSTATUS status = 0;
     KIRQL irql;
-    uint32_t flags = 0;
-    uint32_t i;
     uint32_t q_depth;
 
     if (config_info->NumberOfAccessRanges == 0) {
@@ -469,11 +472,6 @@ XenBlkInitialize(XENBLK_DEVICE_EXTENSION *dev_ext)
 static void
 XenBlkInit(XENBLK_DEVICE_EXTENSION *dev_ext)
 {
-    xenbus_pv_port_options_t options;
-    xenbus_release_device_t release_data;
-    uint32_t devices_to_probe;
-    uint32_t i;
-
     RPRINTK(DPRTL_INIT,
             ("XenBlk: XenBlkInit - IN dev %p, sizeof(info) %d, irql = %d\n",
              dev_ext, sizeof(struct blkfront_info), KeGetCurrentIrql(),
@@ -687,7 +685,7 @@ XenBlkInitHiberCrashInfo(XENBLK_DEVICE_EXTENSION *dev_ext,
         /* Clear out any grants that may still be around. */
         RPRINTK(DPRTL_INIT, ("\tdoing shadow completion\n"));
         for (j = 0; j < BLK_RING_SIZE; j++) {
-            info->shadow[j].req.nr_segments = 0;
+            info->shadow[j].u.req.nr_segments = 0;
         }
 
         /*
@@ -711,7 +709,7 @@ static void
 XenBlkInitHiberCrash(XENBLK_DEVICE_EXTENSION *dev_ext)
 {
     struct blkfront_info *info;
-    uint32_t i, j;
+    uint32_t i;
     KIRQL irql;
 
     RPRINTK(DPRTL_INIT, ("XenBlk XenBlkInitHiberCrash: IN.\n"));
@@ -809,7 +807,6 @@ XenBlkStartIo(XENBLK_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 {
     struct blkfront_info *info;
     xenblk_srb_extension *srb_ext;
-    XENBLK_LOCK_HANDLE lh;
     uint32_t i;
 
     /* StorPort already has the lock.  Just need it for scsiport. */
@@ -1027,7 +1024,6 @@ XenBlkStartIo(XENBLK_DEVICE_EXTENSION *dev_ext, PSCSI_REQUEST_BLOCK Srb)
 
         case SCSIOP_INQUIRY: {
             PINQUIRYDATA inquiryData;
-            uint8_t *rbuf;
 
             RPRINTK(DPRTL_ON,
                 ("%x: SCSIOP_INQUIRY DTlen = 0x%x, iqd sisz = 0x%x, srb = %x\n",
@@ -1434,7 +1430,6 @@ XenBlkStartReadWrite(XENBLK_DEVICE_EXTENSION *dev_ext,
 {
     xenblk_srb_extension *srb_ext;
     NTSTATUS status = STATUS_SUCCESS;
-    ULONG len;
     uint32_t va_size;
     uint32_t sa_size;
     uint32_t working_sgl_size;
@@ -1641,6 +1636,11 @@ XenBlkResetBus(
     XENBLK_DEVICE_EXTENSION *dev_ext,
     IN ULONG PathId)
 {
+#ifndef DBG
+    UNREFERENCED_PARAMETER(dev_ext);
+#endif
+    UNREFERENCED_PARAMETER(PathId);
+
     XENBLK_SET_FLAG(dev_ext->xenblk_locks, (BLK_RBUS_L | BLK_SIO_L));
     xenblk_next_request(NextRequest, dev_ext);
     RPRINTK(DPRTL_ON, ("XenBlk: XenBlkResetBus - Out\n"));
@@ -1688,6 +1688,8 @@ XenBlkRestartAdapter(
     IN PDEVICE_OBJECT DeviceObject,
     XENBLK_DEVICE_EXTENSION *dev_ext)
 {
+    UNREFERENCED_PARAMETER(DeviceObject);
+
     XENBLK_SET_VALUE(conditional_times_to_print_limit, 0);
     DPR_SRB("Rs");
 
@@ -1711,6 +1713,10 @@ XenBlkRestartAdapter(
 static void
 XenBlkRestartDpc(PKDPC dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(s1);
+    UNREFERENCED_PARAMETER(s2);
+
     XENBLK_DEVICE_EXTENSION *dev_ext = (XENBLK_DEVICE_EXTENSION  *)context;
     RPRINTK(DPRTL_ON,
             ("XenBlk: XenBlkRestartDpc - IN irql = %d, cpu %x\n",
@@ -1733,7 +1739,6 @@ XenBlkAdapterControl (
 {
     XENBLK_LOCK_HANDLE lh = {0};
     uint32_t i;
-    int j;
     KIRQL irql;
 
     irql = KeGetCurrentIrql();
@@ -1878,7 +1883,6 @@ XenBlkFreeResource(struct blkfront_info *info, uint32_t info_idx,
     XENBUS_RELEASE_ACTION action)
 {
     xenbus_release_device_t release_data;
-    uint32_t i;
 
     release_data.action = action;
     release_data.type = vbd;
@@ -1921,9 +1925,6 @@ XenBlkFreeAllResources(XENBLK_DEVICE_EXTENSION *dev_ext,
 static void
 XenBlkResume(XENBLK_DEVICE_EXTENSION *dev_ext, uint32_t suspend_canceled)
 {
-    xenbus_release_device_t release_data;
-    struct blkfront_info *info;
-
     PRINTK(("XenBlkResume IN canceled = %d, dev = %p, irql = %d, cpu = %d\n",
         suspend_canceled, dev_ext, KeGetCurrentIrql(),
         KeGetCurrentProcessorNumber()));

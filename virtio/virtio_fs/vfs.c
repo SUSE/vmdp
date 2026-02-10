@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2022-2025 SUSE LLC
+ * Copyright 2022-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -77,6 +77,7 @@ DriverEntry (
   IN PDRIVER_OBJECT DriverObject,
   IN PUNICODE_STRING RegistryPath)
 {
+    UNREFERENCED_PARAMETER(RegistryPath);
     printk = virtio_dbg_printk;
     KeInitializeSpinLock(&virtio_print_lock);
 
@@ -187,7 +188,7 @@ vfs_get_startup_params(void)
     return STATUS_SUCCESS;
 }
 
-static NTSTATUS
+NTSTATUS
 vfs_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 {
     NTSTATUS status;
@@ -258,9 +259,10 @@ vfs_add_device(IN PDRIVER_OBJECT DriverObject, IN PDEVICE_OBJECT pdo)
 }
 
 
-static VOID
+VOID
 vfs_unload(IN PDRIVER_OBJECT DriverObject)
 {
+    UNREFERENCED_PARAMETER(DriverObject);
     PRINTK(("%s\n", __func__));
     PAGED_CODE();
 }
@@ -295,21 +297,21 @@ vfs_dispatch_create_close(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
-static NTSTATUS
+NTSTATUS
 vfs_dispatch_create(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     RPRINTK(DPRTL_ON, ("%s\n", __func__));
     return vfs_dispatch_create_close(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 vfs_dispatch_close(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     RPRINTK(DPRTL_ON, ("%s\n", __func__));
     return vfs_dispatch_create_close(DeviceObject, Irp);
 }
 
-static NTSTATUS
+NTSTATUS
 vfs_dispatch_power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     PIO_STACK_LOCATION irpStack;
@@ -336,7 +338,7 @@ vfs_dispatch_power(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     return status;
 }
 
-static NTSTATUS
+NTSTATUS
 vfs_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
@@ -358,7 +360,7 @@ vfs_dispatch_pnp(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 
 }
 
-static NTSTATUS
+NTSTATUS
 vfs_dispatch_system_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 {
     NTSTATUS status;
@@ -386,11 +388,8 @@ vfs_dispatch_device_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
     PIO_STACK_LOCATION stack;
     KLOCK_QUEUE_HANDLE lh;
     virtio_fs_hold_request_t *hold_irp;
-    PVOID buffer;
     KIRQL irql;
     ULONG buf_len;
-    ULONG length;
-    int i;
 
     DPRINTK(DPRTL_IO, ("--> %s\n", __func__));
 

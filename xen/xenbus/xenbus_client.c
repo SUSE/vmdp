@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -285,7 +285,6 @@ xenbus_get_pvctrl_param(void *mem, uint32_t param, uint32_t *value)
 int
 xenbus_switch_state(const char *nodename, enum xenbus_state state)
 {
-    int current_state;
     int err;
 
     if (nodename == NULL) {
@@ -311,11 +310,9 @@ xenbus_switch_state(const char *nodename, enum xenbus_state state)
 uint32_t
 xenbus_get_pv_port_options(xenbus_pv_port_options_t *options)
 {
-    NTSTATUS status;
     uint32_t devices_to_control;
     uint32_t devices_to_unplug;
     uint32_t shutdown_reason;
-    uint32_t val;
 
     /*
      * Need to use the current value of use_pv_drivers since
@@ -459,6 +456,10 @@ xenbus_control_pv_devices(void *in_port, uint32_t *pv_devices)
 void
 xenbus_invalidate_relations(PKDPC dpc, PVOID dcontext, PVOID sa1, PVOID sa2)
 {
+    UNREFERENCED_PARAMETER(dpc);
+    UNREFERENCED_PARAMETER(sa1);
+    UNREFERENCED_PARAMETER(sa2);
+
     RPRINTK(DPRTL_ON, ("xenbus_invalidate_relations.\n"));
     if (dcontext) {
         IoInvalidateDeviceRelations((PDEVICE_OBJECT)dcontext, BusRelations);
@@ -488,6 +489,8 @@ xenbus_register_xenblk(void *controller,
     uint32_t op_mode,
     void ***info)
 {
+    UNREFERENCED_PARAMETER(controller);
+
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
     PLIST_ENTRY entry;
@@ -566,6 +569,8 @@ xenbus_register_vscsi(void *controller,
     uint32_t op_mode,
     void **info)
 {
+    UNREFERENCED_PARAMETER(controller);
+
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
     PLIST_ENTRY entry;
@@ -621,11 +626,11 @@ xenbus_claim_device(void *dev, void *controller,
     uint32_t (*reserved)(void *context, pv_ioctl_t data),
     uint32_t (*ioctl)(void *context, pv_ioctl_t data))
 {
+    UNREFERENCED_PARAMETER(reserved);
+
     PFDO_DEVICE_EXTENSION fdx;
     PPDO_DEVICE_EXTENSION pdx;
     PLIST_ENTRY entry;
-    NTSTATUS status;
-    uint32_t can_claim;
 
     RPRINTK(DPRTL_ON, ("xenbus_claim_device: %p.\n", gfdo));
 
@@ -718,7 +723,6 @@ xenbus_release_device(void *dev, void *controller,
     PPDO_DEVICE_EXTENSION pdx;
     PPDO_DEVICE_EXTENSION pdx_hba;
     PLIST_ENTRY entry, pdx_entry;
-    NTSTATUS status;
     uint32_t active_vbds;
     uint32_t found_vbds;
     uint32_t vbds_remaining;
@@ -898,7 +902,6 @@ xenbus_printk(char *_fmt, ...)
 {
     va_list ap;
     char buf[256];
-    char *c;
 
     va_start(ap, _fmt);
     RtlStringCbVPrintfA(buf, sizeof(buf), _fmt, ap);
@@ -921,5 +924,5 @@ xenbus_console_io(char *_fmt, ...)
             return;
         }
     }
-    HYPERVISOR_console_io(0, strlen(buf), buf);
+    HYPERVISOR_console_io(0, (int)strlen(buf), buf);
 }

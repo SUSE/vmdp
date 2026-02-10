@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -166,7 +166,7 @@ gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
     shared[ref].domid = domid;
     KeMemoryBarrier();
     InterlockedExchange16(
-      &shared[ref].flags,
+      (SHORT *)&shared[ref].flags,
       GTF_permit_access | (readonly ? GTF_readonly : 0));
 
     return ref;
@@ -180,7 +180,7 @@ gnttab_grant_foreign_access_ref(grant_ref_t ref, domid_t domid,
     shared[ref].domid = domid;
     KeMemoryBarrier();
     InterlockedExchange16(
-      &shared[ref].flags,
+      (SHORT *)&shared[ref].flags,
       GTF_permit_access | (readonly ? GTF_readonly : 0));
 }
 
@@ -205,6 +205,8 @@ gnttab_query_foreign_access_flags(grant_ref_t ref)
 int
 gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
 {
+    UNREFERENCED_PARAMETER(readonly);
+
     uint32_t cnt = 0;
     u16 flags, nflags;
 
@@ -224,7 +226,8 @@ gnttab_end_foreign_access_ref(grant_ref_t ref, int readonly)
                      ref, flags, nflags));
         }
     } while ((nflags =
-        InterlockedCompareExchange16(&shared[ref].flags, 0, flags)) != flags);
+        InterlockedCompareExchange16((SHORT *)&shared[ref].flags, 0, flags))
+             != flags);
 
     return 1;
 }
@@ -383,7 +386,7 @@ gnttab_resume(void)
 
     DPRINTK(DPRTL_ON, ("XENBUS: gnttab_resume - IN\n"));
 
-    if (alloc_xen_mmio(PAGE_SIZE * gNR_GRANT_FRAMES, &addr.QuadPart)
+    if (alloc_xen_mmio(PAGE_SIZE * gNR_GRANT_FRAMES, (uint64_t *)&addr.QuadPart)
         != STATUS_SUCCESS) {
         return STATUS_INSUFFICIENT_RESOURCES;
     }

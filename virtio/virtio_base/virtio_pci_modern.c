@@ -7,7 +7,7 @@
  *  Rusty Russell <rusty@rustcorp.com.au>
  *  Michael S. Tsirkin <mst@redhat.com>
  *
- * Copyright 2017-2021 SUSE LLC
+ * Copyright 2017-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -468,13 +468,9 @@ virtio_dev_modern_vq_setup(virtio_device_t *vdev,
                            uint16_t num,
                            uint16_t msi_vector)
 {
-    PHYSICAL_ADDRESS pa;
-    void *vq_addr;
     NTSTATUS status;
     unsigned long ring_size;
     unsigned long queue_size;
-    uint16_t off;
-    uint16_t i;
     BOOLEAN alloced_mem;
 
     RPRINTK(DPRTL_PCI,

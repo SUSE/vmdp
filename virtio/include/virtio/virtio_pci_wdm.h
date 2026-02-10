@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2020 SUSE LLC
+ * Copyright 2020-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,6 +36,8 @@ typedef struct _wdm_device_int_info {
     UCHAR               shared;
     BOOLEAN             message_signaled;
 } wdm_device_int_info_t;
+
+struct _FDO_DEVICE_EXTENSION;
 
 void wdm_unmap_io_space(struct _FDO_DEVICE_EXTENSION *fdx);
 NTSTATUS wdm_start_device(IN PDEVICE_OBJECT fdo,

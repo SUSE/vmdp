@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -84,9 +84,9 @@ static NTSTATUS
 xenbus_set_io_resources(uint64_t mmio, uint8_t *mem, uint32_t mmio_len,
     uint32_t vector, uint32_t reason)
 {
-    PHYSICAL_ADDRESS phys_mmio;
+    UNREFERENCED_PARAMETER(vector);
+
     FDO_DEVICE_EXTENSION *fdx;
-    NTSTATUS status;
 
     RPRINTK(DPRTL_ON,
             ("xenbus_set_io_resources: mmio %llx mem %p mmio_len %x\n",
@@ -203,7 +203,8 @@ xen_info_init(uint32_t reason)
              sizeof(shared_info_t)));
 
     RPRINTK(DPRTL_ON, ("xen_info_init: calling alloc_xen_mmio.\n"));
-    if (alloc_xen_mmio(PAGE_SIZE, &addr.QuadPart) != STATUS_SUCCESS) {
+    if (alloc_xen_mmio(PAGE_SIZE,
+                       (uint64_t *)&addr.QuadPart) != STATUS_SUCCESS) {
         return STATUS_UNSUCCESSFUL;
     }
 

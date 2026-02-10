@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2019-2020 SUSE LLC
+ * Copyright 2019-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -147,8 +147,7 @@ NDIS_STATUS
 vnif_rss_set_oid_gen_receive_hash(struct _VNIF_ADAPTER *adapter,
                                   NDIS_RECEIVE_HASH_PARAMETERS *rss_params,
                                   ULONG rss_params_len,
-                                  PULONG bytes_read,
-                                  PULONG bytes_needed);
+                                  PULONG bytes_read);
 UINT
 vnif_rss_get_rcv_qidx_for_cur_processor(struct _VNIF_ADAPTER *adapter);
 #define vnif_rss_get_rcv_qidx_for_cur_cpu(_adapter_)                        \

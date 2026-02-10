@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright 2006-2012 Novell, Inc.
- * Copyright 2012-2020 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -63,7 +63,7 @@ mask_evtchn(int port)
     shared_info_t *s = shared_info_area;
 
     masked_evtchns |= (1 << port);
-    InterlockedBitTestAndSetCompat(&s->evtchn_mask[0], port);
+    InterlockedBitTestAndSetCompat((xen_long_t *)&s->evtchn_mask[0], port);
 }
 
 void
@@ -139,7 +139,6 @@ register_dpc_to_evtchn(ULONG evtchn,
 {
     PKDPC dpc;
     XEN_LOCK_HANDLE lh;
-    char *buf;
     int channel;
 
     RPRINTK(DPRTL_ON, ("register_dpc_to_evtchn: evtchn %x\n", evtchn));
@@ -251,6 +250,8 @@ notify_remote_via_irq(int irq)
 void
 unbind_evtchn_from_irq(unsigned int evtchn)
 {
+    UNREFERENCED_PARAMETER(evtchn);
+
     return;
 }
 
@@ -272,6 +273,8 @@ uint32_t cpu_ints_claimed;
 
 BOOLEAN EvtchnISR(void *context)
 {
+    UNREFERENCED_PARAMETER(context);
+
     shared_info_t *s;
     vcpu_info_t *v;
     evtchns_t *evtchn;
@@ -291,7 +294,7 @@ BOOLEAN EvtchnISR(void *context)
     v->evtchn_upcall_pending = 0;
     KeMemoryBarrier();
 
-    l1 = InterlockedExchangeCompat(&v->evtchn_pending_sel, 0);
+    l1 = InterlockedExchangeCompat((xen_long_t *)&v->evtchn_pending_sel, 0);
 #ifdef DBG
     if (evt_print) {
         DPRINTK(DPRTL_EVTCHN,
@@ -300,13 +303,14 @@ BOOLEAN EvtchnISR(void *context)
     }
 #endif
     while (l1 != 0) {
-        l1i = XbBitScanForwardCompat(&l1);
+        l1i = XbBitScanForwardCompat((xen_long_t *)&l1);
         l1 &= ~(1 << l1i);
         while ((l2 = s->evtchn_pending[l1i] & ~s->evtchn_mask[l1i])) {
             port = (l1i * sizeof(xen_ulong_t) * 8)
-                + XbBitScanForwardCompat(&l2);
+                + XbBitScanForwardCompat((xen_long_t *)&l2);
             DPRINTK(DPRTL_EVTCHN, (", port %x", port));
-            InterlockedBitTestAndResetCompat(&s->evtchn_pending[0], port);
+            InterlockedBitTestAndResetCompat((xen_long_t *)&s->evtchn_pending[0],
+                                             port);
             if (port < MAX_EVTCHN_PORTS) {
                 int_count[port]++;
             }
@@ -359,6 +363,8 @@ BOOLEAN EvtchnISR(void *context)
 BOOLEAN
 XenbusOnInterrupt(IN PKINTERRUPT InterruptObject, IN PVOID fdx)
 {
+    UNREFERENCED_PARAMETER(InterruptObject);
+
     DPRINTK(DPRTL_EVTCHN, ("XenbusOnInterrupt.\n"));
     INC_CPU_INTS();
     return EvtchnISR((PFDO_DEVICE_EXTENSION)fdx);

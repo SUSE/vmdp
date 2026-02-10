@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2022 SUSE LLC
+ * Copyright 2022-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -106,6 +106,7 @@ vfs_int_dpc_work(FDO_DEVICE_EXTENSION *fdx, ULONG qidx)
 void
 vfs_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
 {
+    UNREFERENCED_PARAMETER(dpc);
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     ULONG message_id_start = (ULONG)((ULONG_PTR)s1);
     ULONG message_id_end = (ULONG)((ULONG_PTR)s2);
@@ -119,6 +120,7 @@ vfs_int_dpc(PKDPC dpc, void *context, void *s1, void *s2)
 BOOLEAN
 wdm_device_isr(IN PKINTERRUPT InterruptObject, IN PVOID context)
 {
+    UNREFERENCED_PARAMETER(InterruptObject);
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     ULONG cc;
     BOOLEAN int_serviced;
@@ -150,6 +152,7 @@ wdm_device_interrupt_message_service(
     PVOID context,
     ULONG  MessageId)
 {
+    UNREFERENCED_PARAMETER(Interrupt);
     PFDO_DEVICE_EXTENSION fdx = (PFDO_DEVICE_EXTENSION)context;
     ULONG cc;
     BOOLEAN int_serviced;

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008-2017 Red Hat, Inc.
  * Copyright 2011-2012 Novell, Inc.
- * Copyright 2012-2023 SUSE LLC
+ * Copyright 2012-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,7 +31,7 @@
 #define _VIRTIO_BLK_H_
 
 #include <ntddk.h>
-#include <ntdddisk.h>
+//#include <ntdddisk.h>
 #include <limits.h>
 #ifdef IS_STORPORT
 #include <storport.h>
@@ -151,8 +151,8 @@
 #define BLK_ACTR_L              0x2000
 #define BLK_RSU_L               0x4000
 
-#define VBIF_SET_FLAG(_F, _V)       InterlockedOr(&(_F), (_V))
-#define VBIF_CLEAR_FLAG(_F, _V)     InterlockedAnd(&(_F), ~(_V))
+#define VBIF_SET_FLAG(_F, _V)       InterlockedOr((LONG *)&(_F), (_V))
+#define VBIF_CLEAR_FLAG(_F, _V)     InterlockedAnd((LONG *)&(_F), ~(_V))
 #define VBIF_ZERO_VALUE(_V)         _V = 0
 #define VBIF_SET_VALUE(_V, _S)      _V = _S
 #define VBIF_INC(_V)                InterlockedIncrement(&(_V))

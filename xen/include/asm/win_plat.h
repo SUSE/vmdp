@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2015-2020 SUSE LLC
+ * Copyright 2015-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -138,7 +138,7 @@ XbBitScanForward(IN LONG volatile *Base)
 {
     LONG index;
 
-    if (_BitScanForward(&index, *Base) == 0) {
+    if (_BitScanForward((DWORD *)&index, *Base) == 0) {
         index = 0;
     }
     return index;
@@ -150,7 +150,7 @@ XbBitScanForward64(IN INT64 volatile *Base)
 {
     LONG index;
 
-    if (_BitScanForward64(&index, *Base) == 0) {
+    if (_BitScanForward64((DWORD *)&index, *Base) == 0) {
         index = 0;
     }
     return index;

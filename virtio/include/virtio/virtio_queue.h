@@ -11,7 +11,7 @@
  *
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2021 SUSE LLC
+ * Copyright 2021-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,6 +41,8 @@ typedef enum _virtio_queue_type {
     split_vq,
     packed_vq,
 } virtio_queue_type;
+
+struct vring_desc;
 
 typedef struct virtio_queue_s {
     struct virtio_device_s *vdev;

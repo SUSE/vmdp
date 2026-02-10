@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -254,7 +254,6 @@ PciDrvDispatchSetPowerState(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 {
     PIO_STACK_LOCATION stack;
     PFDO_DEVICE_EXTENSION fdx;
-    PPDO_DEVICE_EXTENSION pdx;
     POWER_STATE powerState;
     POWER_STATE_TYPE powerType;
 
