@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright 2014-2020 SUSE LLC
+ * Copyright 2014-2026 SUSE LLC
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -83,7 +83,7 @@ BOOL co_init(void)
         return FALSE;
     }
 
-    status = g_locator->ConnectServer(L"root\\cimv2",
+    status = g_locator->ConnectServer((BSTR)L"root\\cimv2",
                                       NULL,
                                       NULL,
                                       0L,
@@ -124,8 +124,8 @@ mem_update(virtio_bln_stat_t *mstat)
     HRESULT status  = S_OK;
 
     status = g_server->ExecQuery(
-        L"WQL",
-        L"SELECT * FROM Win32_PerfFormattedData_PerfOS_Memory",
+        (BSTR)L"WQL",
+        (BSTR)L"SELECT * FROM Win32_PerfFormattedData_PerfOS_Memory",
         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
         NULL,
         &enumerator);
@@ -151,7 +151,7 @@ mem_update(virtio_bln_stat_t *mstat)
                              NULL);
         if (FAILED(status) || (var_val.vt == VT_NULL)) {
             printf("Cannot get PagesInputPerSec");
-            var_val.vt =  -1;
+            var_val.vt =  (VARTYPE)-1;
         }
         mstat[VIRTIO_BALLOON_S_SWAP_IN].tag = VIRTIO_BALLOON_S_SWAP_IN;
         mstat[VIRTIO_BALLOON_S_SWAP_IN].val = var_val.ullVal;
@@ -163,7 +163,7 @@ mem_update(virtio_bln_stat_t *mstat)
                              NULL);
         if (FAILED(status) || (var_val.vt == VT_NULL)) {
             printf("Cannot get PagesOutputPerSec");
-            var_val.vt =  -1;
+            var_val.vt =  (VARTYPE)-1;
         }
         mstat[VIRTIO_BALLOON_S_SWAP_OUT].tag = VIRTIO_BALLOON_S_SWAP_OUT;
         mstat[VIRTIO_BALLOON_S_SWAP_OUT].val = var_val.ullVal;
@@ -176,7 +176,7 @@ mem_update(virtio_bln_stat_t *mstat)
 
         if (FAILED(status) || (var_val.vt == VT_NULL)) {
             printf("Cannot get PageReadsPerSec");
-            var_val.vt =  -1;
+            var_val.vt =  (VARTYPE)-1;
         }
         mstat[VIRTIO_BALLOON_S_MAJFLT].tag = VIRTIO_BALLOON_S_MAJFLT;
         mstat[VIRTIO_BALLOON_S_MAJFLT].val = var_val.ullVal;
@@ -189,7 +189,7 @@ mem_update(virtio_bln_stat_t *mstat)
 
         if (FAILED(status) || (var_val.vt == VT_NULL)) {
             printf("Cannot get PageFaultsPerSec");
-            var_val.vt =  -1;
+            var_val.vt =  (VARTYPE)-1;
         }
         mstat[VIRTIO_BALLOON_S_MINFLT].tag = VIRTIO_BALLOON_S_MINFLT;
         mstat[VIRTIO_BALLOON_S_MINFLT].val = var_val.ullVal;
@@ -202,10 +202,10 @@ mem_update(virtio_bln_stat_t *mstat)
             mstat[VIRTIO_BALLOON_S_MEMTOT].val = statex.ullTotalPhys;
         } else {
             mstat[VIRTIO_BALLOON_S_MEMFREE].tag = VIRTIO_BALLOON_S_MEMFREE;
-            mstat[VIRTIO_BALLOON_S_MEMFREE].val = -1;
+            mstat[VIRTIO_BALLOON_S_MEMFREE].val = (uint64_t)-1;
 
             mstat[VIRTIO_BALLOON_S_MEMTOT].tag = VIRTIO_BALLOON_S_MEMTOT;
-            mstat[VIRTIO_BALLOON_S_MEMTOT].val = -1;
+            mstat[VIRTIO_BALLOON_S_MEMTOT].val = (uint64_t)-1;
         }
         memory->Release();
     }

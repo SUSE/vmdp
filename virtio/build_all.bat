@@ -2,7 +2,7 @@
 REM
 REM SPDX-License-Identifier: BSD-2-Clause
 REM
-REM Copyright 2020-2023 SUSE LLC
+REM Copyright 2020-2026 SUSE LLC
 REM
 REM Redistribution and use in source and binary forms, with or without
 REM modification, are permitted provided that the following conditions
@@ -146,7 +146,8 @@ for %%w in (8 8.1 10) do (
         )
     )
 )
-echo Built using VS20%vcxp%
+echo Finished building with VS20%vcxp%
+echo[
 
 :build_vs_22
 set path=%start_path%
@@ -160,9 +161,9 @@ set package_to_build=%build_dir%
 for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
 
 echo.
-echo Build using VS20%vcxp%
 
 set vcxp=22
+echo Build using VS20%vcxp%
 call %setvcxp_bat% %vcxp%
 
 for %%w in (11) do (
@@ -217,7 +218,7 @@ echo.
 
 :end
 echo[
-echo Built using VS20%vcxp%
+echo Finished building with VS20%vcxp%
 cd %start_dir%
 call unsetddk.bat
 call unsetmsb.bat

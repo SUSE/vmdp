@@ -1,8 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <Import Project="..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props')" />
   <Import Project="..\packages\Microsoft.Windows.WDK.x64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.x64.props" Condition="Exists('..\packages\Microsoft.Windows.WDK.x64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.x64.props')" />
-  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
-  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Win11Debug|x64">
       <Configuration>Win11Debug</Configuration>
@@ -13,117 +15,123 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <PropertyGroup Label="PropertySheets">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A32B6EA5-CEE8-8E8A-9273-B8D29FFE9C8A}</ProjectGuid>
+    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration>Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <RootNamespace>fwcfg</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
     <DriverType>WDM</DriverType>
-    <TARGETNAME>vcrash_notify</TARGETNAME>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-    <Platform Condition="'$(Platform)' == ''">Win32</Platform>
-  </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Label="PropertySheets">
-    <ConversionToolVersion>1.0</ConversionToolVersion>
-    <BUILD_ALT_DIR>$(Configuration.Replace(' ',''))</BUILD_ALT_DIR>
-    <IntDir Condition="'$(Platform)'!='Win32'">$(BUILD_ALT_DIR)\$(Platform)\</IntDir>
-    <OutDir>$(IntDir)</OutDir>
-  </PropertyGroup>
-  <ImportGroup Label="PreConfiguration">
-    <Import Project="$(VCTargetsPath)\WDKConversion\PreConfiguration.props" />
-  </ImportGroup>
-  <PropertyGroup Label="Globals">
-    <ProjectGuid>{8EDCB02B-1A8F-46BE-9521-865D8B5F6BD2}</ProjectGuid>
-    <RootNamespace>$(MSBuildProjectName)</RootNamespace>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'" Label="Configuration">
-    <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>True</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
-    <UseDebugLibraries>False</UseDebugLibraries>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
   </PropertyGroup>
-  <!-- Needed by any VcxProj -->
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets')" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <!-- The WrappedTaskItems label is used by the conversion tool to identify the location where items
-        associated with wrapped tasks will reside.-->
-  <ItemGroup Label="WrappedTaskItems">
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+    <ClCompile>
+      <PreprocessorDefinitions>FWCFG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS_2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\include;..\include\virtio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <WarningLevel>Level4</WarningLevel>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+    <ClCompile>
+      <PreprocessorDefinitions>FWCFG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS_2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\include;..\include\virtio;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <WarningLevel>Level4</WarningLevel>
+      <LanguageStandard_C>Default</LanguageStandard_C>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\virtio_base\virtio_utils.c" />
+    <ClCompile Include="fwcfg.c" />
+    <ClCompile Include="fwcfg_helper.c" />
+    <ClCompile Include="fwcfg_pnp.c" />
+    <ClCompile Include="fwcfg_power.c" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="fwcfg.h" />
     <ClInclude Include="fwcfg_helper.h" />
     <ClInclude Include="fwcfg_power.h" />
     <ClInclude Include="fwcfg_ver.h" />
   </ItemGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'">
-    <ClCompile>
-      <PreprocessorDefinitions>FWCFG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <SupportJustMyCode>false</SupportJustMyCode>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <CETCompat>true</CETCompat>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'">
-    <ClCompile>
-      <PreprocessorDefinitions>FWCFG;TARGET_OS_GTE_WinLH;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <ResourceCompile>
-      <PreprocessorDefinitions>TARGET_OS_Win10_2004;ARCH_x86_64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Link>
-      <CETCompat>true</CETCompat>
-    </Link>
-  </ItemDefinitionGroup>
   <ItemGroup>
-    <!-- We only add items (e.g. form ClSourceFiles) that do not already exist (e.g in the ClCompile list), this avoids duplication -->
-    <ClCompile Include="@(ClSourceFiles)" Exclude="@(ClCompile)" />
-    <ResourceCompile Include="@(RcSourceFiles)" Exclude="@(ResourceCompile)" />
-    <Midl Include="@(IdlSourceFiles)" Exclude="@(Midl)" />
-    <MessageCompile Include="@(McSourceFiles)" Exclude="@(MessageCompile)" />
-    <MASM Include="@(AsmSourceFiles)" Exclude="@(MASM)" />
-    <GenerateBmf Include="@(MofSourceFiles)" Exclude="@(GenerateBmf)" />
-  </ItemGroup>
-  <!-- Set default environment variables, e.g. for stampinf -->
-  <ItemGroup>
-    <BuildMacro Include="SDK_INC_PATH">
-      <Value>$(KIT_SHARED_INC_PATH)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
+    <ResourceCompile Include="fwcfg.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Inf Exclude="@(Inf)" Include="$(DDK_INF_FILES)" />
-    <FilesToPackage Include="$(TargetPath)" Condition="'$(ConfigurationType)'=='Driver' or '$(ConfigurationType)'=='DynamicLibrary'" />
-    <FilesToPackage Include="$(DDK_PACKAGE_FILES)" />
-    <FilesToPackage Include="@(Inf->'%(CopyOutput)')" Condition="'@(Inf)'!=''" />
-  </ItemGroup>
-  <!-- Necessary to pick up proper files from local directory when in the IDE-->
-  <ItemGroup>
-    <None Exclude="@(None)" Include="*.txt;*.htm;*.html" />
-    <None Exclude="@(None)" Include="*.ico;*.cur;*.bmp;*.dlg;*.rct;*.gif;*.jpg;*.jpeg;*.wav;*.jpe;*.tiff;*.tif;*.png;*.rc2" />
-    <None Exclude="@(None)" Include="*.def;*.bat;*.hpj;*.asmx" />
     <None Include="packages.config" />
   </ItemGroup>
-  <!-- /Necessary to pick up proper files from local directory when in the IDE-->
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets')" />
+  </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.6584\build\native\Microsoft.Windows.SDK.cpp.x64.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.WDK.x64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.WDK.x64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.x64.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.x64.props'))" />
   </Target>
 </Project>

@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" />
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <Import Project="..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props" Condition="Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props')" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Win11Debug|ARM64">
+      <Configuration>Win11Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win11Release|ARM64">
+      <Configuration>Win11Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{36360149-20C0-E23C-AB06-1727F6E79251}</ProjectGuid>
+    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration>Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <RootNamespace>virtio_scsi</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\include;..\include\virtio;..\virtio_sp_common;..\virtio_scsi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;$(DDK_LIB_PATH)storport.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>..\include;..\include\virtio;..\virtio_sp_common;..\virtio_scsi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>USE_STORPORT_DPC;IS_STORPORT;CAN_USE_MSI;VIRTIO_SCSI_DRIVER;WIN10_TARGET_OS=2004;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;$(DDK_LIB_PATH)storport.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\virtio_base\virtio_pci.c" />
+    <ClCompile Include="..\virtio_base\virtio_pci_legacy.c" />
+    <ClCompile Include="..\virtio_base\virtio_pci_modern.c" />
+    <ClCompile Include="..\virtio_base\virtio_ring.c" />
+    <ClCompile Include="..\virtio_base\virtio_ring_packed.c" />
+    <ClCompile Include="..\virtio_base\virtio_utils.c" />
+    <ClCompile Include="..\virtio_blk\sp_io_control.c" />
+    <ClCompile Include="..\virtio_blk\storport_reg.c" />
+    <ClCompile Include="..\virtio_sp_common\virtio_sp_common.c" />
+    <ClCompile Include="virtio_scsi.c" />
+    <ClCompile Include="virtio_scsi_entry.c" />
+    <ClCompile Include="virtio_scsi_front.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="virtio_scsi.h" />
+    <ClInclude Include="virtio_scsix.h" />
+    <ClInclude Include="virtio_scsi_ver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="virtio_scsi.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.WDK.ARM64.10.0.26100.6584\build\native\Microsoft.Windows.WDK.arm64.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.arm64.10.0.26100.7175\build\native\Microsoft.Windows.SDK.cpp.arm64.props'))" />
+  </Target>
+</Project>

@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtio_blk", "virtio_blk\vi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtio_net", "virtio_net\virtio_net.vcxproj", "{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vtioscsi", "virtio_scsi\vtioscsi.vcxproj", "{E2784152-BEF8-4C8A-897E-A483A1E9C3B1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtio_scsi", "virtio_scsi\virtio_scsi.vcxproj", "{E2784152-BEF8-4C8A-897E-A483A1E9C3B1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtio_serial", "virtio_serial\virtio_serial.vcxproj", "{06FDE9A2-685E-4FE5-8C15-A467131CC014}"
 EndProject
@@ -183,9 +183,11 @@ Global
 		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Release|x86.ActiveCfg = Release|Win32
 		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Release|x86.Build.0 = Release|Win32
 		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Release|x86.Deploy.0 = Release|Win32
-		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Debug|x64.ActiveCfg = Win10Debug|ARM64
-		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Debug|x86.ActiveCfg = Win10Debug|ARM64
-		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Release|x64.ActiveCfg = Win10Release|ARM64
+		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Debug|x64.ActiveCfg = Win10Debug|x64
+		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Debug|x86.ActiveCfg = Win10Debug|Win32
+		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Release|x64.ActiveCfg = Win10Release|x64
+		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Release|x64.Build.0 = Win10Release|x64
+		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Release|x64.Deploy.0 = Win10Release|x64
 		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win10Release|x86.ActiveCfg = Win10Release|ARM64
 		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win7Debug|x64.ActiveCfg = Debug|x64
 		{1FCBA6C2-B1D7-4F5C-A93B-FAAB37EC62FE}.Win7Debug|x64.Build.0 = Debug|x64

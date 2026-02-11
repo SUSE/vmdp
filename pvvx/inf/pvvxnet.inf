@@ -43,108 +43,31 @@ pvvxnet.CopyFiles = DRIVER_DIRID
 pvvxnet.sys = 1,,
 
 [Manufacturer]
-%SUSE% = pvvxnet,NTx86.5,NTx86.6,NTx86.6.1,NTamd64.5,NTamd64.6,NTamd64.6.1
+%SUSE% = pvvxnet,NT$ARCH$
 
-[pvvxnet.NTx86.5]
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1000
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1041
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, XEN\TYPE_vif
+[pvvxnet.NT$ARCH$]
+%pvvxnet.DeviceDesc%=pvvxnet.Ndi, PCI\VEN_1AF4&DEV_1000
+%pvvxnet.DeviceDesc%=pvvxnet.Ndi, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
+%pvvxnet.DeviceDesc%=pvvxnet.Ndi, PCI\VEN_1AF4&DEV_1041
+%pvvxnet.DeviceDesc%=pvvxnet.Ndi, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
 
-[pvvxnet.NTx86.6]
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1000
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1041
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, XEN\TYPE_vif
+%pvvxnet.DeviceDesc%=pvvxnet.Ndi, XEN\TYPE_vif
 
-[pvvxnet.NTx86.6.1]
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1000
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1041
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, XEN\TYPE_vif
-
-[pvvxnet.NTamd64.5]
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1000
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1041
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.5, XEN\TYPE_vif
-
-[pvvxnet.NTamd64.6]
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1000
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1041
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6, XEN\TYPE_vif
-
-[pvvxnet.NTamd64.6.1]
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1000
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1041
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, PCI\VEN_1AF4&DEV_1041&SUBSYS_11001AF4&REV_01
-%pvvxnet.DeviceDesc%=pvvxnet.Ndi.6.1, XEN\TYPE_vif
-
-[pvvxnet.Ndi.5]
-;Characteristics = 0x84 ; NCF_PHYSICAL  | NCF_HAS_UI
-;BusType    = 5 ; PCI
+[pvvxnet.Ndi]
 Characteristics = 0x81 ; NCF_HAS_UI 0x80, NCF_VIRTUAL 1
-AddReg = pvvxnet.Reg, pvvxnet_params.reg, pvvxnet_params.reg5
+AddReg = pvvxnet.Reg, pvvxnet_params.reg
 CopyFiles = pvvxnet.CopyFiles
 *IfType = 6
 *MediaType = 0
 *PhysicalMediaType = 0
 
-[pvvxnet.Ndi.6]
-;Characteristics = 0x84 ; NCF_PHYSICAL  | NCF_HAS_UI
-;BusType    = 5 ; PCI
-Characteristics = 0x81 ; NCF_HAS_UI 0x80, NCF_VIRTUAL 1
-AddReg = pvvxnet.Reg, pvvxnet_params.reg, pvvxnet_params.reg6
-CopyFiles = pvvxnet.CopyFiles
-*IfType = 6
-*MediaType = 0
-*PhysicalMediaType = 0
-
-[pvvxnet.Ndi.6.1]
-;Characteristics = 0x84 ; NCF_PHYSICAL  | NCF_HAS_UI
-;BusType    = 5 ; PCI
-Characteristics = 0x81 ; NCF_HAS_UI 0x80, NCF_VIRTUAL 1
-AddReg = pvvxnet.Reg, pvvxnet_params.reg, pvvxnet_params.reg6, pvvxnet_params.reg61
-CopyFiles = pvvxnet.CopyFiles
-*IfType = 6
-*MediaType = 0
-*PhysicalMediaType = 0
-
-[pvvxnet.Ndi.5.Services]
-AddService = pvvxnet, 2, pvvxnet.Service, pvvxnet.EventLog
-
-[pvvxnet.Ndi.6.Services]
-AddService = pvvxnet, 2, pvvxnet.Service, pvvxnet.EventLog
-
-[pvvxnet.Ndi.6.1.Services]
+[pvvxnet.Ndi.Services]
 AddService = pvvxnet, 2, pvvxnet.Service, pvvxnet.EventLog
 
 [pvvxnet.Reg]
 HKR, Ndi, Service, 0, "pvvxnet"
 HKR, Ndi\Interfaces, UpperRange, 0, "ndis5"
 HKR, Ndi\Interfaces, LowerRange, 0, "ethernet"
-
-[pvvxnet.Ndi.6.hw]
-AddReg = pvvxnet.Ndi.6.EnableMSI
-
-[pvvxnet.Ndi.6.1.hw]
-AddReg = pvvxnet.Ndi.6.EnableMSI
-
-[pvvxnet.Ndi.6.EnableMSI]
-HKR, "Interrupt Management",, 0x00000010
-HKR, "Interrupt Management\Affinity Policy",, 0x00000010
-HKR, "Interrupt Management\Affinity Policy", DevicePolicy, 0x00010001, 0
-HKR, "Interrupt Management\Affinity Policy", DevicePriority, 0x00010001, 2
-HKR, "Interrupt Management\MessageSignaledInterruptProperties",, 0x00000010
-HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00010001, 1
-HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 2048
 
 [pvvxnet_params.reg]
 HKR, Ndi\params\NumRcb,          ParamDesc, 0, "%ReceiveBuffers%"
@@ -238,22 +161,7 @@ HKR, Ndi\params\TxSgCnt,        step,      0, "1"
 HKR, Ndi\params\TxSgCnt,        base,      0, "10"
 HKR, Ndi\params\TxSgCnt,        type,      0, "int"
 
-[pvvxnet_params.reg5]
-HKR, Ndi\params\LsoV1IPv4,         ParamDesc,  0, %LSO%
-HKR, Ndi\params\LsoV1IPv4,         default,    0, "0"
-HKR, Ndi\params\LsoV1IPv4,         type,       0, "enum"
-HKR, Ndi\params\LsoV1IPv4\enum,    "0",        0, %Disable%
-HKR, Ndi\params\LsoV1IPv4\enum,    "1",        0, %Enable%
-
-HKR, Ndi\params\LsoDataSize,       ParamDesc,  0, %LSO_DATA_SIZE%
-HKR, Ndi\params\LsoDataSize,       default,    0, "31744"
-HKR, Ndi\params\LsoDataSize,       type,       0, "enum"
-HKR, Ndi\params\LsoDataSize\enum,  "8192",     0, 8192
-HKR, Ndi\params\LsoDataSize\enum,  "16384",    0, 16384
-HKR, Ndi\params\LsoDataSize\enum,  "31744",    0, 31744
-HKR, Ndi\params\LsoDataSize\enum,  "61440",    0, 61440
-
-[pvvxnet_params.reg6]
+;[pvvxnet_params.reg6]
 HKR, Ndi\params\TCPChecksumOffloadIPv6,       ParamDesc,  0, %TCPIPv6Desc%
 HKR, Ndi\params\TCPChecksumOffloadIPv6,       default,    0, "0"
 HKR, Ndi\params\TCPChecksumOffloadIPv6,       type,       0, "enum"
@@ -319,12 +227,11 @@ HKR, Ndi\params\PMC\enum,          "0",       0, %Disable%
 HKR, Ndi\params\PMC\enum,          "1",       0, %W2K12%
 
 HKR, Ndi\params\SplitEvtchn,       ParamDesc, 0, %SPLIT_EVTCHN%
-HKR, Ndi\params\SplitEvtchn,       default,   0, "0"
+HKR, Ndi\params\SplitEvtchn,       default,   0, "1"
 HKR, Ndi\params\SplitEvtchn,       type,      0, "enum"
 HKR, Ndi\params\SplitEvtchn\enum,  "0",       0, %Disable%
 HKR, Ndi\params\SplitEvtchn\enum,  "1",       0, %Enable%
 
-[pvvxnet_params.reg61]
 HKR, Ndi\params\*RSS,              ParamDesc, 0, %RSS%
 HKR, Ndi\params\*RSS,              Type,      0, "enum"
 HKR, Ndi\params\*RSS,              Default,   0, "1"
@@ -353,6 +260,26 @@ HKR, Ndi\Params\*PriorityVLANTag\enum,  "0",        0,     %Disable%
 HKR, Ndi\Params\*PriorityVLANTag\enum,  "1",        0,     %Priority_Enabled%
 HKR, Ndi\Params\*PriorityVLANTag\enum,  "2",        0,     %VLan_Enabled%
 HKR, Ndi\Params\*PriorityVLANTag\enum,  "3",        0,     %Priority_Vlan%
+
+
+HKR, Ndi\params\*NdisPoll,         ParamDesc, 0, "Ndis Poll Mode"
+HKR, Ndi\params\*NdisPoll,         Type,      0, "enum"
+HKR, Ndi\params\*NdisPoll,         Default,   0, "1"
+HKR, Ndi\params\*NdisPoll,         Optional,  0, "0"
+HKR, Ndi\params\*NdisPoll\enum,    "0",       0, "Disabled"
+HKR, Ndi\params\*NdisPoll\enum,    "1",       0, "Enabled"
+
+[pvvxnet.Ndi.hw]
+AddReg = pvvxnet.Ndi.EnableMSI
+
+[pvvxnet.Ndi.EnableMSI]
+HKR, "Interrupt Management",, 0x00000010
+HKR, "Interrupt Management\Affinity Policy",, 0x00000010
+HKR, "Interrupt Management\Affinity Policy", DevicePolicy, 0x00010001, 0
+HKR, "Interrupt Management\Affinity Policy", DevicePriority, 0x00010001, 2
+HKR, "Interrupt Management\MessageSignaledInterruptProperties",, 0x00000010
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MSISupported, 0x00010001, 1
+HKR, "Interrupt Management\MessageSignaledInterruptProperties", MessageNumberLimit, 0x00010001, 2048
 
 [pvvxnet.CopyFiles]
 pvvxnet.sys,,,2
@@ -409,7 +336,6 @@ PMC = "Power Management Capabilities"
 W2K12 = "Win2012"
 RSS = "Receive Side Scaling"
 RSS_QUEUES = "Maximum Number of RSS Queues"
-SPLIT_EVTCHN = "Split Event Channels (Xen)"
 IndirectDesc = "Indirect Descriptors (virtio)"
 UsePackedRings = "Packed Rings (virtio)"
 TxSgCnt = "Maximum TX scatter gather elements (virtio)"
@@ -417,3 +343,4 @@ Priority_Vlan_Tag = "Priority and VLAN Tagging"
 Priority_Enabled = "Priority Enabled"
 VLan_Enabled = "VLAN Enabled"
 Priority_Vlan = "Priority & VLAN Enabled"
+SPLIT_EVTCHN = "Split Event Channels (Xen)"
