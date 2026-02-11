@@ -6,7 +6,8 @@ The provided build scripts allows drivers to be build for Windows Server 2008 th
 
 To build the drivers:
 - Branch/clone the vmdp repo.
-- In each of the virtio, xen, and pvvx directories, from an administrator command prompt, run linkvirtio.bat, linkxen.bat, and linkpvvx.bat respectively.  Vmdp takes advantage of shared code that is common between virtio and xen.  Linking the files facilitates this sharing.  Files are linked due to the limitation that the old "sources" build file requires all source files to be in the same directory.
+- For pvvx, as administrator, run minlinkpvvx.bat in the pvvx directory.  This gives access to shared files used by pvvx.
+- If using the old "sources" and build.exe, in each of the virtio, xen, and pvvx directories, from an administrator command prompt, run linkvirtio.bat, linkxen.bat, and linkpvvx.bat respectively.  Vmdp takes advantage of shared code that is common between virtio and xen.  Linking the files facilitates this sharing.  Files are linked due to the limitation that the old "sources" build file requires all source files to be in the same directory.
 - When building with VS2022, install the DDK via NuGet.  This allows building with VS2019 and VS2022 to co-exist.
 - The build_all.bat will build all drivers for all supported versions of Windows Server.  build_all.bat is a link in xen and pvvx.
 
