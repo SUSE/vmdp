@@ -94,3 +94,9 @@ HKR, Ndi\params\TxSgCnt,        step,      0, "1"
 HKR, Ndi\params\TxSgCnt,        base,      0, "10"
 HKR, Ndi\params\TxSgCnt,        type,      0, "int"
 
+HKR, Ndi\params\MergeableRxBuffers,        ParamDesc, 0, %UseMergeableRxBuffers%
+HKR, Ndi\params\MergeableRxBuffers,        default,   0, "1"
+HKR, Ndi\params\MergeableRxBuffers,        type,      0, "enum"
+HKR, Ndi\params\MergeableRxBuffers\enum,   "0",       0, %Disable%
+HKR, Ndi\params\MergeableRxBuffers\enum,   "1",       0, %Enable%
+

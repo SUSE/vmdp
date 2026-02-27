@@ -346,12 +346,49 @@ vnifv_get_rx(PVNIF_ADAPTER adapter, UINT path_id, UINT rp, UINT *i, UINT *len)
     UNREFERENCED_PARAMETER(i);
 
     RCB *rcb;
+    RCB *cur_rcb;
+    RCB *tail_rcb;
+    virtio_net_hdr_mrg_t *hdr = NULL;
+    UINT n;
 
     rcb = vq_get_buf(adapter->path[path_id].u.vq.rx, len);
     if (rcb) {
         rcb->len = *len - adapter->buffer_offset;
         rcb->total_len = rcb->len;
         rcb->next = NULL;
+        if (adapter->buffer_offset) {
+            hdr = (virtio_net_hdr_mrg_t *)(rcb->page);
+            n = 1;
+            tail_rcb = rcb;
+
+            /* Check if we are dealing with merged buffers. */
+            while (n < hdr->nbuffers) {
+                DPRINTK(DPRTL_RX, ("%s: rcb nbuffers %d of %d: len %d\n",
+                                   __func__,
+                                   n,
+                                   hdr->nbuffers,
+                                   *len - adapter->buffer_offset));
+                cur_rcb = vq_get_buf(adapter->path[path_id].u.vq.rx, len);
+                if (cur_rcb != NULL) {
+                    DPRINTK(DPRTL_RX, ("%p: get_rx nbuffers %d of %d len %d\n",
+                                       cur_rcb, n + 1, hdr->nbuffers, *len));
+                    rcb->total_len += *len;
+                    tail_rcb->next = cur_rcb;
+                    tail_rcb = cur_rcb;
+                    cur_rcb->len = *len;
+                    cur_rcb->total_len = *len;
+
+                    /* Fix up the start va.  Additional rcbs put data
+                     *  at the start of the page.
+                     */
+                    cur_rcb->mdl->MappedSystemVa = cur_rcb->page;
+                    cur_rcb->mdl->StartVa = (uint8_t *)cur_rcb->mdl_start_va
+                        - sizeof(virtio_net_hdr_mrg_t);
+                    cur_rcb->next = NULL;
+                }
+                n++;
+            }
+        }
     }
     return rcb;
 }

@@ -1847,9 +1847,7 @@ vnif_drain_rx_path(PVNIF_ADAPTER adapter,
     rcv_q = &adapter->rcv_q[rcv_qidx];
 
     VNIF_GET_RX_RSP_CONS(adapter, path_id, &i);
-    while ((rcb = vnif_get_rx(adapter, path_id, *rp, &i, &len))
-           != NULL) {
-
+    while ((rcb = vnif_get_rx(adapter, path_id, *rp, &i, &len)) != NULL) {
         len = rcb->total_len;
         if (vnif_continue_proccessing_rcb(adapter, rcb, len, path_id)
                 == FALSE) {

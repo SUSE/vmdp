@@ -881,10 +881,12 @@ vnif_add_rcb_to_ring(PVNIF_ADAPTER adapter, RCB *rcb)
         cur_rcb->len = 0;
         cur_rcb->total_len = 0;
 
-        /* In case of priority packet, put things back the way it was.*/
 #if NDIS_SUPPORT_NDIS6
         cur_rcb->nbl = NULL;
 
+        /* In case of a priority packet or merged buffers,
+         * put things back the way it was.
+         */
         cur_rcb->mdl->MappedSystemVa =
             cur_rcb->page + adapter->buffer_offset;
         cur_rcb->mdl->StartVa = cur_rcb->mdl_start_va;

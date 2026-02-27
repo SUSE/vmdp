@@ -105,6 +105,9 @@ static NDIS_STRING reg_indirect_desc = NDIS_STRING_CONST("IndirectDescriptors");
 static NDIS_STRING reg_packed_rings_desc =
     NDIS_STRING_CONST("PackedRings");
 
+static NDIS_STRING reg_mergeable_rx_buffers_desc =
+    NDIS_STRING_CONST("MergeableRxBuffers");
+
 static NDIS_STRING reg_tx_sg_cnt = NDIS_STRING_CONST("TxSgCnt");
 
 void
@@ -625,6 +628,7 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
     UNICODE_STRING ustr;
     ULONG reg_num_rcv_queues;
     UINT length;
+    UINT mergeable_buffers;
 
     status = VNIFNdisOpenConfiguration(adapter, &config_handle);
 
@@ -908,7 +912,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         }
     } else {
         adapter->num_rcb = NET_RX_RING_SIZE;
-        status = NDIS_STATUS_SUCCESS;
     }
 
     NdisReadConfiguration(
@@ -928,7 +931,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         }
     } else {
         adapter->rcv_limit = VNIF_DEFAULT_BUSY_RECVS;
-        status = NDIS_STATUS_SUCCESS;
     }
 
     NdisReadConfiguration(
@@ -948,7 +950,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         }
     } else {
         adapter->resource_timeout = VNIF_DEF_RESOURCE_TIMEOUT;
-        status = NDIS_STATUS_SUCCESS;
     }
 
     NdisReadConfiguration(
@@ -985,14 +986,12 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
 #endif
                 } else {
                     PRINTK(("VNIF: Failed to allocate memory for rcv_stats\n"));
-                    status = STATUS_NO_MEMORY;
                 }
             }
         }
     } else {
         RPRINTK(DPRTL_ON,
             ("VNIF: NdisReadConfiguration reg_stat_timer_failed\n"));
-        status = NDIS_STATUS_SUCCESS;
     }
 
     /* If set, use its value.  Otherwise, get it from the registry .*/
@@ -1021,14 +1020,34 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         adapter->mtu = MTU_MIN_SIZE;
     }
     adapter->max_frame_sz = adapter->mtu + ETH_HEADER_SIZE;
-    status = NDIS_STATUS_SUCCESS;
 
-    adapter->rx_alloc_buffer_size = g_running_hypervisor == HYPERVISOR_KVM ?
-        (((adapter->max_frame_sz + adapter->buffer_offset - 1)
-          >> PAGE_SHIFT) + 1) * PAGE_SIZE :
-        PAGE_SIZE;
+    NdisReadConfiguration(
+        &status,
+        &returned_value,
+        config_handle,
+        &reg_mergeable_rx_buffers_desc,
+        NdisParameterInteger);
+    if (status == NDIS_STATUS_SUCCESS) {
+        mergeable_buffers = returned_value->ParameterData.IntegerData;
+    } else {
+        RPRINTK(DPRTL_INIT,
+            ("VNIF: NdisReadConfiguration MergeableRxBuffers status %x\n",
+            status));
+        mergeable_buffers = 1;
+    }
+    RPRINTK(DPRTL_INIT, ("VNIF: NdisReadConfiguration MergeableRxBuffers %d\n",
+                         mergeable_buffers));
 
-    RPRINTK(DPRTL_INIT, ("VNIF: mtu %d mfz %d bfz 0x%x\n",
+    if (g_running_hypervisor == HYPERVISOR_KVM && mergeable_buffers == 0) {
+        /* We didn't want mergeable buffes so allocate the full size buffers. */
+        adapter->rx_alloc_buffer_size =
+            (((adapter->max_frame_sz + adapter->buffer_offset - 1)
+                >> PAGE_SHIFT) + 1) * PAGE_SIZE;
+    } else {
+        adapter->rx_alloc_buffer_size = PAGE_SIZE;
+    }
+
+    RPRINTK(DPRTL_INIT, ("VNIF: mtu %d max fsz %d alloc buf sz 0x%x\n",
         adapter->mtu, adapter->max_frame_sz, adapter->rx_alloc_buffer_size));
 
     /* If set, use its value.  Otherwise, get it from the registry. */
@@ -1054,7 +1073,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         adapter->ul64LinkSpeed = VNIF_MIN_REG_LINK_SPEED;
     }
     adapter->ul64LinkSpeed *= VNIF_BASE_LINK_SPEED;
-    status = NDIS_STATUS_SUCCESS;
 
 #if NDIS_SUPPORT_NDIS6 == 0
 
@@ -1071,7 +1089,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         adapter->rcv_delay = returned_value->ParameterData.IntegerData;
     } else {
         adapter->rcv_delay = 0;
-        status = NDIS_STATUS_SUCCESS;
     }
 #endif
 
@@ -1090,7 +1107,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         }
     } else {
         adapter->tx_throttle_start = adapter->num_rcb;
-        status = NDIS_STATUS_SUCCESS;
     }
     RPRINTK(DPRTL_INIT,
         ("VNIF: tx_throttle_start %d\n", adapter->tx_throttle_start));
@@ -1131,7 +1147,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         }
     } else {
         adapter->tx_throttle_stop = adapter->tx_throttle_start;
-        status = NDIS_STATUS_SUCCESS;
     }
     RPRINTK(DPRTL_INIT,
         ("VNIF: tx_throttle_stop %d\n", adapter->tx_throttle_stop));
@@ -1155,7 +1170,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             }
         } else {
             adapter->hw_tasks &= ~VNIF_PMC;
-            status = NDIS_STATUS_SUCCESS;
         }
         RPRINTK(DPRTL_INIT, ("VNIF: PMC %x\n", adapter->hw_tasks & VNIF_PMC));
     }
@@ -1182,7 +1196,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             RPRINTK(DPRTL_INIT,
                     ("VNIF: NdisReadConfiguration RSS status %x\n", status));
             adapter->b_rss_supported = FALSE;
-            status = NDIS_STATUS_SUCCESS;
         }
 
         if (adapter->b_rss_supported == TRUE) {
@@ -1211,7 +1224,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
                 RPRINTK(DPRTL_INIT,
                 ("VNIF: NdisReadConfiguration failed: reg_num_rss_qs\n"));
                 reg_num_rcv_queues = adapter->num_hw_queues;
-                status = NDIS_STATUS_SUCCESS;
             }
             /* Don't let num_rcv_queues be greater than cpus. */
 
@@ -1259,7 +1271,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         RPRINTK(DPRTL_INIT,
             ("VNIF: NdisReadConfiguration Priority VLAN status %x\n", status));
         adapter->b_rss_supported = FALSE;
-        status = NDIS_STATUS_SUCCESS;
     }
 #endif
 
@@ -1281,7 +1292,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         RPRINTK(DPRTL_INIT,
                 ("VNIF: NdisReadConfiguration Nis_poll status %x\n", status));
         adapter->b_use_ndis_poll = FALSE;
-        status = NDIS_STATUS_SUCCESS;
     }
 #endif
 
@@ -1302,7 +1312,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
         } else {
             RPRINTK(DPRTL_INIT,
                ("VNIF: NdisReadConfiguration SplitEvtchn status %x\n", status));
-            status = NDIS_STATUS_SUCCESS;
         }
         RPRINTK(DPRTL_INIT,
             ("VNIF: NdisReadConfiguration split_evtchn set to %d\n",
@@ -1328,7 +1337,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             RPRINTK(DPRTL_INIT,
                ("VNIF: NdisReadConfiguration IndirectDescriptors status %x\n",
                 status));
-            status = NDIS_STATUS_SUCCESS;
         }
     }
     if (adapter->b_use_packed_rings == TRUE) {
@@ -1348,7 +1356,6 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
             RPRINTK(DPRTL_INIT,
                ("VNIF: NdisReadConfiguration packed rings status %x\n",
                 status));
-            status = NDIS_STATUS_SUCCESS;
         }
     }
 
@@ -1379,14 +1386,13 @@ VNIFReadRegParameters(PVNIF_ADAPTER adapter)
                ("VNIF: NdisReadConfiguration set tx sgl to default status %x\n",
                 status));
             adapter->max_sg_el = VNIF_VIRTIO_DEF_TX_SG_ELEMENTS;
-            status = NDIS_STATUS_SUCCESS;
         }
     }
 
     NdisCloseConfiguration(config_handle);
 
     RPRINTK(DPRTL_ON, ("VNIF: VNIFReadRegParameters - OUT\n"));
-    return status;
+    return NDIS_STATUS_SUCCESS;
 }
 
 void
@@ -1404,6 +1410,7 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
     PRINTK(("\ttx_checksum = 0x%x\n\trx_checksum = 0x%x\n",
         adapter->cur_tx_tasks, adapter->cur_rx_tasks));
     PRINTK(("\tmtu = %d\n", adapter->mtu));
+    PRINTK(("\trx buffer size = %d\n", adapter->rx_alloc_buffer_size));
     PRINTK(("\tlink speed = %d\n",
         (uint32_t)(adapter->ul64LinkSpeed / VNIF_BASE_LINK_SPEED)));
     PRINTK(("\tduplex state = %d\n", adapter->duplex_state));
