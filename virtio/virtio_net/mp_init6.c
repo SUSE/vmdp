@@ -904,7 +904,7 @@ VNIFSetupNdisAdapterRx(PVNIF_ADAPTER adapter)
 
                 rcb->mdl = NdisAllocateMdl(adapter->AdapterHandle,
                     rcb->page + adapter->buffer_offset,
-                    min(adapter->max_frame_sz, adapter->rx_alloc_buffer_size));
+                    adapter->rx_alloc_buffer_size - adapter->buffer_offset);
 
                 if (rcb->mdl == NULL) {
                     PRINTK(("VNIF: NdisAllocateMdl failed.\n"));

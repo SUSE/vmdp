@@ -454,7 +454,7 @@ VNIFV_ADD_RCB_TO_RING(VNIF_ADAPTER *adapter, RCB *rcb)
     virtio_buffer_descriptor_t sg;
 
     sg.phys_addr = rcb->page_pa.QuadPart;
-    sg.len = adapter->rx_alloc_buffer_size;
+    sg.len = adapter->rx_alloc_buffer_size - adapter->buffer_offset;
     vq_add_buf(adapter->path[rcb->path_id].u.vq.rx, &sg, 0, 1, rcb);
 }
 
