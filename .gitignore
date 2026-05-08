@@ -43,6 +43,7 @@ sdv-map.h
 src_files
 runsdvui.cmd
 SDV-default.xml
+virtio/virtio.sln
 virtio/pvvxsvc/virtio_balloon_pub.h
 virtio/virtio_balloon/virtio_pci.c
 virtio/virtio_balloon/virtio_queue.c
@@ -125,6 +126,7 @@ xen/xenblk/storport_reg.c
 xen/xenscsi/storport_reg.c
 pvvx/build_all.bat
 pvvx/msb.bat
+pvvx/pvvx.sln
 pvvx/unsetddk.bat
 pvvx/unsetmsb.bat
 pvvx/inf/net-dev-desc.inf
