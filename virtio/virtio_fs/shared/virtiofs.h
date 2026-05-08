@@ -30,6 +30,7 @@
 #pragma once
 
 #include <guiddef.h>
+#include "fuse.h"
 
 // {a1b0cbf2-f488-4b29-b89f-16c78e68c737}
 DEFINE_GUID(GUID_DEVINTERFACE_VIRT_FS, 0xa1b0cbf2, 0xf488, 0x4b29, 0xb8, 0x9f, 0x16, 0xc7, 0x8e, 0x68, 0xc7, 0x37);
@@ -40,3 +41,11 @@ DEFINE_GUID(GUID_DEVINTERFACE_VIRT_FS, 0xa1b0cbf2, 0xf488, 0x4b29, 0xb8, 0x9f, 0
 
 #define IOCTL_VIRTFS_FUSE_REQUEST                                                                                      \
     CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
+
+
+// for OUT buffer of IOCTL_VIRTFS_FUSE_REQUEST_READ, see also FUSE_READ_OUT
+struct fuse_out_for_read
+{
+    struct fuse_out_header hdr;
+    uint64_t original_pointer;
+};

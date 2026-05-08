@@ -255,6 +255,39 @@ static void FUSE_HEADER_INIT(struct fuse_in_header *hdr, uint32_t opcode, uint64
     hdr->pid = GetCurrentProcessId();
 }
 
+class CWideToMultibyteConverter
+{
+  public:
+    CWideToMultibyteConverter(PWSTR FileName, NTSTATUS &Status)
+    {
+        Status = FspPosixMapWindowsToPosixPath(FileName, &m_Multibyte);
+        if (!NT_SUCCESS(Status))
+        {
+            return;
+        }
+        size_t len = strlen(m_Multibyte);
+        if (len > (MAX_NAME_LENGTH - 1))
+        {
+            Status = STATUS_NAME_TOO_LONG;
+            DBG("filename is too long (len = %d)", (ULONG)len);
+        }
+    }
+    ~CWideToMultibyteConverter()
+    {
+        if (m_Multibyte)
+        {
+            FspPosixDeletePath(m_Multibyte);
+        }
+    }
+    char *FullPath()
+    {
+        return m_Multibyte;
+    }
+
+  protected:
+    char *m_Multibyte = NULL;
+};
+
 VOID VIRTFS::Stop()
 {
     if (FileSystem == NULL)
@@ -491,7 +524,8 @@ static NTSTATUS VirtFsFuseRequest(HANDLE Device,
                                   LPVOID InBuffer,
                                   DWORD InBufferSize,
                                   LPVOID OutBuffer,
-                                  DWORD OutBufferSize)
+                                  DWORD OutBufferSize,
+                                  DWORD Code = IOCTL_VIRTFS_FUSE_REQUEST)
 {
     NTSTATUS Status = STATUS_SUCCESS;
     DWORD BytesReturned = 0;
@@ -501,14 +535,7 @@ static NTSTATUS VirtFsFuseRequest(HANDLE Device,
 
     DBG(">>req: %d unique: %I64u len: %u", in_hdr->opcode, in_hdr->unique, in_hdr->len);
 
-    Result = DeviceIoControl(Device,
-                             IOCTL_VIRTFS_FUSE_REQUEST,
-                             InBuffer,
-                             InBufferSize,
-                             OutBuffer,
-                             OutBufferSize,
-                             &BytesReturned,
-                             NULL);
+    Result = DeviceIoControl(Device, Code, InBuffer, InBufferSize, OutBuffer, OutBufferSize, &BytesReturned, NULL);
 
     if (Result == FALSE)
     {
@@ -517,7 +544,7 @@ static NTSTATUS VirtFsFuseRequest(HANDLE Device,
 
     DBG("<<len: %u error: %d unique: %I64u", out_hdr->len, out_hdr->error, out_hdr->unique);
 
-    if (BytesReturned != out_hdr->len)
+    if (Code == IOCTL_VIRTFS_FUSE_REQUEST && BytesReturned != out_hdr->len)
     {
         DBG("BytesReturned != hdr->len");
     }
@@ -976,7 +1003,7 @@ static NTSTATUS PathWalkthough(VIRTFS *VirtFs, CHAR *FullPath, CHAR **FileName, 
 static NTSTATUS VirtFsLookupFileName(VIRTFS *VirtFs, PWSTR FileName, FUSE_LOOKUP_OUT *LookupOut)
 {
     NTSTATUS Status;
-    char *filename, *fullpath;
+    char *filename;
     uint64_t parent;
 
     if (lstrcmp(FileName, TEXT("\\")) == 0)
@@ -989,14 +1016,13 @@ static NTSTATUS VirtFsLookupFileName(VIRTFS *VirtFs, PWSTR FileName, FUSE_LOOKUP
         FileName += 1;
     }
 
-    Status = FspPosixMapWindowsToPosixPath(FileName, &fullpath);
+    CWideToMultibyteConverter conv(FileName, Status);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
-    SCOPE_EXIT(fullpath, { FspPosixDeletePath(fullpath); });
 
-    Status = PathWalkthough(VirtFs, fullpath, &filename, &parent);
+    Status = PathWalkthough(VirtFs, conv.FullPath(), &filename, &parent);
     if (NT_SUCCESS(Status))
     {
         Status = VirtFs->NameAwareRequest(parent, filename, &VIRTFS::SubmitLookupRequest, LookupOut);
@@ -1360,7 +1386,7 @@ static NTSTATUS Create(FSP_FILE_SYSTEM *FileSystem,
     VIRTFS_FILE_CONTEXT *FileContext;
     NTSTATUS Status;
     UINT32 Mode = 0664 /* -rw-rw-r-- */;
-    char *filename, *fullpath;
+    char *filename;
     uint64_t parent;
 
     UNREFERENCED_PARAMETER(SecurityDescriptor);
@@ -1373,14 +1399,13 @@ static NTSTATUS Create(FSP_FILE_SYSTEM *FileSystem,
         FileAttributes,
         AllocationSize);
 
-    Status = FspPosixMapWindowsToPosixPath(FileName + 1, &fullpath);
+    CWideToMultibyteConverter conv(FileName + 1, Status);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
-    SCOPE_EXIT(fullpath, { FspPosixDeletePath(fullpath); });
 
-    Status = PathWalkthough(VirtFs, fullpath, &filename, &parent);
+    Status = PathWalkthough(VirtFs, conv.FullPath(), &filename, &parent);
     if (!NT_SUCCESS(Status) && (Status != STATUS_OBJECT_NAME_NOT_FOUND))
     {
         return Status;
@@ -1559,7 +1584,6 @@ static NTSTATUS Read(FSP_FILE_SYSTEM *FileSystem,
 {
     VIRTFS *VirtFs = (VIRTFS *)FileSystem->UserContext;
     VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
-    FUSE_READ_OUT *read_out;
     NTSTATUS Status = STATUS_SUCCESS;
     // Host page size is unknown, but it can't be less than 4KiB
     UINT32 BufSize = min(VirtFs->MaxPages * PAGE_SZ_4K, Length);
@@ -1575,16 +1599,11 @@ static NTSTATUS Read(FSP_FILE_SYSTEM *FileSystem,
         return STATUS_INVALID_PARAMETER;
     }
 
-    read_out = (FUSE_READ_OUT *)HeapAlloc(GetProcessHeap(), 0, sizeof(*read_out) + BufSize);
-    if (read_out == NULL)
-    {
-        return STATUS_INSUFFICIENT_RESOURCES;
-    }
-
     while (Length)
     {
         UINT32 Size = min(Length, BufSize);
         FUSE_READ_IN read_in;
+        fuse_out_for_read read_out_fast;
         UINT32 OutSize;
 
         read_in.read.fh = FileContext->FileHandle;
@@ -1594,37 +1613,40 @@ static NTSTATUS Read(FSP_FILE_SYSTEM *FileSystem,
         read_in.read.lock_owner = 0;
         read_in.read.flags = 0;
 
+        read_out_fast.hdr.len = Size;
+        read_out_fast.original_pointer = (uint64_t)(ULONG_PTR)Buf;
+
         FUSE_HEADER_INIT(&read_in.hdr, FUSE_READ, FileContext->NodeId, sizeof(read_in.read));
 
-        Status = VirtFsFuseRequest(VirtFs->Device, &read_in, sizeof(read_in), read_out, sizeof(*read_out) + Size);
+        Status = VirtFsFuseRequest(VirtFs->Device,
+                                   &read_in,
+                                   sizeof(read_in),
+                                   &read_out_fast,
+                                   sizeof(read_out_fast));
         if (!NT_SUCCESS(Status))
         {
-            SafeHeapFree(read_out);
             return Status;
         }
 
         // Validate device response to prevent buffer overruns
-        if (read_out->hdr.len < sizeof(struct fuse_out_header) ||
-            read_out->hdr.len > sizeof(struct fuse_out_header) + Size)
+        if (read_out_fast.hdr.len < sizeof(struct fuse_out_header) ||
+            read_out_fast.hdr.len > sizeof(struct fuse_out_header) + Size)
         {
             DBG("Device returned invalid header length: %u (valid range: %u-%u)",
-                read_out->hdr.len,
+                read_out_fast.hdr.len,
                 (UINT32)sizeof(struct fuse_out_header),
                 (UINT32)(sizeof(struct fuse_out_header) + Size));
-            SafeHeapFree(read_out);
             return STATUS_IO_DEVICE_ERROR;
         }
 
-        OutSize = read_out->hdr.len - sizeof(struct fuse_out_header);
+        OutSize = read_out_fast.hdr.len - sizeof(struct fuse_out_header);
 
         if (OutSize > Size)
         {
             DBG("Device returned more data than requested: %u (requested: %u)", OutSize, Size);
-            SafeHeapFree(read_out);
             return STATUS_IO_DEVICE_ERROR;
         }
 
-        CopyMemory(Buf, read_out->buf, OutSize);
         *PBytesTransferred += OutSize;
 
         // A successful read with no bytes read means file offset is at or past
@@ -1646,8 +1668,6 @@ static NTSTATUS Read(FSP_FILE_SYSTEM *FileSystem,
 
     DBG("BytesTransferred: %d", *PBytesTransferred);
 
-    SafeHeapFree(read_out);
-
     return Status;
 }
 
@@ -1664,7 +1684,7 @@ static NTSTATUS Write(FSP_FILE_SYSTEM *FileSystem,
     VIRTFS *VirtFs = (VIRTFS *)FileSystem->UserContext;
     VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
     ULONG WriteSize;
-    NTSTATUS Status = STATUS_SUCCESS;
+    NTSTATUS Status = 0;
     FUSE_WRITE_IN *write_in;
     FUSE_WRITE_OUT write_out;
 
@@ -1873,7 +1893,7 @@ static VOID Cleanup(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0, PWSTR FileN
     UINT64 LastAccessTime, LastWriteTime;
     FILETIME CurrentTime;
     NTSTATUS Status;
-    char *filename, *fullpath;
+    char *filename;
     uint64_t parent;
 
     DBG("\"%S\" Flags: 0x%02x", FileName, Flags);
@@ -1883,14 +1903,13 @@ static VOID Cleanup(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0, PWSTR FileN
         return;
     }
 
-    Status = FspPosixMapWindowsToPosixPath(FileName + 1, &fullpath);
+    CWideToMultibyteConverter conv(FileName + 1, Status);
     if (!NT_SUCCESS(Status))
     {
         return;
     }
-    SCOPE_EXIT(fullpath, { FspPosixDeletePath(fullpath); });
 
-    Status = PathWalkthough(VirtFs, fullpath, &filename, &parent);
+    Status = PathWalkthough(VirtFs, conv.FullPath(), &filename, &parent);
     if (!NT_SUCCESS(Status))
     {
         return;
@@ -2011,34 +2030,31 @@ static NTSTATUS Rename(FSP_FILE_SYSTEM *FileSystem,
     VIRTFS *VirtFs = (VIRTFS *)FileSystem->UserContext;
     VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
     NTSTATUS Status;
-    char *oldname, *newname, *oldfullpath, *newfullpath;
+    char *oldname, *newname;
     uint64_t oldparent, newparent;
     uint32_t flags;
 
     DBG("\"%S\" -> \"%S\" ReplaceIfExist: %d", FileName, NewFileName, ReplaceIfExists);
     DBG("fh: %I64u nodeid: %I64u", FileContext->FileHandle, FileContext->NodeId);
 
-    Status = FspPosixMapWindowsToPosixPath(FileName + 1, &oldfullpath);
+    CWideToMultibyteConverter oldconv(FileName + 1, Status);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
-    SCOPE_EXIT(oldfullpath, { FspPosixDeletePath(oldfullpath); });
-
-    Status = FspPosixMapWindowsToPosixPath(NewFileName + 1, &newfullpath);
-    if (!NT_SUCCESS(Status))
-    {
-        return Status;
-    }
-    SCOPE_EXIT(newfullpath, { FspPosixDeletePath(newfullpath); });
-
-    Status = PathWalkthough(VirtFs, oldfullpath, &oldname, &oldparent);
+    CWideToMultibyteConverter newconv(NewFileName + 1, Status);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
 
-    Status = PathWalkthough(VirtFs, newfullpath, &newname, &newparent);
+    Status = PathWalkthough(VirtFs, oldconv.FullPath(), &oldname, &oldparent);
+    if (!NT_SUCCESS(Status))
+    {
+        return Status;
+    }
+
+    Status = PathWalkthough(VirtFs, newconv.FullPath(), &newname, &newparent);
     if (!NT_SUCCESS(Status))
     {
         return Status;
@@ -2477,7 +2493,7 @@ static NTSTATUS SetReparsePoint(FSP_FILE_SYSTEM *FileSystem,
     WCHAR TargetName[MAX_PATH];
     USHORT TargetLength;
     NTSTATUS Status;
-    char *filename, *linkname, *targetname;
+    char *filename;
     int linkname_len, targetname_len;
     uint64_t parent;
 
@@ -2501,28 +2517,26 @@ static NTSTATUS SetReparsePoint(FSP_FILE_SYSTEM *FileSystem,
 
     TargetName[TargetLength] = TEXT('\0');
 
-    Status = FspPosixMapWindowsToPosixPath(TargetName, &targetname);
+    CWideToMultibyteConverter targetconv(TargetName, Status);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
-    SCOPE_EXIT(targetname, { FspPosixDeletePath(targetname); });
 
-    Status = FspPosixMapWindowsToPosixPath(FileName + 1, &linkname);
+    CWideToMultibyteConverter linkconv(FileName + 1, Status);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
-    SCOPE_EXIT(linkname, { FspPosixDeletePath(linkname); });
 
-    Status = PathWalkthough(VirtFs, linkname, &filename, &parent);
+    Status = PathWalkthough(VirtFs, linkconv.FullPath(), &filename, &parent);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
 
     linkname_len = lstrlenA(filename) + 1;
-    targetname_len = lstrlenA(targetname) + 1;
+    targetname_len = lstrlenA(targetconv.FullPath()) + 1;
 
     symlink_in = (FUSE_SYMLINK_IN *)HeapAlloc(GetProcessHeap(), 0, sizeof(*symlink_in) + linkname_len + targetname_len);
 
@@ -2534,7 +2548,7 @@ static NTSTATUS SetReparsePoint(FSP_FILE_SYSTEM *FileSystem,
     FUSE_HEADER_INIT(&symlink_in->hdr, FUSE_SYMLINK, parent, linkname_len + targetname_len);
 
     CopyMemory(symlink_in->names, filename, linkname_len);
-    CopyMemory(symlink_in->names + linkname_len, targetname, targetname_len);
+    CopyMemory(symlink_in->names + linkname_len, targetconv.FullPath(), targetname_len);
 
     Status = VirtFsFuseRequest(VirtFs->Device, symlink_in, symlink_in->hdr.len, &symlink_out, sizeof(symlink_out));
 
@@ -2552,18 +2566,16 @@ static NTSTATUS GetDirInfoByName(FSP_FILE_SYSTEM *FileSystem,
     VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
     FUSE_LOOKUP_OUT lookup_out;
     NTSTATUS Status;
-    char *filename;
 
     DBG("\"%S\"", FileName);
 
-    Status = FspPosixMapWindowsToPosixPath(FileName, &filename);
+    CWideToMultibyteConverter conv(FileName, Status);
     if (!NT_SUCCESS(Status))
     {
         return Status;
     }
-    SCOPE_EXIT(filename, { FspPosixDeletePath(filename); });
 
-    Status = VirtFs->NameAwareRequest(FileContext->NodeId, filename, &VIRTFS::SubmitLookupRequest, &lookup_out);
+    Status = VirtFs->NameAwareRequest(FileContext->NodeId, conv.FullPath(), &VIRTFS::SubmitLookupRequest, &lookup_out);
 
     if (NT_SUCCESS(Status))
     {
@@ -2578,7 +2590,7 @@ static NTSTATUS GetDirInfoByName(FSP_FILE_SYSTEM *FileSystem,
 }
 
 // clang-format off
-static FSP_FILE_SYSTEM_INTERFACE VirtFsInterface = 
+static FSP_FILE_SYSTEM_INTERFACE VirtFsInterface =
 {
     .GetVolumeInfo = GetVolumeInfo,
     .GetSecurityByName = GetSecurityByName,
