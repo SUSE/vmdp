@@ -76,12 +76,12 @@ if not exist dvl mkdir dvl
 
 for %%c in (%config_os%) do (
     if %%c==Win11Release (
-        if not %switched==22 (
+        if not !switched!==22 (
             call switch_vcxproj.bat 22
             set switched=22
         )
     ) else (
-        if not %switched==19 (
+        if not !switched!==19 (
             call switch_vcxproj.bat 19
             set switched=19
         )
