@@ -161,6 +161,7 @@ vserial_ctrl_msg_send(
     IN USHORT event,
     IN USHORT value)
 {
+    virtio_queue_t *vq;
     virtio_buffer_descriptor_t sg;
     KLOCK_QUEUE_HANDLE lh;
     unsigned int len;
@@ -181,16 +182,21 @@ vserial_ctrl_msg_send(
     sg.len = sizeof(cpkt);
 
     KeAcquireInStackQueuedSpinLock(&fdx->cvq_lock, &lh);
-    if (vq_add_buf(fdx->c_ovq, &sg, 1, 0, &cpkt) >= 0) {
-        vq_kick(fdx->c_ovq);
-        while (vq_get_buf(fdx->c_ovq, &len) == NULL) {
-            KeStallExecutionProcessor(50);
-            if (++cnt > RETRY_THRESHOLD) {
-                DPRINTK(DPRTL_ON, ("%s: failed to get buf after retries %d\n",
-                    __func__, cnt));
-                break;
+    vq = fdx->c_ovq;
+    if (vq != NULL) {
+        if (vq_add_buf(vq, &sg, 1, 0, &cpkt) >= 0) {
+            vq_kick(vq);
+            while (vq_get_buf(vq, &len) == NULL) {
+                KeStallExecutionProcessor(50);
+                if (++cnt > RETRY_THRESHOLD) {
+                    DPRINTK(DPRTL_ON, ("%s: failed to get buf after retries %d\n",
+                        __func__, cnt));
+                    break;
+                }
             }
         }
+    } else {
+        PRINTK(("%s: fdx->c_ovq == NULL\n", __func__));
     }
     KeReleaseInStackQueuedSpinLock(&lh);
 

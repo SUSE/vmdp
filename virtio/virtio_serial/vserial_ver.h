@@ -28,8 +28,8 @@
 #define _VSERIAL_VER_H
 
 
-#define VER_FILEVERSION             1,0,1,13
-#define VER_FILEVERSION_STR         "1.0.1.13\0"
+#define VER_FILEVERSION             1,0,1,14
+#define VER_FILEVERSION_STR         "1.0.1.14\0"
 
 #define VER_LEGALCOPYRIGHT_STR      "Copyright \251 2014-2026 SUSE All rights reserved.", "\0"
 
