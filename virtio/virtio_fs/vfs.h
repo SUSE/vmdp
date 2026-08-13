@@ -76,6 +76,7 @@ typedef struct _VIRTIO_FS_REQUEST {
     size_t in_len;
     PMDL out_mdl;           /* Device-writable part */
     size_t out_len;
+    ULONG ioctl;
 } virtio_fs_request_t;
 
 typedef struct _virtio_fs_hold_request {
@@ -170,6 +171,10 @@ NTSTATUS vfs_fuse_request(PFDO_DEVICE_EXTENSION fdx,
                           PIRP Irp,
                           ULONG OutputBufferLength,
                           ULONG InputBufferLength);
+NTSTATUS vfs_fuse_request_read(PFDO_DEVICE_EXTENSION fdx,
+                               PIRP Irp,
+                               ULONG OutputBufferLength,
+                               ULONG InputBufferLength);
 #ifdef DBG
 void vfs_dump_buf(unsigned char *buf, unsigned int len);
 #else

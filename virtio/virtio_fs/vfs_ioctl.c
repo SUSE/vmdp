@@ -47,9 +47,18 @@ vfs_get_queue_index(IN BOOLEAN is_high_prio)
 static SIZE_T
 vfs_get_required_sg_size(IN virtio_fs_request_t *fs_req)
 {
+    SIZE_T sg_cnt;
+    PMDL mdl;
 
-    return (DIV_ROUND_UP(fs_req->in_len, PAGE_SIZE) +
-            DIV_ROUND_UP(fs_req->out_len, PAGE_SIZE));
+    sg_cnt = DIV_ROUND_UP(fs_req->in_len, PAGE_SIZE);
+    mdl = fs_req->out_mdl;
+    while (mdl != NULL) {
+        sg_cnt += ADDRESS_AND_SIZE_TO_SPAN_PAGES(
+            MmGetMdlVirtualAddress(mdl),
+            MmGetMdlByteCount(mdl));
+        mdl = mdl->Next;
+    }
+    return sg_cnt;
 }
 
 static PMDL
@@ -73,31 +82,53 @@ vfs_alloc_pages_mdl(IN SIZE_T total_bytes)
 }
 
 static int
-vfs_fill_sg_from_mdl(OUT virtio_buffer_descriptor_t sg[],
-                     IN PMDL mdl,
-                     IN size_t length)
+vfs_fill_sg_from_mdl(OUT virtio_buffer_descriptor_t sg[], IN PMDL mdl)
 {
-    PPFN_NUMBER pfn;
-    ULONG total_pages;
+    PPFN_NUMBER pfn_array;
+    virtio_buffer_descriptor_t *prv_sg;
+    uint64_t cur_phys_addr;
+    ULONG pfn_cnt;
+    ULONG mdl_len;
+    ULONG cur_offset;
     ULONG len;
+    ULONG cur_sg_el;
     ULONG j;
-    int i = 0;
 
-    while (mdl != NULL)
-    {
-        total_pages = MmGetMdlByteCount(mdl) / PAGE_SIZE;
-        pfn = MmGetMdlPfnArray(mdl);
-        for (j = 0; j < total_pages; j++) {
-            len = (ULONG)(min(length, PAGE_SIZE));
-            length -= len;
-            sg[i].phys_addr = (ULONGLONG)pfn[j] << PAGE_SHIFT;
-            sg[i].len = len;
-            i += 1;
+    cur_sg_el = 0;
+    while (mdl != NULL) {
+        mdl_len = MmGetMdlByteCount(mdl);
+        pfn_cnt = ADDRESS_AND_SIZE_TO_SPAN_PAGES(
+            MmGetMdlVirtualAddress(mdl),
+            mdl_len);
+        cur_offset = MmGetMdlByteOffset(mdl);
+        pfn_array = MmGetMdlPfnArray(mdl);
+
+        DPRINTK(DPRTL_IO, ("%s: mdl_len %d pfn_cnt %d cur_offset %d\n",
+                           __func__, mdl_len, pfn_cnt, cur_offset));
+
+        for (j = 0; j < pfn_cnt && mdl_len > 0; j++) {
+            len = (ULONG)(min(mdl_len, (PAGE_SIZE - cur_offset)));
+            cur_phys_addr = (pfn_array[j] << PAGE_SHIFT) + cur_offset;
+            if (cur_sg_el > 0) {
+                prv_sg = &sg[cur_sg_el - 1];
+                if (prv_sg->phys_addr + prv_sg->len == cur_phys_addr) {
+                    DPRINTK(DPRTL_IO, ("%s: **  collasping pages\n", __func__));
+                    prv_sg->len += len;
+                    mdl_len -= len;
+                    continue;
+                }
+            }
+            sg[cur_sg_el].phys_addr = cur_phys_addr;
+            sg[cur_sg_el].len = len;
+            cur_sg_el++;
+            mdl_len -= len;
+            cur_offset = 0;
         }
         mdl = mdl->Next;
     }
 
-    return i;
+    DPRINTK(DPRTL_IO, ("  return pnf count %d\n", cur_sg_el));
+    return cur_sg_el;
 }
 
 static NTSTATUS
@@ -136,12 +167,8 @@ vfs_enqueue_request(IN PFDO_DEVICE_EXTENSION fdx,
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
-    out_num = vfs_fill_sg_from_mdl(sg,
-                                   fs_req->in_mdl,
-                                   fs_req->in_len);
-    in_num = vfs_fill_sg_from_mdl(sg + out_num,
-                                  fs_req->out_mdl,
-                                  fs_req->out_len);
+    out_num = vfs_fill_sg_from_mdl(sg, fs_req->in_mdl);
+    in_num = vfs_fill_sg_from_mdl(sg + out_num, fs_req->out_mdl);
 
     KeAcquireInStackQueuedSpinLock(vq_lock, &qlh);
     IoAcquireCancelSpinLock(&irql);
@@ -157,6 +184,8 @@ vfs_enqueue_request(IN PFDO_DEVICE_EXTENSION fdx,
         KeAcquireInStackQueuedSpinLock(&fdx->req_lock, &rlh);
         PushEntryList(&fdx->request_list, &fs_req->list_entry);
         KeReleaseInStackQueuedSpinLock(&rlh);
+
+        DPRINTK(DPRTL_IO, ("%s: Add irp %p\n", __func__, fs_req->irp));
 
         if (2 < sg_size && sg_size <= VFS_INDIRECT_AREA_CAPACITY &&
                 fdx->use_indirect && !high_prio) {
@@ -269,7 +298,6 @@ vfs_fuse_request(PFDO_DEVICE_EXTENSION fdx,
 {
     NTSTATUS status;
     virtio_fs_request_t *fs_req;
-    PVOID in_buf_va;
     BOOLEAN hiprio;
 
     status = STATUS_INVALID_PARAMETER;
@@ -299,39 +327,25 @@ vfs_fuse_request(PFDO_DEVICE_EXTENSION fdx,
         }
 
         fs_req->irp = Irp;
+        fs_req->ioctl = IOCTL_VIRTFS_FUSE_REQUEST;
 
-        fs_req->in_len = in_len;
-        fs_req->in_mdl = vfs_alloc_pages_mdl(in_len);
+        fs_req->in_mdl = IoAllocateMdl(Irp->AssociatedIrp.SystemBuffer,
+                                       in_len, FALSE, FALSE, NULL);
         if (fs_req->in_mdl == NULL) {
-            PRINTK(("  Failed to alloc in_mdl %d\n", in_len));
+            status = STATUS_INSUFFICIENT_RESOURCES;
             break;
         }
 
+        MmBuildMdlForNonPagedPool(fs_req->in_mdl);
+
+        fs_req->in_len = in_len;
+
         fs_req->out_len = out_len;
-        fs_req->out_mdl = vfs_alloc_pages_mdl(out_len);
+        fs_req->out_mdl = Irp->MdlAddress;
         if (fs_req->out_mdl == NULL) {
             PRINTK(("  Failed to alloc out_mdl %d\n", out_len));
             break;
         }
-
-        in_buf_va = MmMapLockedPagesSpecifyCache(fs_req->in_mdl,
-                                                 KernelMode,
-                                                 MmNonCached,
-                                                 NULL,
-                                                 FALSE,
-                                                 NormalPagePriority);
-
-        if (in_buf_va == NULL) {
-            status = STATUS_INSUFFICIENT_RESOURCES;
-            PRINTK(("    MmMapLockedPages failed (in_mdl)\n"));
-            break;
-        }
-
-        RtlCopyMemory(in_buf_va,
-                      Irp->AssociatedIrp.SystemBuffer,
-                      in_len);
-        vfs_dump_buf(in_buf_va, in_len);
-        MmUnmapLockedPages(in_buf_va, fs_req->in_mdl);
 
         hiprio = vfs_is_opcode_high_prio(
             ((struct fuse_in_header *)Irp->AssociatedIrp.SystemBuffer)->opcode);
@@ -340,6 +354,143 @@ vfs_fuse_request(PFDO_DEVICE_EXTENSION fdx,
     } while (0);
 
     if (status != STATUS_PENDING) {
+        vfs_free_request(fs_req);
+    }
+    return status;
+}
+NTSTATUS
+vfs_fuse_request_read(PFDO_DEVICE_EXTENSION fdx,
+    PIRP Irp,
+    ULONG out_len,
+    ULONG in_len)
+{
+    NTSTATUS status;
+    virtio_fs_request_t *fs_req;
+    struct fuse_out_for_read *fuse_out;
+    PMDL first_mdl;
+    PMDL second_mdl;
+    PVOID out_buf;
+    PVOID original_buffer;
+    ULONG original_buffer_len;
+    ULONG out_header_length;
+    BOOLEAN hiprio;
+
+    status = STATUS_INVALID_PARAMETER;
+    first_mdl = NULL;
+    second_mdl = NULL;
+    fs_req = NULL;
+    do {
+        if (in_len < sizeof(struct fuse_in_header)) {
+            PRINTK(("%s: Insufficient in buffer %d\n", __func__,
+                    in_len));
+            status = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+
+        if (out_len < sizeof(struct fuse_out_header)) {
+            PRINTK(("%s: Insufficient out buffer %d\n", __func__,
+                    out_len));
+            status = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+
+        if (Irp->MdlAddress == NULL) {
+            PRINTK(("%s: Irp->MdlAddress is NULL. out_mdl %d\n", __func__,
+                    out_len));
+            break;
+        }
+
+        fs_req = (virtio_fs_request_t *)EX_ALLOC_POOL(
+            VPOOL_NON_PAGED,
+            sizeof(virtio_fs_request_t ),
+            VFS_POOL_TAG);
+        if (fs_req == NULL) {
+            PRINTK(("%s: Failed to alloc fs_req\n", __func__));
+            break;
+        }
+
+        fs_req->irp = Irp;
+        fs_req->ioctl = IOCTL_VIRTFS_FUSE_REQUEST_READ;
+        fs_req->out_mdl = NULL;
+
+        fs_req->in_mdl = IoAllocateMdl(Irp->AssociatedIrp.SystemBuffer,
+                                       in_len, FALSE, FALSE, NULL);
+        if (fs_req->in_mdl == NULL) {
+            PRINTK(("%s: Failed to alloc in_mdl\n", __func__));
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            break;
+        }
+
+        MmBuildMdlForNonPagedPool(fs_req->in_mdl);
+
+        fs_req->in_len = in_len;
+
+        /* Handle output buffer */
+        out_buf = MmGetSystemAddressForMdlSafe(Irp->MdlAddress,
+            NormalPagePriority | MdlMappingNoExecute);
+        if (!out_buf) {
+            PRINTK(("%s: Failed to get out_buf\n", __func__));
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            break;
+        }
+        fuse_out = (struct fuse_out_for_read*)out_buf;
+        original_buffer = (PVOID)(ULONG_PTR)fuse_out->original_pointer;
+        original_buffer_len = fuse_out->hdr.len;
+        out_header_length = sizeof(fuse_out->hdr);
+
+        first_mdl = IoAllocateMdl(out_buf,
+                                  out_header_length,
+                                  FALSE,
+                                  FALSE,
+                                  NULL);
+        if (first_mdl == NULL) {
+            PRINTK(("%s: Failed to alloc first_mdl\n", __func__));
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            break;
+        }
+        MmBuildMdlForNonPagedPool(first_mdl);
+
+        second_mdl = IoAllocateMdl(original_buffer,
+                                   original_buffer_len,
+                                   FALSE,
+                                   FALSE,
+                                   NULL);
+        if (second_mdl == NULL) {
+            PRINTK(("%s: Failed to alloc second_mdl\n", __func__));
+            status = STATUS_INSUFFICIENT_RESOURCES;
+            break;
+        }
+
+        __try {
+            MmProbeAndLockPages(second_mdl, UserMode, IoWriteAccess);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
+            PRINTK(("%s: Failed to MmProbeAndLockPages second_mdl\n",
+                    __func__));
+            status = GetExceptionCode();
+            break;
+        }
+
+        first_mdl->Next = second_mdl;
+        fs_req->out_mdl = first_mdl;
+        fs_req->out_len = out_header_length + original_buffer_len;
+        DPRINTK(DPRTL_IO, ("%s: len %d calculated len %d + %d = %d\n", __func__,
+                out_len, out_header_length, original_buffer_len,
+                fs_req->out_len));
+
+        hiprio = vfs_is_opcode_high_prio(
+            ((struct fuse_in_header *)Irp->AssociatedIrp.SystemBuffer)->opcode);
+
+        status = vfs_enqueue_request(fdx, fs_req, hiprio);
+    } while (0);
+
+    if (status != STATUS_PENDING) {
+        if (first_mdl != NULL) {
+            IoFreeMdl(first_mdl);
+        }
+        if (second_mdl != NULL) {
+            IoFreeMdl(first_mdl);
+        }
         vfs_free_request(fs_req);
     }
     return status;

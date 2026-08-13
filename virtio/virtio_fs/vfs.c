@@ -410,16 +410,33 @@ vfs_dispatch_device_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
             break;
 
         case IOCTL_VIRTFS_FUSE_REQUEST:
-            DPRINTK(DPRTL_IO, ("  IOCTL_VIRTFS_FUSE_REQUEST(0x%x) Irql %d\n",
-                               IOCTL_VIRTFS_FUSE_REQUEST, KeGetCurrentIrql()));
+            DPRINTK(DPRTL_IO, (
+                "  IOCTL_VIRTFS_FUSE_REQUEST(0x%x) o %d i %d Irql %d\n",
+                IOCTL_VIRTFS_FUSE_REQUEST,
+                stack->Parameters.DeviceIoControl.OutputBufferLength,
+                stack->Parameters.DeviceIoControl.InputBufferLength,
+                KeGetCurrentIrql()));
             status = vfs_fuse_request(fdx,
                 Irp,
                 stack->Parameters.DeviceIoControl.OutputBufferLength,
                 stack->Parameters.DeviceIoControl.InputBufferLength);
             break;
+        case IOCTL_VIRTFS_FUSE_REQUEST_READ:
+            DPRINTK(DPRTL_IO, (
+                "  IOCTL_VIRTFS_FUSE_REQUEST_READ(0x%x) o %d i %d Irql %d\n",
+                IOCTL_VIRTFS_FUSE_REQUEST,
+                stack->Parameters.DeviceIoControl.OutputBufferLength,
+                stack->Parameters.DeviceIoControl.InputBufferLength,
+                KeGetCurrentIrql()));
+            status = vfs_fuse_request_read(fdx,
+                Irp,
+                stack->Parameters.DeviceIoControl.OutputBufferLength,
+                stack->Parameters.DeviceIoControl.InputBufferLength);
+            break;
         default:
-            DPRINTK(DPRTL_IO, ("  Unknown IOCTL 0x%x\n",
-                    stack->Parameters.DeviceIoControl.IoControlCode));
+            DPRINTK(DPRTL_IO, ("  Unknown IOCTL 0x%x (REQ 0x%x)\n",
+                    stack->Parameters.DeviceIoControl.IoControlCode,
+                               IOCTL_VIRTFS_FUSE_REQUEST));
             status = STATUS_INVALID_PARAMETER;
             break;
         }
@@ -479,16 +496,25 @@ vfs_dispatch_device_control(IN PDEVICE_OBJECT DeviceObject, IN PIRP Irp)
 void
 vfs_free_request(virtio_fs_request_t *vfs_req)
 {
+    PMDL current_mdl;
+    PMDL next_mdl;
+
     if (vfs_req == NULL) {
         return;
     }
     if (vfs_req->in_mdl != NULL) {
-        MmFreePagesFromMdl(vfs_req->in_mdl);
-        ExFreePool(vfs_req->in_mdl);
+        IoFreeMdl(vfs_req->in_mdl);
     }
-    if (vfs_req->out_mdl != NULL) {
-        MmFreePagesFromMdl(vfs_req->out_mdl);
-        ExFreePool(vfs_req->out_mdl);
+    if (vfs_req->ioctl == IOCTL_VIRTFS_FUSE_REQUEST_READ) {
+        current_mdl = vfs_req->out_mdl;
+        while (current_mdl != NULL) {
+            next_mdl = current_mdl->Next;
+            if (current_mdl->MdlFlags & MDL_PAGES_LOCKED) {
+                MmUnlockPages(current_mdl);
+            }
+            IoFreeMdl(current_mdl);
+            current_mdl = next_mdl;
+        }
     }
     ExFreePoolWithTag(vfs_req, VFS_POOL_TAG);
 }

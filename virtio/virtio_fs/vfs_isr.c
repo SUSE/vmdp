@@ -35,8 +35,6 @@ vfs_int_dpc_work(FDO_DEVICE_EXTENSION *fdx, ULONG qidx)
     virtio_fs_request_t *current;
     DRIVER_CANCEL *cancel_routine;
     KIRQL irql;
-    void *system_buffer;
-    void * out_buf_va;
     unsigned int len;
 
     DPRINTK(DPRTL_DPC, ("--> %s\n", __func__));
@@ -53,6 +51,7 @@ vfs_int_dpc_work(FDO_DEVICE_EXTENSION *fdx, ULONG qidx)
             break;
         }
 
+        DPRINTK(DPRTL_DPC, ("%s: returned irp %p\n", __func__, fs_req->irp));
         KeAcquireInStackQueuedSpinLock(&fdx->req_lock, &lh);
         iter = &fdx->request_list;
         while (iter->Next != NULL) {
@@ -75,27 +74,12 @@ vfs_int_dpc_work(FDO_DEVICE_EXTENSION *fdx, ULONG qidx)
             cancel_routine = IoSetCancelRoutine(fs_req->irp, NULL);
             IoReleaseCancelSpinLock(irql);
             if (cancel_routine != NULL) {
+                DPRINTK(DPRTL_DPC, ("len %d out_len %d\n",
+                                    len, (unsigned)fs_req->out_len));
                 len = min(len, (unsigned)fs_req->out_len);
-                system_buffer = fs_req->irp->AssociatedIrp.SystemBuffer;
-                out_buf_va = MmMapLockedPagesSpecifyCache(
-                    fs_req->out_mdl, KernelMode, MmNonCached, NULL,
-                    FALSE, NormalPagePriority);
-
-                if (out_buf_va != NULL) {
-                    RtlCopyMemory(system_buffer, out_buf_va, len);
-                    vfs_dump_buf((UCHAR *)system_buffer, len);
-                    MmUnmapLockedPages(out_buf_va, fs_req->out_mdl);
-                    fs_req->irp->IoStatus.Status = STATUS_SUCCESS;
-                }
-                else {
-                    PRINTK(("%s: MmMapLockedPagesSpecifyCache failed\n",
-                            __func__));
-                    fs_req->irp->IoStatus.Status =
-                        STATUS_INSUFFICIENT_RESOURCES;
-                    len = 0;
-                }
+                fs_req->irp->IoStatus.Status = STATUS_SUCCESS;
                 fs_req->irp->IoStatus.Information = len;
-                DPRINTK(DPRTL_IO, ("  ** dcp complete irp %p\n", fs_req->irp));
+                DPRINTK(DPRTL_DPC, ("  ** dcp complete irp %p\n", fs_req->irp));
                 vfs_complete_request(fs_req->irp, IO_NO_INCREMENT);
             }
         }

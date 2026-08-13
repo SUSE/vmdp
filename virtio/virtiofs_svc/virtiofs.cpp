@@ -50,6 +50,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "virtiofs.h"
 #include "fusereq.h"
@@ -60,6 +61,8 @@
 #define ALLOCATION_UNIT                4096
 #define PAGE_SZ_4K                     4096
 #define FUSE_DEFAULT_MAX_PAGES_PER_REQ 32
+#define DEFAULT_REFRESH_INTERVAL_SEC   3
+#define MAX_REFRESH_INTERVAL_SEC       60
 
 #define INVALID_FILE_HANDLE            ((uint64_t)(-1))
 
@@ -103,6 +106,24 @@ typedef struct
 
 } VIRTFS_FILE_CONTEXT, *PVIRTFS_FILE_CONTEXT;
 
+typedef struct VIRTFS_CHANGE_TOKEN
+{
+    UINT64 Atime;
+    UINT64 Mtime;
+    UINT64 Ctime;
+    UINT32 AtimeNsec;
+    UINT32 MtimeNsec;
+    UINT32 CtimeNsec;
+    UINT32 Nlink;
+} VIRTFS_CHANGE_TOKEN;
+
+typedef struct VIRTFS_REFRESH_ENTRY
+{
+    std::wstring FileName;
+    VIRTFS_CHANGE_TOKEN ChangeToken{};
+    bool ChangeTokenValid{false};
+} VIRTFS_REFRESH_ENTRY;
+
 struct VIRTFS
 {
     FSP_FILE_SYSTEM *FileSystem{NULL};
@@ -117,6 +138,8 @@ struct VIRTFS
     DeviceHandleNotification DevHandleNotification{};
 
     bool CaseInsensitive{false};
+    bool RefreshEnabled{false};
+    ULONG RefreshIntervalSec{DEFAULT_REFRESH_INTERVAL_SEC};
     std::wstring FileSystemName{};
     std::wstring MountPoint{L"*"};
     std::wstring Tag{};
@@ -141,16 +164,27 @@ struct VIRTFS
     // Maps NodeId to its Nlookup counter.
     std::map<UINT64, UINT64> LookupMap{};
 
+    // Directory buffers are shared by WinFsp dispatcher threads and the
+    // periodic refresh thread. This lock also keeps a file context alive while
+    // the refresh thread is using its FUSE handle.
+    SRWLOCK RefreshLock = SRWLOCK_INIT;
+    std::map<VIRTFS_FILE_CONTEXT *, VIRTFS_REFRESH_ENTRY> RefreshEntries{};
+    HANDLE RefreshStopEvent{NULL};
+    HANDLE RefreshThread{NULL};
+
     VIRTFS(ULONG DebugFlags,
            bool CaseInsensitive,
            const std::wstring &FileSystemName,
            const std::wstring &MountPoint,
            const std::wstring &Tag,
+           bool RefreshEnabled,
+           ULONG RefreshIntervalSec,
            bool AutoOwnerIds,
            uint32_t OwnerUid,
            uint32_t OwnerGid)
-        : DebugFlags{DebugFlags}, CaseInsensitive{CaseInsensitive}, FileSystemName{FileSystemName},
-          MountPoint{MountPoint}, Tag{Tag}, AutoOwnerIds{AutoOwnerIds}
+        : DebugFlags{DebugFlags}, CaseInsensitive{CaseInsensitive}, RefreshEnabled{RefreshEnabled},
+          RefreshIntervalSec{RefreshIntervalSec}, FileSystemName{FileSystemName}, MountPoint{MountPoint}, Tag{Tag},
+          AutoOwnerIds{AutoOwnerIds}
     {
         if (!AutoOwnerIds)
         {
@@ -170,6 +204,12 @@ struct VIRTFS
 
     VOID LookupMapNewOrIncNode(UINT64 NodeId);
     UINT64 LookupMapPopNode(UINT64 NodeId);
+
+    NTSTATUS StartRefreshThread();
+    VOID StopRefreshThread();
+    VOID RegisterRefresh(VIRTFS_FILE_CONTEXT *FileContext, PCWSTR FileName);
+    VOID UnregisterRefresh(VIRTFS_FILE_CONTEXT *FileContext);
+    VOID RefreshWatchedHandles();
 
     NTSTATUS ReadDirAndIgnoreCaseSearch(const VIRTFS_FILE_CONTEXT *ParentContext,
                                         const char *filename,
@@ -210,6 +250,8 @@ struct VIRTFS
     NTSTATUS SubmitDestroyRequest();
 };
 
+static DWORD WINAPI RefreshThreadProc(PVOID Context);
+
 static NTSTATUS SetBasicInfo(FSP_FILE_SYSTEM *FileSystem,
                              PVOID FileContext0,
                              UINT32 FileAttributes,
@@ -230,6 +272,13 @@ static VOID FixReparsePointAttributes(VIRTFS *VirtFs, uint64_t nodeid, UINT32 *P
 static VOID GetVolumeName(HANDLE Device, PWSTR VolumeName, DWORD VolumeNameSize);
 
 static NTSTATUS VirtFsLookupFileName(VIRTFS *VirtFs, PWSTR FileName, FUSE_LOOKUP_OUT *LookupOut);
+
+static NTSTATUS VirtFsFuseRequest(HANDLE Device,
+                                  LPVOID InBuffer,
+                                  DWORD InBufferSize,
+                                  LPVOID OutBuffer,
+                                  DWORD OutBufferSize,
+                                  DWORD Code = IOCTL_VIRTFS_FUSE_REQUEST);
 
 static DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
                                                PVOID Context,
@@ -295,6 +344,7 @@ VOID VIRTFS::Stop()
         return;
     }
 
+    StopRefreshThread();
     FspFileSystemStopDispatcher(FileSystem);
     FspFileSystemDelete(FileSystem);
     FileSystem = NULL;
@@ -402,6 +452,219 @@ DWORD WINAPI DeviceNotificationCallback(HCMNOTIFICATION Notify,
     return ERROR_SUCCESS;
 }
 
+static bool DirChangeTokenEqual(const VIRTFS_CHANGE_TOKEN &Left, const VIRTFS_CHANGE_TOKEN &Right)
+{
+    return Left.Atime == Right.Atime && Left.Mtime == Right.Mtime && Left.Ctime == Right.Ctime &&
+           Left.AtimeNsec == Right.AtimeNsec && Left.MtimeNsec == Right.MtimeNsec &&
+           Left.CtimeNsec == Right.CtimeNsec && Left.Nlink == Right.Nlink;
+}
+
+static bool FileChangeTokenEqual(const VIRTFS_CHANGE_TOKEN &Left, const VIRTFS_CHANGE_TOKEN &Right)
+{
+    return Left.Mtime == Right.Mtime && Left.MtimeNsec == Right.MtimeNsec;
+}
+
+static NTSTATUS GetChangeToken(HANDLE Device, const VIRTFS_FILE_CONTEXT *FileContext, VIRTFS_CHANGE_TOKEN *ChangeToken)
+{
+    FUSE_GETATTR_IN getattr_in;
+    FUSE_GETATTR_OUT getattr_out;
+
+    FUSE_HEADER_INIT(&getattr_in.hdr, FUSE_GETATTR, FileContext->NodeId, sizeof(getattr_in.getattr));
+    ZeroMemory(&getattr_in.getattr, sizeof(getattr_in.getattr));
+    getattr_in.getattr.fh = FileContext->FileHandle;
+    getattr_in.getattr.getattr_flags = FUSE_GETATTR_FH;
+
+    NTSTATUS Status = VirtFsFuseRequest(Device, &getattr_in, sizeof(getattr_in), &getattr_out, sizeof(getattr_out));
+    if (NT_SUCCESS(Status))
+    {
+        ChangeToken->Atime = getattr_out.attr.attr.atime;
+        ChangeToken->Mtime = getattr_out.attr.attr.mtime;
+        ChangeToken->Ctime = getattr_out.attr.attr.ctime;
+        ChangeToken->AtimeNsec = getattr_out.attr.attr.atimensec;
+        ChangeToken->MtimeNsec = getattr_out.attr.attr.mtimensec;
+        ChangeToken->CtimeNsec = getattr_out.attr.attr.ctimensec;
+        ChangeToken->Nlink = getattr_out.attr.attr.nlink;
+    }
+
+    return Status;
+}
+
+NTSTATUS VIRTFS::StartRefreshThread()
+{
+    DBG("Starting change notifier with interval %u second(s)", RefreshIntervalSec);
+
+    RefreshStopEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+    if (RefreshStopEvent == NULL)
+    {
+        return FspNtStatusFromWin32(GetLastError());
+    }
+
+    RefreshThread = CreateThread(NULL, 0, RefreshThreadProc, this, 0, NULL);
+    if (RefreshThread == NULL)
+    {
+        NTSTATUS Status = FspNtStatusFromWin32(GetLastError());
+        CloseHandle(RefreshStopEvent);
+        RefreshStopEvent = NULL;
+        return Status;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+VOID VIRTFS::StopRefreshThread()
+{
+    if (RefreshThread != NULL)
+    {
+        SetEvent(RefreshStopEvent);
+        WaitForSingleObject(RefreshThread, INFINITE);
+        CloseHandle(RefreshThread);
+        RefreshThread = NULL;
+    }
+    if (RefreshStopEvent != NULL)
+    {
+        CloseHandle(RefreshStopEvent);
+        RefreshStopEvent = NULL;
+    }
+
+    AcquireSRWLockExclusive(&RefreshLock);
+    RefreshEntries.clear();
+    ReleaseSRWLockExclusive(&RefreshLock);
+}
+
+VOID VIRTFS::RegisterRefresh(VIRTFS_FILE_CONTEXT *FileContext, PCWSTR FileName)
+{
+    if (!RefreshEnabled)
+    {
+        return;
+    }
+
+    bool LockHeld = false;
+    try
+    {
+        VIRTFS_REFRESH_ENTRY Entry;
+        Entry.FileName = FileName;
+        Entry.ChangeTokenValid = NT_SUCCESS(GetChangeToken(Device, FileContext, &Entry.ChangeToken));
+
+        AcquireSRWLockExclusive(&RefreshLock);
+        LockHeld = true;
+        auto [Iterator, Inserted] = RefreshEntries.emplace(FileContext, std::move(Entry));
+        if (Inserted)
+        {
+            DBG("%s added to refresh watcher: path='%S' nodeid=%I64u fh=%I64u",
+                FileContext->IsDirectory ? "Directory" : "File",
+                Iterator->second.FileName.c_str(),
+                FileContext->NodeId,
+                FileContext->FileHandle);
+        }
+        ReleaseSRWLockExclusive(&RefreshLock);
+        LockHeld = false;
+    }
+    catch (std::bad_alloc &)
+    {
+        if (LockHeld)
+        {
+            ReleaseSRWLockExclusive(&RefreshLock);
+        }
+        DBG("Unable to register directory refresh for '%S'", FileName);
+    }
+}
+
+VOID VIRTFS::UnregisterRefresh(VIRTFS_FILE_CONTEXT *FileContext)
+{
+    if (!RefreshEnabled)
+    {
+        return;
+    }
+
+    AcquireSRWLockExclusive(&RefreshLock);
+    auto Iterator = RefreshEntries.find(FileContext);
+    if (Iterator != RefreshEntries.end())
+    {
+        DBG("%s removed from refresh watcher: path='%S' nodeid=%I64u fh=%I64u",
+            FileContext->IsDirectory ? "Directory" : "File",
+            Iterator->second.FileName.c_str(),
+            FileContext->NodeId,
+            FileContext->FileHandle);
+        RefreshEntries.erase(Iterator);
+    }
+    ReleaseSRWLockExclusive(&RefreshLock);
+}
+
+VOID VIRTFS::RefreshWatchedHandles()
+{
+    AcquireSRWLockExclusive(&RefreshLock);
+
+    for (auto &[FileContext, Entry] : RefreshEntries)
+    {
+        VIRTFS_CHANGE_TOKEN ChangeToken;
+        NTSTATUS Status = GetChangeToken(Device, FileContext, &ChangeToken);
+        if (!NT_SUCCESS(Status))
+        {
+            continue;
+        }
+
+        bool Changed = Entry.ChangeTokenValid &&
+                       !(FileContext->IsDirectory ? DirChangeTokenEqual(Entry.ChangeToken, ChangeToken)
+                                                  : FileChangeTokenEqual(Entry.ChangeToken, ChangeToken));
+
+        if (Changed)
+        {
+            DBG("%s change detected: path='%S' nodeid=%I64u fh=%I64u",
+                FileContext->IsDirectory ? "Directory" : "File",
+                Entry.FileName.c_str(),
+                FileContext->NodeId,
+                FileContext->FileHandle);
+            if (FileContext->IsDirectory)
+            {
+                FspFileSystemDeleteDirectoryBuffer(&FileContext->DirBuffer);
+            }
+
+            alignas(FSP_FSCTL_NOTIFY_INFO) BYTE NotifyInfoBuffer[FIELD_OFFSET(FSP_FSCTL_NOTIFY_INFO, FileNameBuf) +
+                                                                 MAX_PATH * sizeof(WCHAR)];
+            FSP_FSCTL_NOTIFY_INFO *NotifyInfo = reinterpret_cast<FSP_FSCTL_NOTIFY_INFO *>(NotifyInfoBuffer);
+            SIZE_T FileNameLength = min(Entry.FileName.length(), (SIZE_T)MAX_PATH - 1);
+
+            ZeroMemory(NotifyInfoBuffer, sizeof(NotifyInfoBuffer));
+            CopyMemory(NotifyInfo->FileNameBuf, Entry.FileName.c_str(), FileNameLength * sizeof(WCHAR));
+            NotifyInfo->Size = (UINT16)(sizeof(*NotifyInfo) + FileNameLength * sizeof(WCHAR));
+            NotifyInfo->Action = FILE_ACTION_MODIFIED;
+            NotifyInfo->Filter = FileContext->IsDirectory ? FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_FILE_NAME
+                                                          : FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_SIZE;
+
+            if (STATUS_SUCCESS == FspFileSystemNotifyBegin(FileSystem, 500))
+            {
+                FspFileSystemNotify(FileSystem, NotifyInfo, NotifyInfo->Size);
+                FspFileSystemNotifyEnd(FileSystem);
+            }
+        }
+        else
+        {
+            DBG("No %s change detected: path='%S' nodeid=%I64u fh=%I64u",
+                FileContext->IsDirectory ? "directory" : "file",
+                Entry.FileName.c_str(),
+                FileContext->NodeId,
+                FileContext->FileHandle);
+        }
+
+        Entry.ChangeToken = ChangeToken;
+        Entry.ChangeTokenValid = true;
+    }
+
+    ReleaseSRWLockExclusive(&RefreshLock);
+}
+
+static DWORD WINAPI RefreshThreadProc(PVOID Context)
+{
+    VIRTFS *VirtFs = static_cast<VIRTFS *>(Context);
+
+    while (WAIT_TIMEOUT == WaitForSingleObject(VirtFs->RefreshStopEvent, VirtFs->RefreshIntervalSec * 1000))
+    {
+        VirtFs->RefreshWatchedHandles();
+    }
+
+    return 0;
+}
+
 static UINT32 PosixUnixModeToAttributes(VIRTFS *VirtFs, uint64_t nodeid, uint32_t mode)
 {
     UINT32 Attributes;
@@ -474,11 +737,30 @@ static VOID UnixTimeToFileTime(uint64_t time, uint32_t nsec, PUINT64 PFileTime)
     *PFileTime = time * 10000000 + nsec / 100 + 116444736000000000LL;
 }
 
+static UINT64 AlignAllocationSize(UINT64 Size)
+{
+    if (Size == 0)
+    {
+        return 0;
+    }
+
+    return ((Size - 1) / ALLOCATION_UNIT + 1) * ALLOCATION_UNIT;
+}
+
+static UINT64 AllocationSizeFromAttr(const struct fuse_attr *Attr)
+{
+    const UINT64 PhysicalAllocationSize = Attr->blocks * 512ULL;
+    const UINT64 UnalignedAllocationSize = (PhysicalAllocationSize > Attr->size) ? PhysicalAllocationSize : Attr->size;
+
+    return AlignAllocationSize(UnalignedAllocationSize);
+}
+
 static VOID SetFileInfo(VIRTFS *VirtFs, struct fuse_entry_out *entry, FSP_FSCTL_FILE_INFO *FileInfo)
 {
     struct fuse_attr *attr = &entry->attr;
 
     FileInfo->FileAttributes = PosixUnixModeToAttributes(VirtFs, entry->nodeid, attr->mode);
+    FileInfo->ReparseTag = 0;
 
     if (FileInfo->FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
     {
@@ -486,18 +768,36 @@ static VOID SetFileInfo(VIRTFS *VirtFs, struct fuse_entry_out *entry, FSP_FSCTL_
         FileInfo->FileSize = 0;
         FileInfo->AllocationSize = 0;
     }
+    else if (FileInfo->FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        FileInfo->FileSize = 0;
+        FileInfo->AllocationSize = 0;
+    }
     else
     {
-        FileInfo->ReparseTag = 0;
         FileInfo->FileSize = attr->size;
-        FileInfo->AllocationSize = attr->blocks * 512;
+        FileInfo->AllocationSize = AllocationSizeFromAttr(attr);
     }
-    UnixTimeToFileTime(attr->ctime, attr->ctimensec, &FileInfo->CreationTime);
+
+    UnixTimeToFileTime(attr->ctime, attr->ctimensec, &FileInfo->ChangeTime);
     UnixTimeToFileTime(attr->atime, attr->atimensec, &FileInfo->LastAccessTime);
     UnixTimeToFileTime(attr->mtime, attr->mtimensec, &FileInfo->LastWriteTime);
-    FileInfo->ChangeTime = FileInfo->LastWriteTime;
-    FileInfo->IndexNumber = 0;
-    FileInfo->HardLinks = 0;
+
+    if ((attr->ctime != 0) || (attr->ctimensec != 0))
+    {
+        FileInfo->CreationTime = FileInfo->ChangeTime;
+    }
+    else if ((attr->mtime != 0) || (attr->mtimensec != 0))
+    {
+        FileInfo->CreationTime = FileInfo->LastWriteTime;
+    }
+    else
+    {
+        FileInfo->CreationTime = FileInfo->LastAccessTime;
+    }
+
+    FileInfo->IndexNumber = (attr->ino != 0) ? attr->ino : entry->nodeid;
+    FileInfo->HardLinks = (attr->nlink != 0) ? attr->nlink : 1;
     FileInfo->EaSize = 0;
 
     DBG("ino=%I64u size=%I64u blocks=%I64u atime=%I64u mtime=%I64u ctime=%I64u "
@@ -525,7 +825,7 @@ static NTSTATUS VirtFsFuseRequest(HANDLE Device,
                                   DWORD InBufferSize,
                                   LPVOID OutBuffer,
                                   DWORD OutBufferSize,
-                                  DWORD Code = IOCTL_VIRTFS_FUSE_REQUEST)
+                                  DWORD Code)
 {
     NTSTATUS Status = STATUS_SUCCESS;
     DWORD BytesReturned = 0;
@@ -599,6 +899,26 @@ static NTSTATUS VirtFsFuseRequest(HANDLE Device,
     return Status;
 }
 
+static NTSTATUS VirtFsFuseRequestNoReply(HANDLE Device,
+                                         LPVOID InBuffer,
+                                         DWORD InBufferSize,
+                                         DWORD Code = IOCTL_VIRTFS_FUSE_REQUEST)
+{
+    DWORD bytesReturned = 0;
+    struct fuse_in_header *in_hdr = (struct fuse_in_header *)InBuffer;
+
+    DBG(">>req: %d unique: %I64u len: %u", in_hdr->opcode, in_hdr->unique, in_hdr->len);
+
+    BOOL result = DeviceIoControl(Device, Code, InBuffer, InBufferSize, nullptr, 0, &bytesReturned, nullptr);
+
+    if (!result)
+    {
+        return FspNtStatusFromWin32(GetLastError());
+    }
+
+    return STATUS_SUCCESS;
+}
+
 static NTSTATUS VirtFsCreateFile(VIRTFS *VirtFs,
                                  VIRTFS_FILE_CONTEXT *FileContext,
                                  UINT32 GrantedAccess,
@@ -640,7 +960,7 @@ static NTSTATUS VirtFsCreateFile(VIRTFS *VirtFs,
 
         if (AllocationSize > 0)
         {
-            SetFileSize(VirtFs->FileSystem, FileContext, AllocationSize, TRUE, FileInfo);
+            Status = SetFileSize(VirtFs->FileSystem, FileContext, AllocationSize, TRUE, FileInfo);
         }
         else
         {
@@ -709,7 +1029,6 @@ UINT64 VIRTFS::LookupMapPopNode(UINT64 NodeId)
 static VOID SubmitForgetRequest(HANDLE Device, UINT64 NodeId, UINT64 Nlookup)
 {
     FUSE_FORGET_IN forget_in;
-    FUSE_FORGET_OUT forget_out;
 
     DBG("NodeId: %lu Nlookup: %lu", NodeId, Nlookup);
 
@@ -717,7 +1036,7 @@ static VOID SubmitForgetRequest(HANDLE Device, UINT64 NodeId, UINT64 Nlookup)
 
     forget_in.forget.nlookup = Nlookup;
 
-    VirtFsFuseRequest(Device, &forget_in, forget_in.hdr.len, &forget_out, sizeof(forget_out));
+    VirtFsFuseRequestNoReply(Device, &forget_in, forget_in.hdr.len);
 }
 
 NTSTATUS VIRTFS::SubmitDeleteRequest(uint64_t parent, const char *filename, const VIRTFS_FILE_CONTEXT *FileContext)
@@ -1449,6 +1768,8 @@ static NTSTATUS Create(FSP_FILE_SYSTEM *FileSystem,
 
     *PFileContext = FileContext;
 
+    VirtFs->RegisterRefresh(FileContext, FileName);
+
     return Status;
 }
 
@@ -1473,6 +1794,8 @@ static NTSTATUS Open(FSP_FILE_SYSTEM *FileSystem,
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
+    FileContext->FileHandle = INVALID_FILE_HANDLE;
+
     Status = VirtFsLookupFileName(VirtFs, FileName, &lookup_out);
     if (!NT_SUCCESS(Status))
     {
@@ -1495,6 +1818,11 @@ static NTSTATUS Open(FSP_FILE_SYSTEM *FileSystem,
 
     SetFileInfo(VirtFs, &lookup_out.entry, FileInfo);
     *PFileContext = FileContext;
+
+    if (FileContext->FileHandle != INVALID_FILE_HANDLE)
+    {
+        VirtFs->RegisterRefresh(FileContext, FileName);
+    }
 
     return Status;
 }
@@ -1568,7 +1896,12 @@ static VOID Close(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0)
 
     DBG("fh: %I64u nodeid: %I64u", FileContext->FileHandle, FileContext->NodeId);
 
-    (VOID) VirtFs->SubmitReleaseRequest(FileContext);
+    VirtFs->UnregisterRefresh(FileContext);
+
+    if (FileContext->FileHandle != INVALID_FILE_HANDLE)
+    {
+        (VOID) VirtFs->SubmitReleaseRequest(FileContext);
+    }
 
     FspFileSystemDeleteDirectoryBuffer(&FileContext->DirBuffer);
 
@@ -1622,7 +1955,8 @@ static NTSTATUS Read(FSP_FILE_SYSTEM *FileSystem,
                                    &read_in,
                                    sizeof(read_in),
                                    &read_out_fast,
-                                   sizeof(read_out_fast));
+                                   sizeof(read_out_fast),
+                                   IOCTL_VIRTFS_FUSE_REQUEST_READ);
         if (!NT_SUCCESS(Status))
         {
             return Status;
@@ -1816,7 +2150,7 @@ static NTSTATUS GetFileInfo(FSP_FILE_SYSTEM *FileSystem, PVOID FileContext0, FSP
 static NTSTATUS SetBasicInfo(FSP_FILE_SYSTEM *FileSystem,
                              PVOID FileContext0,
                              UINT32 FileAttributes,
-                             UINT64 CreationTime,
+                             UINT64 /*CreationTime*/,
                              UINT64 LastAccessTime,
                              UINT64 LastWriteTime,
                              UINT64 ChangeTime,
@@ -1861,20 +2195,17 @@ static NTSTATUS SetBasicInfo(FSP_FILE_SYSTEM *FileSystem,
         setattr_in.setattr.valid |= FATTR_ATIME;
         FileTimeToUnixTime(LastAccessTime, &setattr_in.setattr.atime, &setattr_in.setattr.atimensec);
     }
-    if ((LastWriteTime != 0) || (ChangeTime != 0))
+    if (LastWriteTime != 0)
     {
-        if (LastWriteTime == 0)
-        {
-            LastWriteTime = ChangeTime;
-        }
         setattr_in.setattr.valid |= FATTR_MTIME;
         FileTimeToUnixTime(LastWriteTime, &setattr_in.setattr.mtime, &setattr_in.setattr.mtimensec);
     }
-    if (CreationTime != 0)
+    if (ChangeTime != 0)
     {
         setattr_in.setattr.valid |= FATTR_CTIME;
-        FileTimeToUnixTime(CreationTime, &setattr_in.setattr.ctime, &setattr_in.setattr.ctimensec);
+        FileTimeToUnixTime(ChangeTime, &setattr_in.setattr.ctime, &setattr_in.setattr.ctimensec);
     }
+    // TODO: set creation/birth time, we need to use setattr(FUSE_SET_ATTR_BTIME)
 
     Status = VirtFsFuseRequest(VirtFs->Device, &setattr_in, sizeof(setattr_in), &setattr_out, sizeof(setattr_out));
 
@@ -1951,14 +2282,45 @@ static NTSTATUS SetFileSize(FSP_FILE_SYSTEM *FileSystem,
 {
     VIRTFS *VirtFs = (VIRTFS *)FileSystem->UserContext;
     VIRTFS_FILE_CONTEXT *FileContext = (VIRTFS_FILE_CONTEXT *)FileContext0;
-    NTSTATUS Status;
+    NTSTATUS Status = STATUS_SUCCESS;
 
     DBG("NewSize: %I64u SetAllocationSize: %d", NewSize, SetAllocationSize);
     DBG("fh: %I64u nodeid: %I64u", FileContext->FileHandle, FileContext->NodeId);
 
     if (SetAllocationSize == TRUE)
     {
-        if (NewSize > 0)
+        FSP_FSCTL_FILE_INFO CurrentFileInfo;
+
+        Status = GetFileInfoInternal(VirtFs, FileContext, &CurrentFileInfo, NULL);
+        if (!NT_SUCCESS(Status))
+        {
+            return Status;
+        }
+
+        if (NewSize < CurrentFileInfo.FileSize)
+        {
+            FUSE_SETATTR_IN setattr_in;
+            FUSE_SETATTR_OUT setattr_out;
+
+            FUSE_HEADER_INIT(&setattr_in.hdr, FUSE_SETATTR, FileContext->NodeId, sizeof(setattr_in.setattr));
+
+            ZeroMemory(&setattr_in.setattr, sizeof(setattr_in.setattr));
+            setattr_in.setattr.valid = FATTR_SIZE;
+            setattr_in.setattr.size = NewSize;
+
+            if ((FileContext->IsDirectory == FALSE) && (FileContext->FileHandle != INVALID_FILE_HANDLE))
+            {
+                setattr_in.setattr.valid |= FATTR_FH;
+                setattr_in.setattr.fh = FileContext->FileHandle;
+            }
+
+            Status = VirtFsFuseRequest(VirtFs->Device,
+                                       &setattr_in,
+                                       sizeof(setattr_in),
+                                       &setattr_out,
+                                       sizeof(setattr_out));
+        }
+        else if (NewSize > CurrentFileInfo.AllocationSize)
         {
             FUSE_FALLOCATE_IN falloc_in;
             FUSE_FALLOCATE_OUT falloc_out;
@@ -1976,13 +2338,6 @@ static NTSTATUS SetFileSize(FSP_FILE_SYSTEM *FileSystem,
 
             Status = VirtFsFuseRequest(VirtFs->Device, &falloc_in, falloc_in.hdr.len, &falloc_out, sizeof(falloc_out));
         }
-        else
-        {
-            // fallocate on host fails when len is less than or equal to 0.
-            // So ignore the request and report success. This fix a failure
-            // to create a new file through Windows Explorer.
-            Status = STATUS_SUCCESS;
-        }
     }
     else
     {
@@ -1994,6 +2349,12 @@ static NTSTATUS SetFileSize(FSP_FILE_SYSTEM *FileSystem,
         ZeroMemory(&setattr_in.setattr, sizeof(setattr_in.setattr));
         setattr_in.setattr.valid = FATTR_SIZE;
         setattr_in.setattr.size = NewSize;
+
+        if ((FileContext->IsDirectory == FALSE) && (FileContext->FileHandle != INVALID_FILE_HANDLE))
+        {
+            setattr_in.setattr.valid |= FATTR_FH;
+            setattr_in.setattr.fh = FileContext->FileHandle;
+        }
 
         Status = VirtFsFuseRequest(VirtFs->Device, &setattr_in, sizeof(setattr_in), &setattr_out, sizeof(setattr_out));
     }
@@ -2322,6 +2683,18 @@ static NTSTATUS ReadDirectory(FSP_FILE_SYSTEM *FileSystem,
     int FileNameLength;
     FUSE_READ_OUT *read_out;
 
+    bool RefreshLockHeld = VirtFs->RefreshEnabled;
+    if (RefreshLockHeld)
+    {
+        AcquireSRWLockExclusive(&VirtFs->RefreshLock);
+    }
+    scope_exit RefreshLockGuard([VirtFs, RefreshLockHeld] {
+        if (RefreshLockHeld)
+        {
+            ReleaseSRWLockExclusive(&VirtFs->RefreshLock);
+        }
+    });
+
     DBG("Pattern: %S Marker: %S BufferLength: %u",
         Pattern ? Pattern : TEXT("(null)"),
         Marker ? Marker : TEXT("(null)"),
@@ -2339,11 +2712,11 @@ static NTSTATUS ReadDirectory(FSP_FILE_SYSTEM *FileSystem,
         {
             for (;;)
             {
-                VirtFs->SubmitReadDirRequest(FileContext,
-                                             Offset,
-                                             TRUE,
-                                             read_out,
-                                             sizeof(struct fuse_out_header) + (ULONG64)BufferLength * 2);
+                Status = VirtFs->SubmitReadDirRequest(FileContext,
+                                                      Offset,
+                                                      TRUE,
+                                                      read_out,
+                                                      sizeof(struct fuse_out_header) + (ULONG64)BufferLength * 2);
 
                 if (!NT_SUCCESS(Status))
                 {
@@ -2590,7 +2963,7 @@ static NTSTATUS GetDirInfoByName(FSP_FILE_SYSTEM *FileSystem,
 }
 
 // clang-format off
-static FSP_FILE_SYSTEM_INTERFACE VirtFsInterface =
+static FSP_FILE_SYSTEM_INTERFACE VirtFsInterface = 
 {
     .GetVolumeInfo = GetVolumeInfo,
     .GetSecurityByName = GetSecurityByName,
@@ -2725,6 +3098,16 @@ NTSTATUS VIRTFS::Start()
         goto out_del_fs;
     }
 
+    if (RefreshEnabled)
+    {
+        Status = StartRefreshThread();
+        if (!NT_SUCCESS(Status))
+        {
+            FspFileSystemStopDispatcher(FileSystem);
+            goto out_del_fs;
+        }
+    }
+
     return STATUS_SUCCESS;
 
 out_del_fs:
@@ -2738,6 +3121,8 @@ static NTSTATUS ParseArgs(ULONG argc,
                           ULONG &DebugFlags,
                           std::wstring &DebugLogFile,
                           bool &CaseInsensitive,
+                          bool &RefreshEnabled,
+                          ULONG &RefreshIntervalSec,
                           std::wstring &FileSystemName,
                           std::wstring &MountPoint,
                           std::wstring &Tag,
@@ -2775,6 +3160,10 @@ static NTSTATUS ParseArgs(ULONG argc,
                 break;
             case L'i':
                 CaseInsensitive = true;
+                break;
+            case L'n':
+                argtol(RefreshIntervalSec);
+                RefreshEnabled = true;
                 break;
             case L'F':
                 argtos(FileSystemName);
@@ -2815,12 +3204,13 @@ usage:
                              "    -d DebugFlags       [-1: enable all debug logs]\n"
                              "    -D DebugLogFile     [file path; use - for stderr]\n"
                              "    -i                  [case insensitive file system]\n"
+                             "    -n Seconds          [enable notifier; 0 defaults to 3, maximum %u]\n"
                              "    -F FileSystemName   [file system name for OS]\n"
                              "    -m MountPoint       [X:|* (required if no UNC prefix)]\n"
                              "    -t Tag              [mount tag; max 36 symbols]\n"
                              "    -o UID:GID          [host owner UID:GID]\n";
 
-    FspServiceLog(EVENTLOG_ERROR_TYPE, usage, FS_SERVICE_NAME);
+    FspServiceLog(EVENTLOG_ERROR_TYPE, usage, FS_SERVICE_NAME, MAX_REFRESH_INTERVAL_SEC);
 
     return STATUS_UNSUCCESSFUL;
 }
@@ -2828,6 +3218,8 @@ usage:
 static VOID ParseRegistry(ULONG &DebugFlags,
                           std::wstring &DebugLogFile,
                           bool &CaseInsensitive,
+                          bool &RefreshEnabled,
+                          ULONG &RefreshIntervalSec,
                           std::wstring &FileSystemName,
                           std::wstring &MountPoint,
                           std::wstring &Owner)
@@ -2835,6 +3227,8 @@ static VOID ParseRegistry(ULONG &DebugFlags,
     RegistryGetVal(FS_SERVICE_REGKEY, L"DebugFlags", DebugFlags);
     RegistryGetVal(FS_SERVICE_REGKEY, L"DebugLogFile", DebugLogFile);
     RegistryGetVal(FS_SERVICE_REGKEY, L"CaseInsensitive", CaseInsensitive);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"NotifierEnabled", RefreshEnabled);
+    RegistryGetVal(FS_SERVICE_REGKEY, L"NotifierIntervalSec", RefreshIntervalSec);
     RegistryGetVal(FS_SERVICE_REGKEY, L"FileSystemName", FileSystemName);
     RegistryGetVal(FS_SERVICE_REGKEY, L"MountPoint", MountPoint);
     RegistryGetVal(FS_SERVICE_REGKEY, L"Owner", Owner);
@@ -2884,6 +3278,8 @@ static NTSTATUS SvcStart(FSP_SERVICE *Service, ULONG argc, PWSTR *argv)
     std::wstring DebugLogFile{};
     ULONG DebugFlags{0};
     bool CaseInsensitive{false};
+    bool RefreshEnabled{false};
+    ULONG RefreshIntervalSec{DEFAULT_REFRESH_INTERVAL_SEC};
     std::wstring MountPoint{L"*"};
     std::wstring FileSystemName{};
     std::wstring Tag{};
@@ -2919,6 +3315,8 @@ static NTSTATUS SvcStart(FSP_SERVICE *Service, ULONG argc, PWSTR *argv)
                            DebugFlags,
                            DebugLogFile,
                            CaseInsensitive,
+                           RefreshEnabled,
+                           RefreshIntervalSec,
                            FileSystemName,
                            MountPoint,
                            Tag,
@@ -2931,7 +3329,14 @@ static NTSTATUS SvcStart(FSP_SERVICE *Service, ULONG argc, PWSTR *argv)
     }
     else
     {
-        ParseRegistry(DebugFlags, DebugLogFile, CaseInsensitive, FileSystemName, MountPoint, Owner);
+        ParseRegistry(DebugFlags,
+                      DebugLogFile,
+                      CaseInsensitive,
+                      RefreshEnabled,
+                      RefreshIntervalSec,
+                      FileSystemName,
+                      MountPoint,
+                      Owner);
     }
 
     ParseRegistryCommon();
@@ -2941,6 +3346,15 @@ static NTSTATUS SvcStart(FSP_SERVICE *Service, ULONG argc, PWSTR *argv)
     if (!NT_SUCCESS(Status))
     {
         return Status;
+    }
+
+    if (RefreshEnabled && RefreshIntervalSec == 0)
+    {
+        RefreshIntervalSec = DEFAULT_REFRESH_INTERVAL_SEC;
+    }
+    else if (RefreshEnabled && RefreshIntervalSec > MAX_REFRESH_INTERVAL_SEC)
+    {
+        RefreshIntervalSec = MAX_REFRESH_INTERVAL_SEC;
     }
 
     if (!DebugLogFile.empty())
@@ -2959,6 +3373,8 @@ static NTSTATUS SvcStart(FSP_SERVICE *Service, ULONG argc, PWSTR *argv)
                             FileSystemName,
                             MountPoint,
                             Tag,
+                            RefreshEnabled,
+                            RefreshIntervalSec,
                             AutoOwnerIds,
                             OwnerUid,
                             OwnerGid);
