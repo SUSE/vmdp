@@ -45,6 +45,8 @@ runsdvui.cmd
 SDV-default.xml
 virtio/virtio.sln
 virtio/pvvxsvc/virtio_balloon_pub.h
+virtio/viosock
+virtio/viogpudo
 virtio/virtio_balloon/virtio_pci.c
 virtio/virtio_balloon/virtio_queue.c
 virtio/virtio_balloon/virtio_ring.c

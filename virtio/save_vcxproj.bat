@@ -3,7 +3,9 @@
 if "%1"=="" goto help
 rem if "%1"=="19" goto start
 rem if "%1"=="22" goto start
-rem if "%1"=="arm64" goto start
+rem if "%1"=="22arm64" goto start
+rem if "%1"=="26" goto start
+rem if "%1"=="26arm64" goto start
 rem goto help
 
 :start
@@ -20,6 +22,8 @@ for %%d in (fwcfg pvcrash_notify pvvxsvc virtiofs_svc virtio_balloon virtio_blk 
     if "%%d%"=="virtio_rng" (
         copy /y cng\um\viorngum.vcxproj cng\um\viorngum.vcxproj.%1
         copy /y cng\um\viorngum.vcxproj.user cng\um\viorngum.vcxproj.user.%1
+        if exist cng\um\sources.props copy cng\um\sources.props cng\um\sources.props.%1
+        if exist cng\um\packages.config copy cng\um\packages.config cng\um\packages.config.%1
         if exist cng\um\viorngum.vcxproj.filters copy /y cng\um\viorngum.vcxproj.filters cng\um\viorngum.vcxproj.filters.%1
     )
     cd ..

@@ -3,7 +3,9 @@
 if "%1"=="" goto help
 if "%1"=="19" goto start
 if "%1"=="22" goto start
-if "%1"=="arm64" goto start
+if "%1"=="22arm64" goto start
+if "%1"=="26" goto start
+if "%1"=="26arm64" goto start
 goto help
 
 :start

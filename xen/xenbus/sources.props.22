@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">xenbus</TARGETNAME>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">EXPORT_DRIVER</TARGETTYPE>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">..\include;..\..\virtio\include; ..\..\virtio\include\virtio;..\..\virtio\include\asm;..\xenbus</INCLUDES>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(DDK_LIB_PATH)\ntstrsafe.lib              $(DDK_LIB_PATH)\wdmsec.lib</TARGETLIBS>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(_BUILDARCH)'=='x86'">
+      <PropertyGroup>
+        <DLLDEF Condition="'$(OVERRIDE_DLLDEF)'!='true'">$(TARGETNAME)_x86.def</DLLDEF>
+        <I386_SOURCES Condition="'$(OVERRIDE_I386_SOURCES)'!='true'">i386\xenbus_glu32.asm</I386_SOURCES>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_BUILDARCH)'=='AMD64'">
+      <PropertyGroup>
+        <DLLDEF Condition="'$(OVERRIDE_DLLDEF)'!='true'">$(TARGETNAME)_x64.def</DLLDEF>
+        <AMD64_SOURCES Condition="'$(OVERRIDE_AMD64_SOURCES)'!='true'">amd64\xenbus_glu64.asm</AMD64_SOURCES>
+      </PropertyGroup>
+    </When>
+  </Choose>
+  <PropertyGroup>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">xenbus_entry.c           xenbus.c           pnp.c           power.c           pdofunc.c           xen_support.c           gnttab.c           evtchn.c           balloon.c           xenbus_xs.c           xenbus_probe.c           xenbus_client.c           xenbus_ioctl.c           xenbus.rc</SOURCES>
+  </PropertyGroup>
+</Project>

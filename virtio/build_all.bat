@@ -28,6 +28,8 @@ REM
 REM This Batch file builds all of the windows paravirtual drivers for
 REM all platforms and architectures
 
+setlocal EnableDelayedExpansion
+
 del *.err
 del *.wrn
 del *.log
@@ -35,6 +37,9 @@ set pvbuildoption=
 set do_arm_build=
 set vxcp_latest=
 set vcxp=19
+set _WXP=
+set _WLH=
+set _WIN7=
 set setvcxp_bat=switch_vcxproj.bat
 
 :parse_params
@@ -55,11 +60,11 @@ if "%1"=="" (
 ) else if "%1"=="22" (
     set vcxp=%1
     set setvcxp_bat=switch_vcxproj.bat
+) else if "%1"=="26" (
+    set vcxp=%1
+    set setvcxp_bat=switch_vcxproj.bat
 ) else if "%1"=="-cZ" (
     set pvbuildoption=%1
-) else if "%1"=="msb" (
-    echo Invalid option: %1
-    goto help
 ) else if "%1"=="xp" (
     set _WXP=WXP
 ) else if "%1"=="lh" (
@@ -84,12 +89,12 @@ echo Build using VS20%vcxp%
 set start_dir=%cd%
 set build_dir=%cd%
 set start_path=%path%
-set start_username=%USERNAME%
 set t_rebuild_flag=
 if "%pvbuildoption%"=="-cZ" set t_rebuild_flag=c
 
-rem If specifically specified vs2022, only build for 11
-if %vcxp%==22 goto build_vs_22
+rem If specifically specified vs2022 or greater, only build for 11
+if %vcxp%==22 goto setup_vs_gte22
+if %vcxp%==26 goto setup_vs_gte22
 
 rem Build 32 bit
 cd %build_dir%
@@ -129,8 +134,11 @@ if %vcxp%==13 (
 ) else if %vcxp%==19 (
     call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat"
 ) else if %vcxp%==22 (
-    goto build_vs_22
+    goto setup_vs_gte22
+) else if %vcxp%==26 (
+    goto setup_vs_gte22
 ) else (
+    echo Unknown vs version
     goto help
 )
 
@@ -149,55 +157,60 @@ for %%w in (8 8.1 10) do (
 echo Finished building with VS20%vcxp%
 echo[
 
-:build_vs_22
+rem reset vcxp to 26 from 19 because 22 was not specified.
+set vcxp=26
+
+rem ********************** Win11 builds ************************
+:setup_vs_gte22
 set path=%start_path%
+set msb_arch=6
 cd %start_dir%
 call unsetddk.bat
 call unsetmsb.bat
 cd %build_dir%
-call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 
 set package_to_build=%build_dir%
 for %%g in ("%package_to_build%") do set package_to_build=%%~nxg
 
 echo.
+if %vcxp%==26 goto build_vs_26
 
-set vcxp=22
-echo Build using VS20%vcxp%
-call %setvcxp_bat% %vcxp%
+:build_vs_22
+call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+goto build_vs_gte22
 
-for %%w in (11) do (
-    for %%r in (r d) do (
-        for %%x in (6) do (
+:build_vs_26
+call "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat"
+goto build_vs_gte22
+
+:build_vs_gte22
+if "%do_arm_build%"=="arm" (
+    if "not %package_to_build%"=="virtio" (
+        echo[
+        echo Building for ARM64 is not supported on %package_to_build%
+        goto end
+    )
+    set msb_arch=!msb_arch! a
+)
+
+for %%x in (!msb_arch!) do (
+    echo Build using VS20!vcxp! %%x
+    if %%x==6 (
+        call %setvcxp_bat% %vcxp%
+    ) else (
+        call %setvcxp_bat% %vcxp%arm64
+    )
+    for %%w in (11) do (
+        for %%r in (r d) do (
             title Windows %%w %%r %%x
             call msb.bat %%w %%r %%x %t_rebuild_flag%
             call msb_err.bat %%w %%r %%x
             if exist *.err goto builderr
         )
     )
-)
-
-if not "%do_arm_build%"=="arm" goto end
-
-if "%package_to_build%"=="virtio" (
-    call %setvcxp_bat% arm64
-    echo "building for virtio - do ARM64 as well"
-    for %%w in (11) do (
-        for %%r in (r d) do (
-            for %%x in (a) do (
-                title Windows %%w %%r %%x
-                call msb.bat %%w %%r %%x %t_rebuild_flag%
-                call msb_err.bat %%w %%r %%x
-                if exist *.err goto builderr
-            )
-        )
-    )
-    call %setvcxp_bat% 22
-) else (
+    echo Finished building with VS20!vcxp! %%x
     echo[
-    echo Building for ARM64 is not supported on %package_to_build%
 )
-
 goto end
 
 :builderr
@@ -212,19 +225,16 @@ goto end
 echo.
 echo build_all.bat builds all of the driver kit files
 echo.
-echo "syntax: build_all.bat [<13|15|17|19|22>] [-cZ] [xp] [lh] [win7] [arm]"
+echo "syntax: build_all.bat [<13|15|17|19|22|26>] [-cZ] [xp] [lh] [win7] [arm]"
 echo example: build_all
 echo.
 
 :end
 echo[
-echo Finished building with VS20%vcxp%
 cd %start_dir%
 call unsetddk.bat
 call unsetmsb.bat
-set USERNAME=%start_username%
 set path=%start_path%
-set start_username=
 set start_path=
 set start_dir=
 set build_dir=

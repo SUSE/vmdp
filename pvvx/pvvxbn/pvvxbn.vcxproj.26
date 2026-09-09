@@ -1,0 +1,242 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.x64.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.x64.props')" />
+  <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.props')" />
+  <Import Project="..\packages\Microsoft.Windows.WDK.x64.10.0.28000.2526\build\native\Microsoft.Windows.WDK.x64.props" Condition="Exists('..\packages\Microsoft.Windows.WDK.x64.10.0.28000.2526\build\native\Microsoft.Windows.WDK.x64.props')" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Win11Debug|x64">
+      <Configuration>Win11Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win11Release|x64">
+      <Configuration>Win11Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win11Debug|ARM64">
+      <Configuration>Win11Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Win11Release|ARM64">
+      <Configuration>Win11Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{D0A64B54-68C2-1711-8EA1-4AE39FE41EB1}</ProjectGuid>
+    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration>Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <RootNamespace>pvvxbn</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'" Label="Configuration">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <OutDir>$(ConfigurationName)\$(Platform)\</OutDir>
+    <IntDir>$(ConfigurationName)\$(Platform)\</IntDir>
+    <EnableInf2cat>false</EnableInf2cat>
+    <DriverCatalog_Enable>false</DriverCatalog_Enable>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|x64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+    <ClCompile>
+      <AdditionalIncludeDirectories>.;..\..\xen\xenbus;..\..\virtio\virtio_balloon;..\include;..\..\xen\include;..\..\xen\include\asm;..\..\virtio\include;..\..\virtio\include\virtio;..\..\virtio\include\asm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>WIN10_TARGET_OS=2004;ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;$(DDK_LIB_PATH)wdmsec.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>pvvxbn_x64.def</ModuleDefinitionFile>
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>..\..\virtio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|x64'">
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+    </DriverSign>
+    <ClCompile>
+      <AdditionalIncludeDirectories>.;..\..\xen\xenbus;..\..\virtio\virtio_balloon;..\include;..\..\xen\include;..\..\xen\include\asm;..\..\virtio\include;..\..\virtio\include\virtio;..\..\virtio\include\asm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PreprocessorDefinitions>WIN10_TARGET_OS=2004;ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;$(DDK_LIB_PATH)wdmsec.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>pvvxbn_x64.def</ModuleDefinitionFile>
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>..\..\virtio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.;..\..\xen\xenbus;..\..\virtio\virtio_balloon;..\include;..\..\xen\include;..\..\xen\include\asm;..\..\virtio\include;..\..\virtio\include\virtio;..\..\virtio\include\asm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Debug|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN10_TARGET_OS=2004;ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;$(DDK_LIB_PATH)wdmsec.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>pvvxbn_x64.def</ModuleDefinitionFile>
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>..\..\virtio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.;..\..\xen\xenbus;..\..\virtio\virtio_balloon;..\include;..\..\xen\include;..\..\xen\include\asm;..\..\virtio\include;..\..\virtio\include\virtio;..\..\virtio\include\asm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win11Release|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN10_TARGET_OS=2004;ARCH_x86_64;TARGET_OS_GTE_WinLH;PVVXBN;PVVX;VIRTIO_DEVICE_BALLOON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(DDK_LIB_PATH)ntstrsafe.lib;$(DDK_LIB_PATH)wdmsec.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>pvvxbn_x64.def</ModuleDefinitionFile>
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>..\..\virtio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="pvvxbn_x64.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\virtio\virtio_balloon\virtio_balloon.c" />
+    <ClCompile Include="..\..\virtio\virtio_balloon\virtio_blndrv.c" />
+    <ClCompile Include="..\..\virtio\virtio_balloon\virtio_blnpwr.c" />
+    <ClCompile Include="..\..\virtio\virtio_base\virtio_pci.c" />
+    <ClCompile Include="..\..\virtio\virtio_base\virtio_pci_legacy.c" />
+    <ClCompile Include="..\..\virtio\virtio_base\virtio_pci_modern.c" />
+    <ClCompile Include="..\..\virtio\virtio_base\virtio_pci_wdm.c" />
+    <ClCompile Include="..\..\virtio\virtio_base\virtio_ring.c" />
+    <ClCompile Include="..\..\virtio\virtio_base\virtio_ring_packed.c" />
+    <ClCompile Include="..\..\virtio\virtio_base\virtio_utils.c" />
+    <ClCompile Include="..\..\xen\xenbus\balloon.c" />
+    <ClCompile Include="..\..\xen\xenbus\evtchn.c" />
+    <ClCompile Include="..\..\xen\xenbus\gnttab.c" />
+    <ClCompile Include="..\..\xen\xenbus\pdofunc.c" />
+    <ClCompile Include="..\..\xen\xenbus\pnp.c" />
+    <ClCompile Include="..\..\xen\xenbus\power.c" />
+    <ClCompile Include="..\..\xen\xenbus\xenbus.c" />
+    <ClCompile Include="..\..\xen\xenbus\xenbus_client.c" />
+    <ClCompile Include="..\..\xen\xenbus\xenbus_ioctl.c" />
+    <ClCompile Include="..\..\xen\xenbus\xenbus_probe.c" />
+    <ClCompile Include="..\..\xen\xenbus\xenbus_xs.c" />
+    <ClCompile Include="..\..\xen\xenbus\xen_support.c" />
+    <ClCompile Include="hypervsr_is.c" />
+    <ClCompile Include="vxbn.c" />
+    <ClCompile Include="vxbn_devctrl.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="virtio_blnx.h" />
+    <ClInclude Include="vxbn.h" />
+    <ClInclude Include="vxbn_ver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="vxbn.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="..\..\xen\xenbus\amd64\xenbus_glu64.asm" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.targets" Condition="Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.WDK.x64.10.0.28000.2526\build\native\Microsoft.Windows.WDK.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.WDK.x64.10.0.28000.2526\build\native\Microsoft.Windows.WDK.x64.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.CPP.x64.10.0.28000.2705\build\native\Microsoft.Windows.SDK.cpp.x64.props'))" />
+  </Target>
+</Project>

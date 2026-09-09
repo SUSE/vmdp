@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35004.147
+MinimumVisualStudioVersion = 12.0
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xenbus", "xenbus\xenbus.vcxproj", "{7F1B1F31-4217-41D9-B763-BEABF0EB0633}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xenblk", "xenblk\xenblk.vcxproj", "{4C412A27-ED32-4ED3-AB67-73CCB0EA182A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xennet", "xennet\xennet.vcxproj", "{319BC2AA-1F96-4E9E-A192-A94C4EAB0E85}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xenscsi", "xenscsi\xenscsi.vcxproj", "{BBCC49DD-9447-46FE-A5EA-660B33CB0648}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Win11Debug|x64 = Win11Debug|x64
+		Win11Release|x64 = Win11Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7F1B1F31-4217-41D9-B763-BEABF0EB0633}.Win11Debug|x64.ActiveCfg = Win11Debug|x64
+		{7F1B1F31-4217-41D9-B763-BEABF0EB0633}.Win11Debug|x64.Build.0 = Win11Debug|x64
+		{7F1B1F31-4217-41D9-B763-BEABF0EB0633}.Win11Debug|x64.Deploy.0 = Win11Debug|x64
+		{7F1B1F31-4217-41D9-B763-BEABF0EB0633}.Win11Release|x64.ActiveCfg = Win11Release|x64
+		{7F1B1F31-4217-41D9-B763-BEABF0EB0633}.Win11Release|x64.Build.0 = Win11Release|x64
+		{7F1B1F31-4217-41D9-B763-BEABF0EB0633}.Win11Release|x64.Deploy.0 = Win11Release|x64
+		{4C412A27-ED32-4ED3-AB67-73CCB0EA182A}.Win11Debug|x64.ActiveCfg = Win11Debug|x64
+		{4C412A27-ED32-4ED3-AB67-73CCB0EA182A}.Win11Debug|x64.Build.0 = Win11Debug|x64
+		{4C412A27-ED32-4ED3-AB67-73CCB0EA182A}.Win11Debug|x64.Deploy.0 = Win11Debug|x64
+		{4C412A27-ED32-4ED3-AB67-73CCB0EA182A}.Win11Release|x64.ActiveCfg = Win11Release|x64
+		{4C412A27-ED32-4ED3-AB67-73CCB0EA182A}.Win11Release|x64.Build.0 = Win11Release|x64
+		{4C412A27-ED32-4ED3-AB67-73CCB0EA182A}.Win11Release|x64.Deploy.0 = Win11Release|x64
+		{319BC2AA-1F96-4E9E-A192-A94C4EAB0E85}.Win11Debug|x64.ActiveCfg = Win11Debug|x64
+		{319BC2AA-1F96-4E9E-A192-A94C4EAB0E85}.Win11Debug|x64.Build.0 = Win11Debug|x64
+		{319BC2AA-1F96-4E9E-A192-A94C4EAB0E85}.Win11Debug|x64.Deploy.0 = Win11Debug|x64
+		{319BC2AA-1F96-4E9E-A192-A94C4EAB0E85}.Win11Release|x64.ActiveCfg = Win11Release|x64
+		{319BC2AA-1F96-4E9E-A192-A94C4EAB0E85}.Win11Release|x64.Build.0 = Win11Release|x64
+		{319BC2AA-1F96-4E9E-A192-A94C4EAB0E85}.Win11Release|x64.Deploy.0 = Win11Release|x64
+		{BBCC49DD-9447-46FE-A5EA-660B33CB0648}.Win11Debug|x64.ActiveCfg = Win11Debug|x64
+		{BBCC49DD-9447-46FE-A5EA-660B33CB0648}.Win11Debug|x64.Build.0 = Win11Debug|x64
+		{BBCC49DD-9447-46FE-A5EA-660B33CB0648}.Win11Debug|x64.Deploy.0 = Win11Debug|x64
+		{BBCC49DD-9447-46FE-A5EA-660B33CB0648}.Win11Release|x64.ActiveCfg = Win11Release|x64
+		{BBCC49DD-9447-46FE-A5EA-660B33CB0648}.Win11Release|x64.Build.0 = Win11Release|x64
+		{BBCC49DD-9447-46FE-A5EA-660B33CB0648}.Win11Release|x64.Deploy.0 = Win11Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		        SolutionGuid = {2329F970-7B19-4F3C-B15F-916F42C374EE}
+		                SolutionGuid = {536D60E4-5B64-4432-B434-A30D50219188}
+		SolutionGuid = {B427EB8D-ACF3-4461-B9BD-30B9211E0616}
+	EndGlobalSection
+EndGlobal

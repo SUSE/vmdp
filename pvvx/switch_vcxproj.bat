@@ -2,6 +2,7 @@
 
 if "%1"=="19" goto start
 if "%1"=="22" goto start
+if "%1"=="26" goto start
 goto help
 
 :start
