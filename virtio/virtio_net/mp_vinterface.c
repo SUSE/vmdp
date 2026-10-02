@@ -331,6 +331,9 @@ vnif_init_rcb_pool(PVNIF_ADAPTER adapter)
         for (i = 0; i < adapter->path[path_id].u.vq.rx->num; i++) {
             rcb = (RCB *)RemoveHeadList(
                 &adapter->path[path_id].rcb_rp.rcb_free_list);
+            if (rcb == (RCB *)&adapter->path[path_id].rcb_rp.rcb_free_list) {
+                break;
+            }
             sg.phys_addr = rcb->page_pa.QuadPart;
             vq_add_buf(adapter->path[path_id].u.vq.rx, &sg, 0, 1, rcb);
         }
@@ -527,6 +530,8 @@ vnif_setup_queues(PVNIF_ADAPTER adapter)
             break;
         }
         adapter->path[i].rx = adapter->path[i].u.vq.rx;
+        adapter->min_rx_q_size = min(adapter->min_rx_q_size,
+                                     adapter->path[i].u.vq.rx->num);
 
         adapter->path[i].u.vq.tx = VIRTIO_DEVICE_QUEUE_SETUP(
             &adapter->u.v.vdev,
@@ -732,6 +737,8 @@ VNIFV_SetupAdapterInterface(PVNIF_ADAPTER adapter)
     if (adapter->lso_data_size > VIRTIO_LSO_MAX_DATA_SIZE) {
         adapter->lso_data_size = VIRTIO_LSO_MAX_DATA_SIZE;
     }
+
+    adapter->min_rx_q_size = MAX_NET_RX_RING_SIZE;
 
     vnif_set_guest_features(adapter);
 

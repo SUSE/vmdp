@@ -908,7 +908,7 @@ VNIFReceivePackets(IN PVNIF_ADAPTER adapter, UINT path_id, UINT nbls)
                         }
                         DPRINTK(DPRTL_TRC,
                             ("Receiveing rcb %x.\n", rcb->index));
-                        if (adapter->num_rcb > NET_RX_RING_SIZE) {
+                        if (adapter->num_rcb > adapter->min_rx_q_size) {
                             DPRINTK(DPRTL_TRC,
                                 ("%s: vnif_add_rcb_to_ring_from_list.\n",
                                  __func__));

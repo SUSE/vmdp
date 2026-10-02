@@ -1917,7 +1917,7 @@ vnif_drain_rx_path(PVNIF_ADAPTER adapter,
                              rcv_qidx);
         }
 
-        if (adapter->num_rcb > NET_RX_RING_SIZE) {
+        if (adapter->num_rcb > adapter->min_rx_q_size) {
             (*rcb_added_to_ring) += vnif_add_rcb_to_ring_from_list(
                 adapter,
                 path_id);

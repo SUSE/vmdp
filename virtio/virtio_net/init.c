@@ -1415,6 +1415,7 @@ VNIFDumpSettings(PVNIF_ADAPTER adapter)
         (uint32_t)(adapter->ul64LinkSpeed / VNIF_BASE_LINK_SPEED)));
     PRINTK(("\tduplex state = %d\n", adapter->duplex_state));
     PRINTK(("\tLSO size %d\n", adapter->lso_data_size));
+    PRINTK(("\tmin rx queue size = %d\n", adapter->min_rx_q_size));
     PRINTK(("\trcbs = %d\n", adapter->num_rcb));
     PRINTK(("\trcv limit = %d\n", adapter->rcv_limit));
     PRINTK(("\tresource timeout = %d\n", adapter->resource_timeout));

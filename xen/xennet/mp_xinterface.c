@@ -441,6 +441,8 @@ VNIFX_SetupAdapterInterface(PVNIF_ADAPTER adapter)
         adapter->lso_data_size = XEN_LSO_MAX_DATA_SIZE;
     }
 
+    adapter->min_rx_q_size = NET_RX_RING_SIZE;
+
     status = vnif_setup_rxtx(adapter);
     if (status != NDIS_STATUS_SUCCESS) {
         return status;

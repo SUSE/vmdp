@@ -935,7 +935,7 @@ vnif_return_rcb(PVNIF_ADAPTER adapter, RCB *rcb)
     path_id = rcb->path_id;
     DPRINTK(DPRTL_TRC, ("%s: index %x path_id %d.\n",
                         __func__, rcb->index, path_id));
-    if (adapter->num_rcb <= NET_RX_RING_SIZE) {
+    if (adapter->num_rcb <= adapter->min_rx_q_size) {
         vnif_add_rcb_to_ring(adapter, rcb);
     } else {
         DPRINTK(DPRTL_TRC, ("%s: vnif_add_rcb_to_ring.\n", __func__));

@@ -801,6 +801,7 @@ typedef struct _VNIF_ADAPTER {
     uint32_t            cur_tx_tasks;
     uint32_t            cur_rx_tasks;
     uint32_t            num_rcb;
+    uint32_t            min_rx_q_size;
     int32_t             rcv_limit;
     uint32_t            resource_timeout;
     uint32_t            rx_alloc_buffer_size;
