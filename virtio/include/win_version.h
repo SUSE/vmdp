@@ -28,12 +28,12 @@
 #ifndef _WIN_VERSION_H
 #define _WIN_VERSION_H
 
-#define PV_PRODUCTVERSION           2,5,5.2
-#define PV_PRODUCTVERSION_STR       "2.5.5.2\0"
+#define PV_PRODUCTVERSION           2,5,5.3
+#define PV_PRODUCTVERSION_STR       "2.5.5.3\0"
 #define PV_PRODUCTVERSION_MJMN      205
 #define PV_PRODUCTVERSION_NUMBER    20505
 #define PV_PRODUCTNAME_STR         "SUSE Virtual Machine Driver Pack (VMDP) for Windows"
-#define SETUP_CAPTION_STR           "SUSE VMDP v2.5.5.2 - User License Agreement"
+#define SETUP_CAPTION_STR           "SUSE VMDP v2.5.5.3 - User License Agreement"
 
 #define VIRT_COMPANYNAME_STR        "SUSE"
 

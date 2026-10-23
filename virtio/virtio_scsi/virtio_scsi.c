@@ -513,7 +513,9 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
 
             switch (resp->response) {
             case VIRTIO_SCSI_S_OK:
-                srb->SrbStatus = SRB_STATUS_SUCCESS;
+                srb->ScsiStatus = resp->status;
+                srb->SrbStatus = (resp->status == SCSISTAT_GOOD) ?
+                    SRB_STATUS_SUCCESS : SRB_STATUS_ERROR;
                 break;
             case VIRTIO_SCSI_S_UNDERRUN:
                 dev_ext->underruns++;
@@ -566,11 +568,19 @@ virtio_sp_complete_cmd(virtio_sp_dev_ext_t *dev_ext,
                 break;
             }
 
-            if (srb->DataBuffer) {
-                memcpy(srb->DataBuffer, resp->sense,
-                    min(resp->sense_len, srb->DataTransferLength));
-            }
-            if (srb_ext->Xfer && srb->DataTransferLength > srb_ext->Xfer) {
+            if (srb->SrbStatus != SRB_STATUS_SUCCESS) {
+                if (srb->SenseInfoBuffer && srb->SenseInfoBufferLength &&
+                        resp->sense_len) {
+                     memcpy(srb->SenseInfoBuffer, resp->sense,
+                            min(resp->sense_len, srb->SenseInfoBufferLength));
+                     if (srb->SrbStatus == SRB_STATUS_ERROR) {
+                         srb->SrbStatus |= SRB_STATUS_AUTOSENSE_VALID;
+                     }
+                }
+                /* No data transferred on error. */
+                srb->DataTransferLength = 0;
+            } else if (srb_ext->Xfer
+                       && srb->DataTransferLength > srb_ext->Xfer) {
                 srb->DataTransferLength = srb_ext->Xfer;
                 srb->SrbStatus = SRB_STATUS_DATA_OVERRUN;
             }
