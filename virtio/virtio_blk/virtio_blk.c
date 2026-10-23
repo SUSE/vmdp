@@ -203,7 +203,7 @@ sp_start_io(virtio_sp_dev_ext_t *dev_ext, PSCSI_REQUEST_BLOCK Srb)
             Srb->ScsiStatus = SCSISTAT_GOOD;
             Srb->DataTransferLength = 16;
             RPRINTK(DPRTL_INIT,
-                ("%s %x: SRB_STATUS_INVALID_REQUEST cdb %x\n",
+                ("%s %x: SCSIOP_REPORT_LUNS Cdb[0] %x\n",
                 VIRTIO_SP_DRIVER_NAME, Srb->TargetId, Srb->Cdb[0]));
             break;
         }

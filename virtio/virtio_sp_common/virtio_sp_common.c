@@ -513,6 +513,14 @@ sp_msinterrupt_routine(virtio_sp_dev_ext_t *dev_ext, ULONG  msg_id)
     }
 
     if (dev_ext->msix_uses_one_vector == FALSE) {
+        if (msg_id == VIRTIO_BLK_MSIX_CONFIG_VECTOR) {
+            /* The config vector has no queue, so msg_id - 1 is not valid. */
+            RPRINTK(DPRTL_ON, ("%s %s: config change, msg_id 0x%x\n",
+                               VIRTIO_SP_DRIVER_NAME, __func__, msg_id));
+            virtio_sp_get_device_config(dev_ext);
+            SP_NOTIFICATION(BusChangeDetected, dev_ext, 0);
+            return TRUE;
+        }
         virtio_sp_int_complete_cmd(dev_ext, 0, msg_id - 1, int_serviced);
     } else {
         for (i = 0; i < dev_ext->num_queues + VIRTIO_SCSI_QUEUE_REQUEST; i++) {
