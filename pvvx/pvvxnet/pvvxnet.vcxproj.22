@@ -108,6 +108,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(DDK_LIB_PATH)ndis.lib;$(DDK_LIB_PATH)ntstrsafe.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <CETCompat>true</CETCompat>
     </Link>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -129,6 +130,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(DDK_LIB_PATH)ndis.lib;$(DDK_LIB_PATH)ntstrsafe.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <CETCompat>true</CETCompat>
     </Link>
     <ResourceCompile>
       <PreprocessorDefinitions>TARGET_OS_Win11;%(PreprocessorDefinitions)</PreprocessorDefinitions>
