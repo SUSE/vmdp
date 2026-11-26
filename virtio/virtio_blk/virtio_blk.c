@@ -518,6 +518,30 @@ sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId)
 
     RPRINTK(DPRTL_ON, ("%s %s: In\n", VIRTIO_SP_DRIVER_NAME, __func__));
     VBIF_SET_FLAG(dev_ext->sp_locks, (BLK_RBUS_L | BLK_SIO_L));
+#ifdef IS_STORPORT
+    {
+        ULONG i;
+
+        /*
+         * StorPort calls the bus reset after a request timed out.  The miniport
+         * must hand back every outstanding request, otherwise a request the
+         * device never completes stays outstanding forever (shutdown blocked
+         * in NtfsWaitOnIo, Driver Verifier bugcheck 0xC4/0x115).
+         * 1. Complete what the device already finished (lost interrupt).
+         * 2. Reset the device so that it releases the remaining descriptors.
+         * 3. Complete everything still outstanding with SRB_STATUS_BUS_RESET.
+         */
+        for (i = 0; i < dev_ext->num_queues; i++) {
+            virtio_sp_complete_cmd(dev_ext, 1, i, TRUE);
+        }
+        if (virtio_sp_reset_device(dev_ext) == FALSE) {
+            PRINTK(("%s %s: device reset failed\n",
+                    VIRTIO_SP_DRIVER_NAME, __func__));
+        }
+        StorPortCompleteRequest(dev_ext, (UCHAR)PathId, SP_UNTAGGED,
+                                SP_UNTAGGED, SRB_STATUS_BUS_RESET);
+    }
+#endif
     SP_NEXT_REQUEST(NextRequest, dev_ext);
     VBIF_CLEAR_FLAG(dev_ext->sp_locks, (BLK_RBUS_L | BLK_SIO_L));
     RPRINTK(DPRTL_ON, ("%s %s: Out\n", VIRTIO_SP_DRIVER_NAME, __func__));

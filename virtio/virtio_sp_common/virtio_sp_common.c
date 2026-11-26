@@ -1444,6 +1444,21 @@ virtio_sp_shutdown(virtio_sp_dev_ext_t *dev_ext)
 }
 
 static SCSI_ADAPTER_CONTROL_STATUS
+virtio_sp_restart(virtio_sp_dev_ext_t *dev_ext);
+
+/*
+ * Reset the virtio device and rebuild its queues.  Used by the bus reset:
+ * after VIRTIO_DEVICE_RESET the device no longer owns any descriptor, so the
+ * outstanding requests can be completed without a late completion arriving.
+ */
+BOOLEAN
+virtio_sp_reset_device(virtio_sp_dev_ext_t *dev_ext)
+{
+    virtio_sp_shutdown(dev_ext);
+    return virtio_sp_restart(dev_ext) == ScsiAdapterControlSuccess;
+}
+
+static SCSI_ADAPTER_CONTROL_STATUS
 virtio_sp_restart(virtio_sp_dev_ext_t *dev_ext)
 {
     NTSTATUS nt_status;

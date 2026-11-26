@@ -108,6 +108,7 @@ BOOLEAN sp_start_io(virtio_sp_dev_ext_t *dev_ext,
 BOOLEAN sp_build_io(virtio_sp_dev_ext_t *dev_ext,
     PSCSI_REQUEST_BLOCK Srb);
 BOOLEAN sp_reset_bus(virtio_sp_dev_ext_t *dev_ext, ULONG PathId);
+BOOLEAN virtio_sp_reset_device(virtio_sp_dev_ext_t *dev_ext);
 BOOLEAN sp_interrupt(IN PVOID dev_ext);
 SCSI_ADAPTER_CONTROL_STATUS sp_adapter_control(
     IN PVOID dev_ext,
