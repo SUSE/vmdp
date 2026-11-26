@@ -242,6 +242,14 @@ typedef struct _vbif_srb_extension {
 #ifndef IS_STORPORT
     BOOLEAN         notify_next;
 #endif
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+    /*
+     * Discard ranges belong to the request: a single table in the device
+     * extension is overwritten by a concurrent UNMAP while the device is still
+     * reading it.
+     */
+    virtio_blk_discard_write_zeroes_t blk_discard[VIRTIO_BLK_MAX_DISCARD];
+#endif
 } vbif_srb_ext_t, virtio_sp_srb_ext_t;
 
 typedef struct _virtio_sp_dev_ext {

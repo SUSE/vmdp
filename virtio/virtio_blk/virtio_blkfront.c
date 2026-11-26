@@ -891,11 +891,11 @@ virtio_blk_do_unmap(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
         DPRINTK(DPRTL_ON,
             ("[%d] blk_descr_cnt %d blk_start_lba %llu blk_descr_lba_cnt %lu\n",
             i, blk_descr_cnt, blk_start_lba, blk_descr_lba_cnt));
-        dev_ext->blk_discard[i].sector =
+        srb_ext->blk_discard[i].sector =
             blk_start_lba * (dev_ext->info.blk_size / SECTOR_SIZE);
-        dev_ext->blk_discard[i].num_sectors =
+        srb_ext->blk_discard[i].num_sectors =
             blk_descr_lba_cnt * (dev_ext->info.blk_size / SECTOR_SIZE);
-        dev_ext->blk_discard[i].flags = 0;
+        srb_ext->blk_discard[i].flags = 0;
     }
 
     srb_ext->vbr.out_hdr.sector = 0;
@@ -909,7 +909,7 @@ virtio_blk_do_unmap(virtio_sp_dev_ext_t *dev_ext, SCSI_REQUEST_BLOCK *srb)
     srb_ext->sg[0].phys_addr = pa.QuadPart;
     srb_ext->sg[0].len   = sizeof(srb_ext->vbr.out_hdr);
 
-    pa = MmGetPhysicalAddress(&dev_ext->blk_discard[0]);
+    pa = SP_GET_PHYSICAL_ADDRESS(dev_ext, NULL, &srb_ext->blk_discard[0], &len);
     srb_ext->sg[1].phys_addr = pa.QuadPart;
     srb_ext->sg[1].len =
         sizeof(virtio_blk_discard_write_zeroes_t) * blk_descr_cnt;
